@@ -26,7 +26,10 @@ find_package (Clang REQUIRED CONFIG)
 include(AddLLVM)
 include(AddClang)
 
-set (PROJECT_SOURCES src/PDFGDriver.cpp)
+set (PROJECT_SOURCES
+    PDFGDriver.cpp
+    Builder.hpp)
+list (TRANSFORM PROJECT_SOURCES PREPEND "src/")
 add_clang_executable(${CMAKE_PROJECT_NAME} ${PROJECT_SOURCES})
 
 # Add directories to include

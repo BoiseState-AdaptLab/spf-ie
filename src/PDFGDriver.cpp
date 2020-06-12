@@ -1,6 +1,8 @@
-#include <iostream>
-
+#include "Builder.hpp"
+#include "clang/AST/ASTConsumer.h"
 #include "clang/AST/ASTContext.h"
+#include "clang/AST/Decl.h"
+#include "clang/AST/DeclBase.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Tooling/CommonOptionsParser.h"
@@ -14,14 +16,23 @@ namespace pdfg_c {
 class PDFGConsumer : public ASTConsumer {
    public:
     explicit PDFGConsumer(ASTContext *Context, std::string fileName)
-        : fileName(fileName) {}
+        : fileName(fileName), builder(new Builder) {}
     // defines the action to perform per translation unit
     virtual void HandleTranslationUnit(ASTContext &Context) {
-        llvm::errs() << fileName << "\n";
+        llvm::errs() << "currently processing " << fileName << "\n";
+        TranslationUnitDecl *translationUnit = Context.getTranslationUnitDecl();
+        for (DeclContext::decl_iterator it = translationUnit->decls_begin();
+             it != translationUnit->decls_end(); ++it) {
+            FunctionDecl *func = dyn_cast<FunctionDecl>(*it);
+            if (func && func->doesThisDeclarationHaveABody()) {
+                builder->processFunction(func);
+            }
+        }
     }
 
    private:
     std::string fileName;
+    Builder *builder;
 };
 
 class PDFGFrontendAction : public ASTFrontendAction {
