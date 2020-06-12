@@ -21,11 +21,10 @@ class PDFGConsumer : public ASTConsumer {
         : fileName(fileName), builder(std::make_unique<Builder>(Context)) {}
     // defines the action to perform per translation unit
     virtual void HandleTranslationUnit(ASTContext &Context) {
-        llvm::errs() << "currently processing " << fileName << "\n";
-        TranslationUnitDecl *translationUnit = Context.getTranslationUnitDecl();
-        for (auto it = translationUnit->decls_begin();
-             it != translationUnit->decls_end(); ++it) {
-            FunctionDecl *func = dyn_cast<FunctionDecl>(*it);
+        llvm::errs() << "processing " << fileName << "\n";
+        TranslationUnitDecl *transUnitDecl = Context.getTranslationUnitDecl();
+        for (auto it : transUnitDecl->decls()) {
+            FunctionDecl *func = dyn_cast<FunctionDecl>(it);
             if (func && func->doesThisDeclarationHaveABody()) {
                 builder->processFunction(func);
             }
