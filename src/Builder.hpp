@@ -1,5 +1,7 @@
 #include <iostream>
+#include <vector>
 
+#include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Stmt.h"
 
@@ -9,17 +11,55 @@ namespace pdfg_c {
 
 class Builder {
    public:
-    explicit Builder() : stmtNumber(0){};
+    explicit Builder(ASTContext* Context) : Context(Context){};
+    // entry point; gather information about all statements in a function
     void processFunction(FunctionDecl* funcDecl) {
         CompoundStmt* funcBody = cast<CompoundStmt>(funcDecl->getBody());
-        for (CompoundStmt::const_body_iterator it = funcBody->body_begin();
-             it != funcBody->body_end(); ++it) {
-            llvm::errs() << "S" << stmtNumber++ << ": " << *it << "\n";
+        processBody(funcBody);
+    }
+
+    // print collected information to stdout
+    void printStmtInfo() {
+        for (std::vector<Stmt>::size_type i = 0; i != stmts.size(); ++i) {
+            llvm ::outs() << "S" << i << ": " << stmts[i]->getStmtClassName()
+                          << "\n";
         }
     }
 
    private:
-    int stmtNumber;
+    ASTContext* Context;
+    std::vector<Stmt*> stmts;
+
+    // process the body of a control structure
+    void processBody(Stmt* stmt) {
+        CompoundStmt* asCompoundStmt = dyn_cast<CompoundStmt>(stmt);
+        if (asCompoundStmt) {
+            for (auto it = asCompoundStmt->body_begin();
+                 it != asCompoundStmt->body_end(); ++it) {
+                processSingleStmt(*it);
+            }
+        } else {
+            processSingleStmt(stmt);
+        }
+    }
+
+    // process one statement, recursing if compound structure
+    void processSingleStmt(Stmt* stmt) {
+        ForStmt* asForStmt = dyn_cast<ForStmt>(stmt);
+        if (asForStmt) {
+            processBody(asForStmt->getBody());
+            return;
+        }
+        IfStmt* asIfStmt = dyn_cast<IfStmt>(stmt);
+        if (asIfStmt) {
+            processBody(asIfStmt->getThen());
+            return;
+        }
+        addStmt(stmt);
+    }
+
+    // add info about a stmt to the Builder
+    void addStmt(Stmt* stmt) { stmts.push_back(stmt); }
 };
 }  // namespace pdfg_c
 
