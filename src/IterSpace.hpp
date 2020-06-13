@@ -1,6 +1,3 @@
-#ifndef PDFG_ITERSPACE_HPP
-#define PDFG_ITERSPACE_HPP
-
 #include <memory>
 #include <tuple>
 #include <vector>
@@ -16,7 +13,8 @@ using namespace clang;
 
 namespace pdfg_c {
 
-// represents the iteration space of a statement
+// contains a statement and associated information (iteration space and
+// execution schedules)
 struct IterSpace {
     IterSpace() {}
     IterSpace(IterSpace* other) {
@@ -97,5 +95,3 @@ struct IterSpace {
     }
 };
 }  // namespace pdfg_c
-
-#endif

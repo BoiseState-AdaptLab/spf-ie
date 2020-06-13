@@ -11,9 +11,9 @@ using namespace clang;
 
 namespace pdfg_c {
 
-class Builder {
+class PDFGLBuilder {
    public:
-    explicit Builder(ASTContext* Context) : Context(Context){};
+    explicit PDFGLBuilder(ASTContext* Context) : Context(Context){};
     // entry point for each function; gather information about its statements
     void processFunction(FunctionDecl* funcDecl) {
         CompoundStmt* funcBody = cast<CompoundStmt>(funcDecl->getBody());
@@ -77,7 +77,7 @@ class Builder {
         addStmt(stmt);
     }
 
-    // add info about a stmt to the Builder
+    // add info about a stmt to the PDFGLBuilder
     void addStmt(Stmt* stmt) {
         stmts.push_back(stmt);
         iterSpaces.push_back(IterSpace(&currentIterSpace));

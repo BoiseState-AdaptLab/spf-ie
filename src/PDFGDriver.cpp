@@ -19,7 +19,7 @@ namespace pdfg_c {
 class PDFGConsumer : public ASTConsumer {
    public:
     explicit PDFGConsumer(ASTContext *Context, std::string fileName)
-        : fileName(fileName), builder(std::make_unique<Builder>(Context)) {}
+        : fileName(fileName), builder(std::make_unique<PDFGLBuilder>(Context)) {}
     virtual void HandleTranslationUnit(ASTContext &Context) {
         llvm::errs() << "processing " << fileName << "\n";
         TranslationUnitDecl *transUnitDecl = Context.getTranslationUnitDecl();
@@ -33,7 +33,7 @@ class PDFGConsumer : public ASTConsumer {
     }
 
    private:
-    std::unique_ptr<Builder> builder;
+    std::unique_ptr<PDFGLBuilder> builder;
     std::string fileName;
 };
 
