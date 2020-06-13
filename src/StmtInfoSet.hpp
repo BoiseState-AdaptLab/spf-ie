@@ -95,6 +95,7 @@ struct StmtInfoSet {
         return os.str();
     }
 
+    // move statement number forward in the schedule
     void advanceSchedule() {
         if (schedule.empty() || schedule.back()->valueIsVar) {
             schedule.push_back(std::make_shared<ScheduleVal>(0));
@@ -102,6 +103,16 @@ struct StmtInfoSet {
             std::shared_ptr<ScheduleVal> top = schedule.back();
             schedule.pop_back();
             schedule.push_back(std::make_shared<ScheduleVal>(top->num + 1));
+        }
+    }
+
+    // get the dimension of this execution schedule
+    int getScheduleDimension() { return schedule.size(); }
+
+    // zero-pad this execution schedule up to a certain dimension
+    void zeroPadScheduleDimension(int dim) {
+        for (int i = getScheduleDimension(); i < dim; ++i) {
+            schedule.push_back(std::make_shared<ScheduleVal>(0));
         }
     }
 

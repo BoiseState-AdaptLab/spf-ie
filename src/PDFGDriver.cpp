@@ -19,9 +19,11 @@ namespace pdfg_c {
 class PDFGConsumer : public ASTConsumer {
    public:
     explicit PDFGConsumer(ASTContext *Context, std::string fileName)
-        : fileName(fileName), builder(std::make_unique<PDFGLBuilder>(Context)) {}
+        : fileName(fileName),
+          builder(std::make_unique<PDFGLBuilder>(Context)) {}
     virtual void HandleTranslationUnit(ASTContext &Context) {
-        llvm::errs() << "processing " << fileName << "\n";
+        llvm::errs() << "\nProcessing: " << fileName << "\n";
+        llvm::errs() << "=================================================\n\n";
         TranslationUnitDecl *transUnitDecl = Context.getTranslationUnitDecl();
         for (auto it : transUnitDecl->decls()) {
             FunctionDecl *func = dyn_cast<FunctionDecl>(it);

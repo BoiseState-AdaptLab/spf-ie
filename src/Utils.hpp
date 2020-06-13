@@ -22,6 +22,9 @@ class Utils {
         exit(1);
     }
 
+    // print a line (horizontal separator) to stdout
+    static void printSmallLine() { llvm::outs() << "---------------\n"; }
+
     static llvm::StringRef stmtToString(Stmt* stmt, ASTContext* Context) {
         return Lexer::getSourceText(
             CharSourceRange::getTokenRange(stmt->getSourceRange()),
