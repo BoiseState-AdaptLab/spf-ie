@@ -10,6 +10,7 @@
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/Support/raw_ostream.h"
 
 using namespace clang;
 using namespace clang::tooling;
@@ -29,7 +30,7 @@ class PDFGConsumer : public ASTConsumer {
                 builder->processFunction(func);
             }
         }
-        builder->printStmtInfo();
+        builder->printInfo();
     }
 
    private:

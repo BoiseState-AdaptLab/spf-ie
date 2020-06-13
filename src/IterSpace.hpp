@@ -1,8 +1,11 @@
-#include <map>
+#ifndef PDFG_ITERSPACE_HPP
+#define PDFG_ITERSPACE_HPP
+
 #include <memory>
 #include <tuple>
 #include <vector>
 
+#include "Utils.hpp"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/OperationKinds.h"
@@ -50,6 +53,35 @@ struct IterSpace {
 
     void exitIf() { constraints.pop_back(); }
 
+    std::string toString(ASTContext* Context) {
+        std::string output;
+        llvm::raw_string_ostream os(output);
+        if (!constraints.empty()) {
+            os << "{[";
+            for (auto it = iterators.begin(); it != iterators.end(); ++it) {
+                if (it != iterators.begin()) {
+                    os << ",";
+                }
+                os << (*it)->getNameAsString();
+            }
+            os << "]: ";
+            for (auto it = constraints.begin(); it != constraints.end(); ++it) {
+                if (it != constraints.begin()) {
+                    os << " and ";
+                }
+                BinaryOperatorKind bo = std::get<2>(**it);
+                os << Utils::exprToString(std::get<0>(**it), Context) << " "
+                   << Utils::binaryOperatorKindToString(std::get<2>(**it),
+                                                        Context)
+                   << " " << Utils::exprToString(std::get<1>(**it), Context);
+            }
+            os << "}";
+        } else {
+            os << "{[]}";
+        }
+        return os.str();
+    }
+
    private:
     void makeAndInsertConstraint(Expr* lower, Expr* upper,
                                  BinaryOperatorKind oper) {
@@ -59,3 +91,5 @@ struct IterSpace {
     }
 };
 }  // namespace pdfg_c
+
+#endif
