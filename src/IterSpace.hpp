@@ -24,34 +24,11 @@ struct IterSpace {
         constraints = other->constraints;
     }
 
+    // variables being iterated over
     std::vector<ValueDecl*> iterators;
+    // constraints on iteration (inequalities and equalities)
     std::vector<std::shared_ptr<std::tuple<Expr*, Expr*, BinaryOperatorKind>>>
         constraints;
-
-    void enterFor(ForStmt* forStmt) {
-        BinaryOperator* init = cast<BinaryOperator>(forStmt->getInit());
-        makeAndInsertConstraint(init->getLHS(), init->getRHS(),
-                                BinaryOperatorKind::BO_LE);
-        BinaryOperator* cond = cast<BinaryOperator>(forStmt->getCond());
-        makeAndInsertConstraint(cond->getLHS(), cond->getRHS(),
-                                cond->getOpcode());
-        iterators.push_back(
-            cast<DeclRefExpr>(init->getLHS()->IgnoreImplicit())->getDecl());
-    }
-
-    void exitFor() {
-        constraints.pop_back();
-        constraints.pop_back();
-        iterators.pop_back();
-    }
-
-    void enterIf(IfStmt* ifStmt) {
-        BinaryOperator* cond = cast<BinaryOperator>(ifStmt->getCond());
-        makeAndInsertConstraint(cond->getLHS(), cond->getRHS(),
-                                cond->getOpcode());
-    }
-
-    void exitIf() { constraints.pop_back(); }
 
     std::string toString(ASTContext* Context) {
         std::string output;
@@ -82,7 +59,36 @@ struct IterSpace {
         return os.str();
     }
 
+    // enter* and exit* methods add iterators and constraints when entering a
+    // new scope, remove when leaving the scope
+
+    void enterFor(ForStmt* forStmt) {
+        BinaryOperator* init = cast<BinaryOperator>(forStmt->getInit());
+        makeAndInsertConstraint(init->getLHS(), init->getRHS(),
+                                BinaryOperatorKind::BO_LE);
+        BinaryOperator* cond = cast<BinaryOperator>(forStmt->getCond());
+        makeAndInsertConstraint(cond->getLHS(), cond->getRHS(),
+                                cond->getOpcode());
+        iterators.push_back(
+            cast<DeclRefExpr>(init->getLHS()->IgnoreImplicit())->getDecl());
+    }
+
+    void exitFor() {
+        constraints.pop_back();
+        constraints.pop_back();
+        iterators.pop_back();
+    }
+
+    void enterIf(IfStmt* ifStmt) {
+        BinaryOperator* cond = cast<BinaryOperator>(ifStmt->getCond());
+        makeAndInsertConstraint(cond->getLHS(), cond->getRHS(),
+                                cond->getOpcode());
+    }
+
+    void exitIf() { constraints.pop_back(); }
+
    private:
+    // convenience function to add a new constraint from the given parameters
     void makeAndInsertConstraint(Expr* lower, Expr* upper,
                                  BinaryOperatorKind oper) {
         constraints.push_back(

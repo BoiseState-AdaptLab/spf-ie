@@ -43,6 +43,7 @@ class Utils {
     }
 
    private:
+    // valid operators for use in constraints
     static std::map<BinaryOperatorKind, llvm::StringRef> operatorStrings;
 
     Utils() = delete;

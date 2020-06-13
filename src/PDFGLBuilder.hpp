@@ -14,7 +14,7 @@ namespace pdfg_c {
 class Builder {
    public:
     explicit Builder(ASTContext* Context) : Context(Context){};
-    // entry point; gather information about all statements in a function
+    // entry point for each function; gather information about its statements
     void processFunction(FunctionDecl* funcDecl) {
         CompoundStmt* funcBody = cast<CompoundStmt>(funcDecl->getBody());
         processBody(funcBody);

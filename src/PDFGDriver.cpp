@@ -20,7 +20,6 @@ class PDFGConsumer : public ASTConsumer {
    public:
     explicit PDFGConsumer(ASTContext *Context, std::string fileName)
         : fileName(fileName), builder(std::make_unique<Builder>(Context)) {}
-    // defines the action to perform per translation unit
     virtual void HandleTranslationUnit(ASTContext &Context) {
         llvm::errs() << "processing " << fileName << "\n";
         TranslationUnitDecl *transUnitDecl = Context.getTranslationUnitDecl();
@@ -40,7 +39,6 @@ class PDFGConsumer : public ASTConsumer {
 
 class PDFGFrontendAction : public ASTFrontendAction {
    public:
-    // called to create a consumer for each translation unit
     virtual std::unique_ptr<ASTConsumer> CreateASTConsumer(
         CompilerInstance &Compiler, llvm::StringRef InFile) {
         return std::unique_ptr<ASTConsumer>(
