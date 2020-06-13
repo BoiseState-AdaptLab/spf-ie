@@ -4,6 +4,10 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Stmt.h"
+#include "clang/Basic/SourceLocation.h"
+#include "clang/Basic/SourceManager.h"
+#include "clang/Lex/Lexer.h"
+#include "llvm/ADT/StringRef.h"
 
 using namespace clang;
 
@@ -20,9 +24,14 @@ class Builder {
 
     // print collected information to stdout
     void printStmtInfo() {
+        SourceManager* sm = &Context->getSourceManager();
         for (std::vector<Stmt>::size_type i = 0; i != stmts.size(); ++i) {
-            llvm ::outs() << "S" << i << ": " << stmts[i]->getStmtClassName()
-                          << "\n";
+            llvm::StringRef stmtString = clang::Lexer::getSourceText(
+                clang::CharSourceRange::getTokenRange(
+                    stmts[i]->getSourceRange()),
+                Context->getSourceManager(), Context->getLangOpts());
+            llvm ::outs() << "S" << i << ": " << stmtString << " ("
+                          << stmts[i]->getStmtClassName() << ")\n";
         }
     }
 

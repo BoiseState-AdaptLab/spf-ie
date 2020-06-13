@@ -28,7 +28,7 @@ include(AddClang)
 
 set (PROJECT_SOURCES
     PDFGDriver.cpp
-    Builder.hpp)
+    PDFGLBuilder.hpp)
 list (TRANSFORM PROJECT_SOURCES PREPEND "src/")
 add_clang_executable(${CMAKE_PROJECT_NAME} ${PROJECT_SOURCES})
 
@@ -48,5 +48,6 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
             clangSerialization
             clangFrontend
             clangTooling
+            clangLex
 )
 
