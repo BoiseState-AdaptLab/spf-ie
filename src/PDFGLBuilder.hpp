@@ -1,6 +1,6 @@
 #include <vector>
 
-#include "IterSpace.hpp"
+#include "StmtInfoSet.hpp"
 #include "Utils.hpp"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
@@ -28,22 +28,25 @@ class PDFGLBuilder {
                          << Utils::stmtToString(stmts[i], Context) << "\n";
         }
         llvm::outs() << "\nIteration spaces:\n";
-        for (std::vector<IterSpace>::size_type i = 0; i != iterSpaces.size();
-             ++i) {
-            llvm::outs() << "S" << i << ": " << iterSpaces[i].toString(Context)
-                         << "\n";
+        for (std::vector<StmtInfoSet>::size_type i = 0;
+             i != stmtInfoSets.size(); ++i) {
+            llvm::outs() << "S" << i << ": "
+                         << stmtInfoSets[i].getIterSpaceString(Context) << "\n";
         }
         llvm::outs() << "\nExecution schedules:\n";
-        llvm::outs() << "schedules placeholder\n";
+        for (std::vector<StmtInfoSet>::size_type i = 0;
+             i != stmtInfoSets.size(); ++i) {
+            llvm::outs() << "S" << i << ": "
+                         << stmtInfoSets[i].getExecScheduleString(Context)
+                         << "\n";
+        }
     }
 
    private:
     ASTContext* Context;
     std::vector<Stmt*> stmts;
-    std::vector<IterSpace> iterSpaces;
-    IterSpace currentIterSpace;
-    /* std::vector<Schedule*> schedules; */
-    /* std::stack<Schedule*> currentSchedule; */
+    std::vector<StmtInfoSet> stmtInfoSets;
+    StmtInfoSet currentStmtInfoSet;
 
     // process the body of a control structure
     void processBody(Stmt* stmt) {
@@ -61,26 +64,28 @@ class PDFGLBuilder {
     void processSingleStmt(Stmt* stmt) {
         ForStmt* asForStmt = dyn_cast<ForStmt>(stmt);
         if (asForStmt) {
-            currentIterSpace.enterFor(asForStmt);
+            currentStmtInfoSet.advanceSchedule();
+            currentStmtInfoSet.enterFor(asForStmt);
             processBody(asForStmt->getBody());
-            currentIterSpace.exitFor();
+            currentStmtInfoSet.exitFor();
             return;
         }
         IfStmt* asIfStmt = dyn_cast<IfStmt>(stmt);
         if (asIfStmt) {
-            currentIterSpace.enterIf(asIfStmt);
+            currentStmtInfoSet.enterIf(asIfStmt);
             processBody(asIfStmt->getThen());
-            currentIterSpace.exitIf();
+            currentStmtInfoSet.exitIf();
             return;
         }
 
+        currentStmtInfoSet.advanceSchedule();
         addStmt(stmt);
     }
 
     // add info about a stmt to the PDFGLBuilder
     void addStmt(Stmt* stmt) {
         stmts.push_back(stmt);
-        iterSpaces.push_back(IterSpace(&currentIterSpace));
+        stmtInfoSets.push_back(StmtInfoSet(&currentStmtInfoSet));
     }
 };
 }  // namespace pdfg_c

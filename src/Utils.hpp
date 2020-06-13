@@ -50,11 +50,9 @@ class Utils {
 };
 
 std::map<BinaryOperatorKind, llvm::StringRef> Utils::operatorStrings = {
-    {BinaryOperatorKind::BO_LT, "<"},
-    {BinaryOperatorKind::BO_LE, "<="},
-    {BinaryOperatorKind::BO_GT, ">"},
-    {BinaryOperatorKind::BO_GE, ">="},
-    {BinaryOperatorKind::BO_EQ, "=="}};
+    {BinaryOperatorKind::BO_LT, "<"},  {BinaryOperatorKind::BO_LE, "<="},
+    {BinaryOperatorKind::BO_GT, ">"},  {BinaryOperatorKind::BO_GE, ">="},
+    {BinaryOperatorKind::BO_EQ, "=="}, {BinaryOperatorKind::BO_NE, "!="}};
 
 }  // namespace pdfg_c
 

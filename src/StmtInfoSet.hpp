@@ -13,13 +13,24 @@ using namespace clang;
 
 namespace pdfg_c {
 
-// contains a statement and associated information (iteration space and
+// one entry in an execution schedule, which may be a varible or a number
+struct ScheduleVal {
+    ScheduleVal(ValueDecl* var) : var(var), valueIsVar(true) {}
+    ScheduleVal(int num) : num(num), valueIsVar(false) {}
+
+    ValueDecl* var;
+    int num;
+    bool valueIsVar;
+};
+
+// contains associated information for a statement (iteration space and
 // execution schedules)
-struct IterSpace {
-    IterSpace() {}
-    IterSpace(IterSpace* other) {
+struct StmtInfoSet {
+    StmtInfoSet() {}
+    StmtInfoSet(StmtInfoSet* other) {
         iterators = other->iterators;
         constraints = other->constraints;
+        schedule = other->schedule;
     }
 
     // variables being iterated over
@@ -27,8 +38,10 @@ struct IterSpace {
     // constraints on iteration (inequalities and equalities)
     std::vector<std::shared_ptr<std::tuple<Expr*, Expr*, BinaryOperatorKind>>>
         constraints;
+    // execution schedule, which begins at 0
+    std::vector<std::shared_ptr<ScheduleVal>> schedule;
 
-    std::string toString(ASTContext* Context) {
+    std::string getIterSpaceString(ASTContext* Context) {
         std::string output;
         llvm::raw_string_ostream os(output);
         if (!constraints.empty()) {
@@ -57,24 +70,63 @@ struct IterSpace {
         return os.str();
     }
 
+    std::string getExecScheduleString(ASTContext* Context) {
+        std::string output;
+        llvm::raw_string_ostream os(output);
+        os << "{[";
+        for (auto it = iterators.begin(); it != iterators.end(); ++it) {
+            if (it != iterators.begin()) {
+                os << ",";
+            }
+            os << (*it)->getNameAsString();
+        }
+        os << "]->[";
+        for (auto it = schedule.begin(); it != schedule.end(); ++it) {
+            if (it != schedule.begin()) {
+                os << ",";
+            }
+            if ((*it)->valueIsVar) {
+                os << (*it)->var->getNameAsString();
+            } else {
+                os << (*it)->num;
+            }
+        }
+        os << "]}";
+        return os.str();
+    }
+
+    void advanceSchedule() {
+        if (schedule.empty() || schedule.back()->valueIsVar) {
+            schedule.push_back(std::make_shared<ScheduleVal>(0));
+        } else {
+            std::shared_ptr<ScheduleVal> top = schedule.back();
+            schedule.pop_back();
+            schedule.push_back(std::make_shared<ScheduleVal>(top->num + 1));
+        }
+    }
+
     // enter* and exit* methods add iterators and constraints when entering a
     // new scope, remove when leaving the scope
 
     void enterFor(ForStmt* forStmt) {
         BinaryOperator* init = cast<BinaryOperator>(forStmt->getInit());
-        makeAndInsertConstraint(init->getLHS(), init->getRHS(),
+        makeAndInsertConstraint(init->getRHS(), init->getLHS(),
                                 BinaryOperatorKind::BO_LE);
         BinaryOperator* cond = cast<BinaryOperator>(forStmt->getCond());
         makeAndInsertConstraint(cond->getLHS(), cond->getRHS(),
                                 cond->getOpcode());
-        iterators.push_back(
-            cast<DeclRefExpr>(init->getLHS()->IgnoreImplicit())->getDecl());
+        ValueDecl* iterDecl =
+            cast<DeclRefExpr>(init->getLHS()->IgnoreImplicit())->getDecl();
+        iterators.push_back(iterDecl);
+        schedule.push_back(std::make_shared<ScheduleVal>(iterDecl));
     }
 
     void exitFor() {
         constraints.pop_back();
         constraints.pop_back();
         iterators.pop_back();
+        schedule.pop_back();
+        schedule.pop_back();
     }
 
     void enterIf(IfStmt* ifStmt) {
