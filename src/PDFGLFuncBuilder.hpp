@@ -13,12 +13,13 @@ using namespace clang;
 
 namespace pdfg_c {
 
-class PDFGLBuilder {
+class PDFGLFuncBuilder {
    public:
-    explicit PDFGLBuilder(ASTContext* Context)
+    explicit PDFGLFuncBuilder(ASTContext* Context)
         : Context(Context), largestScheduleDimension(0){};
     // entry point for each function; gather information about its statements
     void processFunction(FunctionDecl* funcDecl) {
+        functionName = funcDecl->getQualifiedNameAsString();
         CompoundStmt* funcBody = cast<CompoundStmt>(funcDecl->getBody());
         processBody(funcBody);
         for (auto it = stmtInfoSets.begin(); it != stmtInfoSets.end(); ++it) {
@@ -28,30 +29,32 @@ class PDFGLBuilder {
 
     // print collected information to stdout
     void printInfo() {
-        llvm::outs() << "Statements:\n";
+        llvm::outs() << "Function: " << functionName << "\n";
         Utils::printSmallLine();
+        llvm::outs() << "\n";
+        llvm::outs() << "Statements:\n";
         for (std::vector<Stmt>::size_type i = 0; i != stmts.size(); ++i) {
             llvm::outs() << "S" << i << ": "
                          << Utils::stmtToString(stmts[i], Context) << "\n";
         }
         llvm::outs() << "\nIteration spaces:\n";
-        Utils::printSmallLine();
         for (std::vector<StmtInfoSet>::size_type i = 0;
              i != stmtInfoSets.size(); ++i) {
             llvm::outs() << "S" << i << ": "
                          << stmtInfoSets[i].getIterSpaceString(Context) << "\n";
         }
         llvm::outs() << "\nExecution schedules:\n";
-        Utils::printSmallLine();
         for (std::vector<StmtInfoSet>::size_type i = 0;
              i != stmtInfoSets.size(); ++i) {
             llvm::outs() << "S" << i << ": "
                          << stmtInfoSets[i].getExecScheduleString(Context)
                          << "\n";
         }
+        llvm::outs() << "\n";
     }
 
    private:
+    std::string functionName;
     ASTContext* Context;
     std::vector<Stmt*> stmts;
     std::vector<StmtInfoSet> stmtInfoSets;
@@ -104,7 +107,7 @@ class PDFGLBuilder {
         addStmt(stmt);
     }
 
-    // add info about a stmt to the PDFGLBuilder
+    // add info about a stmt to the builder
     void addStmt(Stmt* stmt) {
         stmts.push_back(stmt);
         largestScheduleDimension =

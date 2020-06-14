@@ -1,6 +1,6 @@
 #include <memory>
 
-#include "PDFGLBuilder.hpp"
+#include "PDFGLFuncBuilder.hpp"
 #include "clang/AST/ASTConsumer.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
@@ -19,8 +19,7 @@ namespace pdfg_c {
 class PDFGConsumer : public ASTConsumer {
    public:
     explicit PDFGConsumer(ASTContext *Context, std::string fileName)
-        : fileName(fileName),
-          builder(std::make_unique<PDFGLBuilder>(Context)) {}
+        : fileName(fileName) {}
     virtual void HandleTranslationUnit(ASTContext &Context) {
         llvm::errs() << "\nProcessing: " << fileName << "\n";
         llvm::errs() << "=================================================\n\n";
@@ -28,14 +27,15 @@ class PDFGConsumer : public ASTConsumer {
         for (auto it : transUnitDecl->decls()) {
             FunctionDecl *func = dyn_cast<FunctionDecl>(it);
             if (func && func->doesThisDeclarationHaveABody()) {
+                std::unique_ptr<PDFGLFuncBuilder> builder =
+                    std::make_unique<PDFGLFuncBuilder>(&Context);
                 builder->processFunction(func);
+                builder->printInfo();
             }
         }
-        builder->printInfo();
     }
 
    private:
-    std::unique_ptr<PDFGLBuilder> builder;
     std::string fileName;
 };
 

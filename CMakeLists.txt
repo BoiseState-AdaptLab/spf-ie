@@ -28,7 +28,7 @@ include(AddClang)
 
 set (PROJECT_SOURCES
     PDFGDriver.cpp
-    PDFGLBuilder.hpp
+    PDFGLFuncBuilder.hpp
     StmtInfoSet.hpp
     Utils.hpp)
 list (TRANSFORM PROJECT_SOURCES PREPEND "src/")
