@@ -18,7 +18,19 @@ namespace pdfg_c {
 class Utils {
    public:
     static void printErrorAndExit(llvm::StringRef message) {
+        printErrorAndExit(message, nullptr, nullptr);
+    }
+
+    static void printErrorAndExit(llvm::StringRef message, Stmt* stmt,
+                                  ASTContext* Context) {
         llvm::errs() << "ERROR: " << message << "\n";
+        if (stmt) {
+            llvm::errs() << "At "
+                         << stmt->getBeginLoc().printToString(
+                                Context->getSourceManager())
+                         << ":\n"
+                         << stmtToString(stmt, Context) << "\n";
+        }
         exit(1);
     }
 

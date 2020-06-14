@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <sstream>
 #include <vector>
 
 #include "StmtInfoSet.hpp"
@@ -71,6 +72,18 @@ class PDFGLBuilder {
 
     // process one statement, recursing if compound structure
     void processSingleStmt(Stmt* stmt) {
+        // fail on disallowed statement types
+        if (isa<WhileStmt>(stmt) || isa<CompoundStmt>(stmt) ||
+            isa<SwitchStmt>(stmt) || isa<DoStmt>(stmt) ||
+            isa<LabelStmt>(stmt) || isa<AttributedStmt>(stmt) ||
+            isa<GotoStmt>(stmt) || isa<ContinueStmt>(stmt) ||
+            isa<BreakStmt>(stmt)) {
+            std::ostringstream errorMsg;
+            errorMsg << "Unsupported compound stmt type "
+                     << stmt->getStmtClassName();
+            Utils::printErrorAndExit(errorMsg.str(), stmt, Context);
+        }
+
         ForStmt* asForStmt = dyn_cast<ForStmt>(stmt);
         if (asForStmt) {
             currentStmtInfoSet.advanceSchedule();
