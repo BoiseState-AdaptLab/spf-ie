@@ -1,12 +1,12 @@
 Clang AST Visitor
 ===========
 
-Anna Rift
+Anna Rift  
 Aaron Orenstein
 
 Installation
 ------------
-LLVM/Clang:
+#### LLVM/Clang:
 
 Follow the instructions at https://clang.llvm.org/get_started.html with one
 modification: add the flag `-DBUILD_SHARED_LIBS=ON` to the CMake command.
@@ -24,7 +24,7 @@ the executables produced by build are easily accessible from the command line.
 This is more important if you have multiple LLVM installations, and want to be
 sure that you use this one when invoking tools like `llvm-config`.
 
-PolyhedralDataflowIR:
+#### PolyhedralDataflowIR:
 
 Get the PolyhedralDataflowIR repository
 [here](https://github.com/BoiseState-AdaptLab/PolyhedralDataflowIR)
