@@ -44,13 +44,13 @@ class PDFGLFuncBuilder {
         for (std::vector<StmtInfoSet>::size_type i = 0;
              i != stmtInfoSets.size(); ++i) {
             llvm::outs() << "S" << i << ": "
-                         << stmtInfoSets[i].getIterSpaceString(Context) << "\n";
+                         << stmtInfoSets[i].getIterSpaceString() << "\n";
         }
         llvm::outs() << "\nExecution schedules:\n";
         for (std::vector<StmtInfoSet>::size_type i = 0;
              i != stmtInfoSets.size(); ++i) {
             llvm::outs() << "S" << i << ": "
-                         << stmtInfoSets[i].getExecScheduleString(Context)
+                         << stmtInfoSets[i].getExecScheduleString()
                          << "\n";
         }
         llvm::outs() << "\n";
@@ -70,7 +70,7 @@ class PDFGLFuncBuilder {
             oss << "S" << i;
             // Save the statement number as the name of our set
             iegenSets.push_back(oss.str());
-            oss << " := " << stmtInfoSets[i].getIterSpaceString(Context);
+            oss << " := " << stmtInfoSets[i].getIterSpaceString();
             // Add the set to iegen
             llvm::outs() << "Adding " << oss.str() << "\n";
             iegen.add(oss.str());
@@ -143,7 +143,7 @@ class PDFGLFuncBuilder {
         ForStmt* asForStmt = dyn_cast<ForStmt>(stmt);
         if (asForStmt) {
             currentStmtInfoSet.advanceSchedule();
-            currentStmtInfoSet.enterFor(asForStmt);
+            currentStmtInfoSet.enterFor(asForStmt, Context);
             processBody(asForStmt->getBody());
             //currentStmtInfoSet.exitCtrlFlow();
             currentStmtInfoSet.exitFor();
@@ -151,7 +151,7 @@ class PDFGLFuncBuilder {
         }
         IfStmt* asIfStmt = dyn_cast<IfStmt>(stmt);
         if (asIfStmt) {
-            currentStmtInfoSet.enterIf(asIfStmt);
+            currentStmtInfoSet.enterIf(asIfStmt, Context);
             processBody(asIfStmt->getThen());
             //currentStmtInfoSet.exitCtrlFlow();
             currentStmtInfoSet.exitIf();
