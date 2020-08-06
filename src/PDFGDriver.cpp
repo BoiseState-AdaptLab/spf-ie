@@ -31,6 +31,8 @@ class PDFGConsumer : public ASTConsumer {
                     std::make_unique<PDFGLFuncBuilder>(&Context);
                 builder->processFunction(func);
                 builder->printInfo();
+                builder->addIEGenSets();
+                builder->genIEGenSets(fileName);
             }
         }
     }

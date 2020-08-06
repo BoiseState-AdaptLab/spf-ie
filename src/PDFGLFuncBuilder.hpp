@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <sstream>
+#include <fstream>
 #include <vector>
 
 #include "StmtInfoSet.hpp"
@@ -8,6 +9,8 @@
 #include "clang/AST/Decl.h"
 #include "clang/AST/Stmt.h"
 #include "llvm/Support/raw_ostream.h"
+#include "IEGenLib.hpp"
+#include "omega/OmegaLib.hpp"
 
 using namespace clang;
 
@@ -53,12 +56,62 @@ class PDFGLFuncBuilder {
         llvm::outs() << "\n";
     }
 
+    // Convert all statements within loops into set strings
+    // and send them to iegen
+    void addIEGenSets() {
+        llvm::outs() << "Adding sets to iegen:\n";
+        // Clear all sets and relations
+        iegen.clear();
+        iegenSets.clear();
+        // Go through each statement
+        for (std::vector<StmtInfoSet>::size_type i = 0;
+             i != stmtInfoSets.size(); ++i) {
+            std::ostringstream oss;
+            oss << "S" << i;
+            // Save the statement number as the name of our set
+            iegenSets.push_back(oss.str());
+            oss << " := " << stmtInfoSets[i].getIterSpaceString(Context);
+            // Add the set to iegen
+            llvm::outs() << "Adding " << oss.str() << "\n";
+            iegen.add(oss.str());
+        }
+        llvm::outs() << "\n";
+    }
+
+    // Turn all stored iegen sets into code using omega
+    void genIEGenSets(std::string inFile) {
+        llvm::outs() << "Generating code from iegen sets:\n";
+        // Generate output file name from input file name
+        int idx = inFile.rfind(".");
+        std::string outFile;
+        if (idx != std::string::npos) {
+            outFile = inFile.substr(0, idx) + "_gen" + inFile.substr(idx);
+        } else {
+            outFile = inFile + "_gen";
+        }
+
+        // Open our file
+        std::ofstream out;
+        out.open(outFile);
+
+        // TODO: Filter out failed codegens
+        // Go through each set added to iegen
+        for (const std::string &name : iegenSets) {
+            out << omega.codegen(iegen.get(name)) << std::endl;
+        }
+        out.close();
+        llvm::outs() << "\n";
+    }
+
    private:
     std::string functionName;
     ASTContext* Context;
     std::vector<Stmt*> stmts;
     std::vector<StmtInfoSet> stmtInfoSets;
+    std::vector<std::string> iegenSets;
     StmtInfoSet currentStmtInfoSet;
+    iegen::IEGenLib iegen;
+    omglib::OmegaLib omega;
     int largestScheduleDimension;
 
     // process the body of a control structure
@@ -92,6 +145,7 @@ class PDFGLFuncBuilder {
             currentStmtInfoSet.advanceSchedule();
             currentStmtInfoSet.enterFor(asForStmt);
             processBody(asForStmt->getBody());
+            //currentStmtInfoSet.exitCtrlFlow();
             currentStmtInfoSet.exitFor();
             return;
         }
@@ -99,6 +153,7 @@ class PDFGLFuncBuilder {
         if (asIfStmt) {
             currentStmtInfoSet.enterIf(asIfStmt);
             processBody(asIfStmt->getThen());
+            //currentStmtInfoSet.exitCtrlFlow();
             currentStmtInfoSet.exitIf();
             return;
         }
