@@ -50,6 +50,7 @@ list (TRANSFORM PROJECT_SOURCES PREPEND "src/")
 
 # Sources for PolyhedralDataflowIR repository
 set (POLY_SOURCES
+     src
      lib/iegenlib/src
      lib/isl lib/isl/imath lib/isl/include lib/isl/bld lib/isl/bld/include lib/gmp
      lib/chill lib/chill/omega/basic/include lib/chill/omega/omega_lib/include
@@ -59,13 +60,14 @@ set (POLY_SOURCES
      lib/taco/include)
 list (TRANSFORM POLY_SOURCES PREPEND "${POLY_SRC}/")
 
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 add_clang_executable(${CMAKE_PROJECT_NAME} ${PROJECT_SOURCES})
 
 # Add directories to include
 target_include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "${LLVM_INCLUDE_DIRS}")
 target_include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "${LLVM_SRC}/llvm/include")
 target_include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "${CLANG_INCLUDE_DIRS}")
-target_include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "${POLY_SRC}/src")
 target_include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC ${POLY_SOURCES})
 
 # Find libraries corresponding to LLVM components we need
@@ -80,6 +82,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
             clangFrontend
             clangTooling
             clangLex
-            m polylib
+            m
+            "${POLY_SRC}/libpolylib.so"
 )
 
