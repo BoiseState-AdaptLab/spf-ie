@@ -3,6 +3,7 @@
 
 #include <map>
 
+#include "PDFGDriver.hpp"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/Stmt.h"
@@ -15,21 +16,21 @@
 using namespace clang;
 
 namespace pdfg_c {
+
 class Utils {
    public:
     static void printErrorAndExit(llvm::StringRef message) {
-        printErrorAndExit(message, nullptr, nullptr);
+        printErrorAndExit(message, nullptr);
     }
 
-    static void printErrorAndExit(llvm::StringRef message, Stmt* stmt,
-                                  ASTContext* Context) {
+    static void printErrorAndExit(llvm::StringRef message, Stmt* stmt) {
         llvm::errs() << "ERROR: " << message << "\n";
         if (stmt) {
             llvm::errs() << "At "
                          << stmt->getBeginLoc().printToString(
                                 Context->getSourceManager())
                          << ":\n"
-                         << stmtToString(stmt, Context) << "\n";
+                         << stmtToString(stmt) << "\n";
         }
         exit(1);
     }
@@ -37,24 +38,25 @@ class Utils {
     // print a line (horizontal separator) to stdout
     static void printSmallLine() { llvm::outs() << "---------------\n"; }
 
-    static llvm::StringRef stmtToString(Stmt* stmt, ASTContext* Context) {
+    static std::string stmtToString(Stmt* stmt) {
         return Lexer::getSourceText(
-            CharSourceRange::getTokenRange(stmt->getSourceRange()),
-            Context->getSourceManager(), Context->getLangOpts());
+                   CharSourceRange::getTokenRange(stmt->getSourceRange()),
+                   Context->getSourceManager(), Context->getLangOpts())
+            .str();
     }
 
-    static llvm::StringRef exprToString(Expr* expr, ASTContext* Context) {
+    static std::string exprToString(Expr* expr) {
         return Lexer::getSourceText(
-            CharSourceRange::getTokenRange(expr->getSourceRange()),
-            Context->getSourceManager(), Context->getLangOpts());
+                   CharSourceRange::getTokenRange(expr->getSourceRange()),
+                   Context->getSourceManager(), Context->getLangOpts())
+            .str();
     }
 
-    static llvm::StringRef binaryOperatorKindToString(BinaryOperatorKind bo,
-                                                      ASTContext* Context) {
+    static std::string binaryOperatorKindToString(BinaryOperatorKind bo) {
         if (!operatorStrings.count(bo)) {
             printErrorAndExit("Invalid operator type encountered.");
         }
-        return operatorStrings.at(bo);
+        return operatorStrings.at(bo).str();
     }
 
    private:
@@ -65,9 +67,9 @@ class Utils {
 };
 
 std::map<BinaryOperatorKind, llvm::StringRef> Utils::operatorStrings = {
-    {BinaryOperatorKind::BO_LT, "<"},  {BinaryOperatorKind::BO_LE, "<="},
-    {BinaryOperatorKind::BO_GT, ">"},  {BinaryOperatorKind::BO_GE, ">="},
-    {BinaryOperatorKind::BO_EQ, "=="}, {BinaryOperatorKind::BO_NE, "!="}};
+    {BinaryOperatorKind::BO_LT, "<"}, {BinaryOperatorKind::BO_LE, "<="},
+    {BinaryOperatorKind::BO_GT, ">"}, {BinaryOperatorKind::BO_GE, ">="},
+    {BinaryOperatorKind::BO_EQ, "="}, {BinaryOperatorKind::BO_NE, "!="}};
 
 }  // namespace pdfg_c
 

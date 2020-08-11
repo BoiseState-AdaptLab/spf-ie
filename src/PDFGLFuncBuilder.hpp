@@ -1,15 +1,15 @@
 #include <algorithm>
-#include <sstream>
 #include <fstream>
+#include <sstream>
 #include <vector>
 
+#include "IEGenLib.hpp"
 #include "StmtInfoSet.hpp"
 #include "Utils.hpp"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Stmt.h"
 #include "llvm/Support/raw_ostream.h"
-#include "IEGenLib.hpp"
 #include "omega/OmegaLib.hpp"
 
 using namespace clang;
@@ -32,13 +32,13 @@ class PDFGLFuncBuilder {
 
     // print collected information to stdout
     void printInfo() {
-        llvm::outs() << "Function: " << functionName << "\n";
+        llvm::outs() << "FUNCTION: " << functionName << "\n";
         Utils::printSmallLine();
         llvm::outs() << "\n";
         llvm::outs() << "Statements:\n";
         for (std::vector<Stmt>::size_type i = 0; i != stmts.size(); ++i) {
-            llvm::outs() << "S" << i << ": "
-                         << Utils::stmtToString(stmts[i], Context) << "\n";
+            llvm::outs() << "S" << i << ": " << Utils::stmtToString(stmts[i])
+                         << "\n";
         }
         llvm::outs() << "\nIteration spaces:\n";
         for (std::vector<StmtInfoSet>::size_type i = 0;
@@ -50,8 +50,7 @@ class PDFGLFuncBuilder {
         for (std::vector<StmtInfoSet>::size_type i = 0;
              i != stmtInfoSets.size(); ++i) {
             llvm::outs() << "S" << i << ": "
-                         << stmtInfoSets[i].getExecScheduleString()
-                         << "\n";
+                         << stmtInfoSets[i].getExecScheduleString() << "\n";
         }
         llvm::outs() << "\n";
     }
@@ -96,7 +95,7 @@ class PDFGLFuncBuilder {
 
         // TODO: Filter out failed codegens
         // Go through each set added to iegen
-        for (const std::string &name : iegenSets) {
+        for (const std::string& name : iegenSets) {
             out << omega.codegen(iegen.get(name)) << std::endl;
         }
         out.close();
@@ -137,23 +136,23 @@ class PDFGLFuncBuilder {
             std::ostringstream errorMsg;
             errorMsg << "Unsupported compound stmt type "
                      << stmt->getStmtClassName();
-            Utils::printErrorAndExit(errorMsg.str(), stmt, Context);
+            Utils::printErrorAndExit(errorMsg.str(), stmt);
         }
 
         ForStmt* asForStmt = dyn_cast<ForStmt>(stmt);
         if (asForStmt) {
             currentStmtInfoSet.advanceSchedule();
-            currentStmtInfoSet.enterFor(asForStmt, Context);
+            currentStmtInfoSet.enterFor(asForStmt);
             processBody(asForStmt->getBody());
-            //currentStmtInfoSet.exitCtrlFlow();
+            // currentStmtInfoSet.exitCtrlFlow();
             currentStmtInfoSet.exitFor();
             return;
         }
         IfStmt* asIfStmt = dyn_cast<IfStmt>(stmt);
         if (asIfStmt) {
-            currentStmtInfoSet.enterIf(asIfStmt, Context);
+            currentStmtInfoSet.enterIf(asIfStmt);
             processBody(asIfStmt->getThen());
-            //currentStmtInfoSet.exitCtrlFlow();
+            // currentStmtInfoSet.exitCtrlFlow();
             currentStmtInfoSet.exitIf();
             return;
         }

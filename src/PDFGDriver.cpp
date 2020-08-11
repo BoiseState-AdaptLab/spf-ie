@@ -16,10 +16,12 @@ using namespace clang;
 using namespace clang::tooling;
 
 namespace pdfg_c {
+
+ASTContext *Context;
+
 class PDFGConsumer : public ASTConsumer {
    public:
-    explicit PDFGConsumer(ASTContext *Context, std::string fileName)
-        : fileName(fileName) {}
+    explicit PDFGConsumer(std::string fileName) : fileName(fileName) {}
     virtual void HandleTranslationUnit(ASTContext &Context) {
         llvm::errs() << "\nProcessing: " << fileName << "\n";
         llvm::errs() << "=================================================\n\n";
@@ -45,8 +47,9 @@ class PDFGFrontendAction : public ASTFrontendAction {
    public:
     virtual std::unique_ptr<ASTConsumer> CreateASTConsumer(
         CompilerInstance &Compiler, llvm::StringRef InFile) {
-        return std::unique_ptr<ASTConsumer>(
-            new PDFGConsumer(&Compiler.getASTContext(), InFile.str()));
+        // initializing globally-accessible ASTContext
+        Context = &Compiler.getASTContext();
+        return std::unique_ptr<ASTConsumer>(new PDFGConsumer(InFile.str()));
     }
 };
 
