@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "IEGenLib.hpp"
+#include "PDFGDriver.hpp"
 #include "StmtInfoSet.hpp"
 #include "Utils.hpp"
 #include "clang/AST/ASTContext.h"
@@ -18,8 +19,7 @@ namespace pdfg_c {
 
 class PDFGLFuncBuilder {
    public:
-    explicit PDFGLFuncBuilder(ASTContext* Context)
-        : Context(Context), largestScheduleDimension(0){};
+    explicit PDFGLFuncBuilder() : largestScheduleDimension(0){};
     // entry point for each function; gather information about its statements
     void processFunction(FunctionDecl* funcDecl) {
         functionName = funcDecl->getQualifiedNameAsString();
@@ -104,7 +104,6 @@ class PDFGLFuncBuilder {
 
    private:
     std::string functionName;
-    ASTContext* Context;
     std::vector<Stmt*> stmts;
     std::vector<StmtInfoSet> stmtInfoSets;
     std::vector<std::string> iegenSets;

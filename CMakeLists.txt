@@ -42,6 +42,7 @@ include(AddClang)
 
 set (PROJECT_SOURCES
     PDFGDriver.cpp
+    PDFGDriver.hpp
     PDFGLFuncBuilder.hpp
     StmtInfoSet.hpp
     Utils.hpp

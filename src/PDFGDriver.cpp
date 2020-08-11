@@ -1,3 +1,5 @@
+#include "PDFGDriver.hpp"
+
 #include <memory>
 
 #include "PDFGLFuncBuilder.hpp"
@@ -22,15 +24,17 @@ ASTContext *Context;
 class PDFGConsumer : public ASTConsumer {
    public:
     explicit PDFGConsumer(std::string fileName) : fileName(fileName) {}
-    virtual void HandleTranslationUnit(ASTContext &Context) {
+    virtual void HandleTranslationUnit(ASTContext &Ctx) {
+        // initializing globally-accessible ASTContext
+        Context = &Ctx;
         llvm::errs() << "\nProcessing: " << fileName << "\n";
         llvm::errs() << "=================================================\n\n";
-        TranslationUnitDecl *transUnitDecl = Context.getTranslationUnitDecl();
+        TranslationUnitDecl *transUnitDecl = Context->getTranslationUnitDecl();
         for (auto it : transUnitDecl->decls()) {
             FunctionDecl *func = dyn_cast<FunctionDecl>(it);
             if (func && func->doesThisDeclarationHaveABody()) {
                 std::unique_ptr<PDFGLFuncBuilder> builder =
-                    std::make_unique<PDFGLFuncBuilder>(&Context);
+                    std::make_unique<PDFGLFuncBuilder>();
                 builder->processFunction(func);
                 builder->printInfo();
                 builder->addIEGenSets();
@@ -47,8 +51,6 @@ class PDFGFrontendAction : public ASTFrontendAction {
    public:
     virtual std::unique_ptr<ASTConsumer> CreateASTConsumer(
         CompilerInstance &Compiler, llvm::StringRef InFile) {
-        // initializing globally-accessible ASTContext
-        Context = &Compiler.getASTContext();
         return std::unique_ptr<ASTConsumer>(new PDFGConsumer(InFile.str()));
     }
 };
