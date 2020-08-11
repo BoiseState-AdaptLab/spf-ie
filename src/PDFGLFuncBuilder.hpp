@@ -23,10 +23,15 @@ class PDFGLFuncBuilder {
     // entry point for each function; gather information about its statements
     void processFunction(FunctionDecl* funcDecl) {
         functionName = funcDecl->getQualifiedNameAsString();
-        CompoundStmt* funcBody = cast<CompoundStmt>(funcDecl->getBody());
-        processBody(funcBody);
-        for (auto it = stmtInfoSets.begin(); it != stmtInfoSets.end(); ++it) {
-            (*it).zeroPadScheduleDimension(largestScheduleDimension);
+        if (CompoundStmt* funcBody = cast<CompoundStmt>(funcDecl->getBody())) {
+            processBody(funcBody);
+            for (auto it = stmtInfoSets.begin(); it != stmtInfoSets.end();
+                 ++it) {
+                (*it).zeroPadScheduleDimension(largestScheduleDimension);
+            }
+        } else {
+            Utils::printErrorAndExit("Invalid function body",
+                                     funcDecl->getBody());
         }
     }
 
@@ -108,14 +113,13 @@ class PDFGLFuncBuilder {
     std::vector<StmtInfoSet> stmtInfoSets;
     std::vector<std::string> iegenSets;
     StmtInfoSet currentStmtInfoSet;
+    int largestScheduleDimension;
     iegen::IEGenLib iegen;
     omglib::OmegaLib omega;
-    int largestScheduleDimension;
 
     // process the body of a control structure
     void processBody(Stmt* stmt) {
-        CompoundStmt* asCompoundStmt = dyn_cast<CompoundStmt>(stmt);
-        if (asCompoundStmt) {
+        if (CompoundStmt* asCompoundStmt = dyn_cast<CompoundStmt>(stmt)) {
             for (auto it : asCompoundStmt->body()) {
                 processSingleStmt(it);
             }
@@ -138,8 +142,7 @@ class PDFGLFuncBuilder {
             Utils::printErrorAndExit(errorMsg.str(), stmt);
         }
 
-        ForStmt* asForStmt = dyn_cast<ForStmt>(stmt);
-        if (asForStmt) {
+        if (ForStmt* asForStmt = dyn_cast<ForStmt>(stmt)) {
             currentStmtInfoSet.advanceSchedule();
             currentStmtInfoSet.enterFor(asForStmt);
             processBody(asForStmt->getBody());
@@ -147,8 +150,8 @@ class PDFGLFuncBuilder {
             currentStmtInfoSet.exitFor();
             return;
         }
-        IfStmt* asIfStmt = dyn_cast<IfStmt>(stmt);
-        if (asIfStmt) {
+
+        if (IfStmt* asIfStmt = dyn_cast<IfStmt>(stmt)) {
             currentStmtInfoSet.enterIf(asIfStmt);
             processBody(asIfStmt->getThen());
             // currentStmtInfoSet.exitCtrlFlow();

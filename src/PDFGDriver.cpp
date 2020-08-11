@@ -12,6 +12,7 @@
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/raw_ostream.h"
 
 using namespace clang;
@@ -23,14 +24,15 @@ ASTContext *Context;
 
 class PDFGConsumer : public ASTConsumer {
    public:
-    explicit PDFGConsumer(std::string fileName) : fileName(fileName) {}
+    explicit PDFGConsumer(llvm::StringRef fileName)
+        : fileName(fileName.str()) {}
     virtual void HandleTranslationUnit(ASTContext &Ctx) {
         // initializing globally-accessible ASTContext
         Context = &Ctx;
         llvm::errs() << "\nProcessing: " << fileName << "\n";
         llvm::errs() << "=================================================\n\n";
-        TranslationUnitDecl *transUnitDecl = Context->getTranslationUnitDecl();
-        for (auto it : transUnitDecl->decls()) {
+        // process each function (with a body) in the file
+        for (auto it : Context->getTranslationUnitDecl()->decls()) {
             FunctionDecl *func = dyn_cast<FunctionDecl>(it);
             if (func && func->doesThisDeclarationHaveABody()) {
                 std::unique_ptr<PDFGLFuncBuilder> builder =
@@ -51,7 +53,7 @@ class PDFGFrontendAction : public ASTFrontendAction {
    public:
     virtual std::unique_ptr<ASTConsumer> CreateASTConsumer(
         CompilerInstance &Compiler, llvm::StringRef InFile) {
-        return std::unique_ptr<ASTConsumer>(new PDFGConsumer(InFile.str()));
+        return std::unique_ptr<ASTConsumer>(new PDFGConsumer(InFile));
     }
 };
 

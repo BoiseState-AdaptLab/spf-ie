@@ -43,6 +43,7 @@ struct StmtInfoSet {
     // execution schedule, which begins at 0
     std::vector<std::shared_ptr<ScheduleVal>> schedule;
 
+    // get a string representing the iteration space
     std::string getIterSpaceString() {
         std::string output;
         llvm::raw_string_ostream os(output);
@@ -71,6 +72,7 @@ struct StmtInfoSet {
         return os.str();
     }
 
+    // get a string representing the execution schedule
     std::string getExecScheduleString() {
         std::string output;
         llvm::raw_string_ostream os(output);
@@ -123,6 +125,7 @@ struct StmtInfoSet {
     void enterFor(ForStmt* forStmt) {
         std::string error = std::string();
         std::string errorReason = std::string();
+
         // initializer
         std::string initVar;
         if (BinaryOperator* init =
@@ -130,7 +133,6 @@ struct StmtInfoSet {
             makeAndInsertConstraint(init->getRHS(), init->getLHS(),
                                     BinaryOperatorKind::BO_LE);
             initVar = Utils::exprToString(init->getLHS());
-
         } else if (DeclStmt* init = dyn_cast<DeclStmt>(forStmt->getInit())) {
             if (VarDecl* initDecl = dyn_cast<VarDecl>(init->getSingleDecl())) {
                 makeAndInsertConstraint(initDecl->getNameAsString(),
@@ -248,5 +250,6 @@ struct StmtInfoSet {
                 std::tuple<std::string, std::string, BinaryOperatorKind>>(
                 lower, Utils::exprToString(upper), oper));
     }
-};  // namespace pdfg_c
+};
+
 }  // namespace pdfg_c
