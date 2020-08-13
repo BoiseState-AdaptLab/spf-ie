@@ -58,7 +58,7 @@ struct StmtInfoSet {
             os << "]: ";
             for (auto it = constraints.begin(); it != constraints.end(); ++it) {
                 if (it != constraints.begin()) {
-                    os << " && ";
+                    os << " and ";
                 }
                 BinaryOperatorKind bo = std::get<2>(**it);
                 os << std::get<0>(**it) << " "

@@ -1,30 +1,16 @@
 cmake_minimum_required(VERSION 3.9)
 project (new-pdfg-c C CXX)
 
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w -g -O0 -Wall -Wextra -std=c++14 ")
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -DPIC -Xpreprocessor -ftree-vectorize -funroll-all-loops ")
-# Enable exceptions to compile IEGenLib
-add_compile_options( -fexceptions )
+set (CMAKE_CXX_FLAGS "-g -O0 -Wall -Wextra -std=c++14")
 
-# Input path to llvm directory
+
 option (LLVM_SRC "LLVM source directory")
 set (CLANG_SRC "${LLVM_SRC}/clang")
 
-if (NOT EXISTS ${LLVM_SRC})
-    message (SEND_ERROR "${LLVM_SRC} is not a directory")
-    set (HELP true)
-endif()
-
-# Inputer path to Polyhedral directory
-option (POLY_SRC "PolyhedralDataflowIR source directory")
-
-if (NOT EXISTS ${POLY_SRC})
-    message (SEND_ERROR "${POLY_SRC} is not a directory")
-    set (HELP true)
-endif()
-
 # Add the location of LLVMConfig.cmake so cmake can find it
 list (INSERT CMAKE_PREFIX_PATH 0 "${LLVM_SRC}/build/cmake/modules/CMakeFiles")
+# list (APPEND CMAKE_PREFIX_PATH "${LLVM_SRC}/llvm/cmake")
+# list (APPEND CMAKE_PREFIX_PATH "${CLANG_SRC}/cmake")
 find_package (LLVM REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
@@ -45,23 +31,8 @@ set (PROJECT_SOURCES
     PDFGDriver.hpp
     PDFGLFuncBuilder.hpp
     StmtInfoSet.hpp
-    Utils.hpp
-    IEGenLib.hpp)
+    Utils.hpp)
 list (TRANSFORM PROJECT_SOURCES PREPEND "src/")
-
-# Sources for PolyhedralDataflowIR repository
-set (POLY_SOURCES
-     src
-     lib/iegenlib/src
-     lib/isl lib/isl/imath lib/isl/include lib/isl/bld lib/isl/bld/include lib/gmp
-     lib/chill lib/chill/omega/basic/include lib/chill/omega/omega_lib/include
-     lib/chill/omega/code_gen/include lib/chill/omega/parser
-     lib/gtest  lib/gtest/include
-     lib/eigen lib/eigen/unsupported
-     lib/taco/include)
-list (TRANSFORM POLY_SOURCES PREPEND "${POLY_SRC}/")
-
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 add_clang_executable(${CMAKE_PROJECT_NAME} ${PROJECT_SOURCES})
 
@@ -69,7 +40,6 @@ add_clang_executable(${CMAKE_PROJECT_NAME} ${PROJECT_SOURCES})
 target_include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "${LLVM_INCLUDE_DIRS}")
 target_include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "${LLVM_SRC}/llvm/include")
 target_include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "${CLANG_INCLUDE_DIRS}")
-target_include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC ${POLY_SOURCES})
 
 # Find libraries corresponding to LLVM components we need
 llvm_map_components_to_libnames(LLVM_LIBS support)
@@ -83,7 +53,5 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
             clangFrontend
             clangTooling
             clangLex
-            m
-            "${POLY_SRC}/libpolylib.so"
 )
 
