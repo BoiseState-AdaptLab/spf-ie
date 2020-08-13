@@ -23,7 +23,8 @@ class PDFGLFuncBuilder {
     // entry point for each function; gather information about its statements
     void processFunction(FunctionDecl* funcDecl) {
         functionName = funcDecl->getQualifiedNameAsString();
-        if (CompoundStmt* funcBody = cast<CompoundStmt>(funcDecl->getBody())) {
+        if (CompoundStmt* funcBody =
+                dyn_cast<CompoundStmt>(funcDecl->getBody())) {
             processBody(funcBody);
             for (auto it = stmtInfoSets.begin(); it != stmtInfoSets.end();
                  ++it) {
@@ -146,21 +147,15 @@ class PDFGLFuncBuilder {
             currentStmtInfoSet.advanceSchedule();
             currentStmtInfoSet.enterFor(asForStmt);
             processBody(asForStmt->getBody());
-            // currentStmtInfoSet.exitCtrlFlow();
             currentStmtInfoSet.exitFor();
-            return;
-        }
-
-        if (IfStmt* asIfStmt = dyn_cast<IfStmt>(stmt)) {
+        } else if (IfStmt* asIfStmt = dyn_cast<IfStmt>(stmt)) {
             currentStmtInfoSet.enterIf(asIfStmt);
             processBody(asIfStmt->getThen());
-            // currentStmtInfoSet.exitCtrlFlow();
             currentStmtInfoSet.exitIf();
-            return;
+        } else {
+            currentStmtInfoSet.advanceSchedule();
+            addStmt(stmt);
         }
-
-        currentStmtInfoSet.advanceSchedule();
-        addStmt(stmt);
     }
 
     // add info about a stmt to the builder
