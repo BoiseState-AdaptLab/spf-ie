@@ -28,15 +28,16 @@ include(AddClang)
 
 set (PROJECT_SOURCES
     PDFGDriver.cpp
-    PDFGDriver.hpp
-    PDFGLFuncBuilder.hpp
-    StmtInfoSet.hpp
-    Utils.hpp)
+    PDFGLFuncBuilder.cpp
+    StmtInfoSet.cpp
+    Utils.cpp
+)
 list (TRANSFORM PROJECT_SOURCES PREPEND "src/")
 
 add_clang_executable(${CMAKE_PROJECT_NAME} ${PROJECT_SOURCES})
 
 # Add directories to include
+target_include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "include")
 target_include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "${LLVM_INCLUDE_DIRS}")
 target_include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "${LLVM_SRC}/llvm/include")
 target_include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "${CLANG_INCLUDE_DIRS}")
