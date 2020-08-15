@@ -14,15 +14,7 @@ using namespace clang;
 
 namespace pdfg_c {
 
-// one entry in an execution schedule, which may be a varible or a number
-struct ScheduleVal {
-    ScheduleVal(std::string var);
-    ScheduleVal(int num);
-
-    std::string var;
-    int num;
-    bool valueIsVar;
-};
+struct ScheduleVal;
 
 // contains associated information for a statement (iteration space and
 // execution schedules)
@@ -72,6 +64,16 @@ struct StmtInfoSet {
 
     void makeAndInsertConstraint(std::string lower, Expr* upper,
                                  BinaryOperatorKind oper);
+};
+
+// one entry in an execution schedule, which may be a varible or a number
+struct ScheduleVal {
+    ScheduleVal(std::string var);
+    ScheduleVal(int num);
+
+    std::string var;
+    int num;
+    bool valueIsVar;
 };
 
 }  // namespace pdfg_c

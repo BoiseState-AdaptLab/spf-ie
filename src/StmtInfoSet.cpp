@@ -16,13 +16,8 @@ using namespace clang;
 
 namespace pdfg_c {
 
-/* ScheduleVal */
-
-ScheduleVal::ScheduleVal(std::string var) : var(var), valueIsVar(true) {}
-
-ScheduleVal::ScheduleVal(int num) : num(num), valueIsVar(false) {}
-
 /* StmtInfoSet */
+
 StmtInfoSet::StmtInfoSet() {}
 
 StmtInfoSet::StmtInfoSet(StmtInfoSet* other) {
@@ -222,5 +217,11 @@ void StmtInfoSet::makeAndInsertConstraint(std::string lower, Expr* upper,
             std::tuple<std::string, std::string, BinaryOperatorKind>>(
             lower, Utils::exprToString(upper), oper));
 }
+
+/* ScheduleVal */
+
+ScheduleVal::ScheduleVal(std::string var) : var(var), valueIsVar(true) {}
+
+ScheduleVal::ScheduleVal(int num) : num(num), valueIsVar(false) {}
 
 }  // namespace pdfg_c
