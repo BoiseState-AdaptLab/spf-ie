@@ -3,6 +3,8 @@ project (new-pdfg-c C CXX)
 
 set (CMAKE_CXX_FLAGS "-g -O0 -Wall -Wextra -std=c++14")
 
+add_custom_target(docs COMMAND doxygen docs/Doxyfile WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
 
 option (LLVM_SRC "LLVM source directory")
 set (CLANG_SRC "${LLVM_SRC}/clang")

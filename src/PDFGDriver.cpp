@@ -1,3 +1,14 @@
+/*!
+ * \file PDFGDriver.cpp
+ *
+ * \brief Driver for the program, processing command-line input.
+ *
+ * Contains the basic setup for a Clang tool and the entry point of the
+ * program.
+ *
+ * \author Anna Rift
+ */
+
 #include "PDFGDriver.hpp"
 
 #include <memory>
@@ -61,6 +72,7 @@ using namespace pdfg_c;
 
 static llvm::cl::OptionCategory PDFGToolCategory("pdfg-c options");
 
+//! Instantiate and run the Clang tool
 int main(int argc, const char **argv) {
     CommonOptionsParser OptionsParser(argc, argv, PDFGToolCategory);
     ClangTool Tool(OptionsParser.getCompilations(),

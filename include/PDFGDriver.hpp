@@ -5,6 +5,8 @@
 
 namespace pdfg_c {
 
+//! Globally-accessible pointer to the ASTContext, initialized before the
+//! tool runs.
 extern clang::ASTContext* Context;
 
 }

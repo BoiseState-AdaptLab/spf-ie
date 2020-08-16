@@ -12,29 +12,48 @@ using namespace clang;
 
 namespace pdfg_c {
 
+/*!
+ * \class PDFGLFuncBuilder
+ *
+ * \brief Class handling building up the polyhedral model for a function
+ *
+ * Contains the entry point for function processing. Recursively visits each
+ * statement in the source.
+ */
 class PDFGLFuncBuilder {
    public:
     explicit PDFGLFuncBuilder();
-    // entry point for each function; gather information about its statements
+    //! Entry point for each function; gathers information about its
+    //! statements
+    //! \param[in] funcDecl Function declaration to process
     void processFunction(FunctionDecl* funcDecl);
 
-    // print collected information to stdout
+    //! Print collected information to standard output
     void printInfo();
 
    private:
+    //! Name of the function being processed
     std::string functionName;
+    //! Statements that have completed processing
     std::vector<Stmt*> stmts;
+    //! Context information attached to each completed statement
     std::vector<StmtInfoSet> stmtInfoSets;
+    //! The information about the context we are currently in, which is
+    //! copied for completed statements
     StmtInfoSet currentStmtInfoSet;
+    //! The length of the longest schedule tuple
     int largestScheduleDimension;
 
-    // process the body of a control structure
+    //! Process the body of a control structure, such as a for loop
+    //! \param[in] stmt Body statement (which may be compound) to process
     void processBody(Stmt* stmt);
 
-    // process one statement, recursing if compound structure
+    //! Process one statement, recursing on compound statements
+    //! \param[in] stmt Statement to process
     void processSingleStmt(Stmt* stmt);
 
-    // add info about a stmt to the builder
+    //! Add info about a completed statement to the builder
+    //! \param[in] stmt Completed statement to save
     void addStmt(Stmt* stmt);
 };
 

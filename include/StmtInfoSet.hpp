@@ -1,3 +1,12 @@
+/*!
+ * \file StmtInfoSet.hpp
+ *
+ * \brief Structs representing all information associated with a statement.
+ *
+ * \author Anna Rift
+ * \author Aaron Orenstein
+ */
+
 #ifndef PDFG_STMTINFOSET_HPP
 #define PDFG_STMTINFOSET_HPP
 
@@ -16,63 +25,81 @@ namespace pdfg_c {
 
 struct ScheduleVal;
 
-// contains associated information for a statement (iteration space and
-// execution schedules)
+/*!
+ * \struct StmtInfoSet
+ *
+ * \brief Contains associated information for a statement, such as iteration
+ * space and execution schedule.
+ */
 struct StmtInfoSet {
     StmtInfoSet();
+
+    //! Copy the information from an existing StmtInfoSet
+    //! \param[in] other Existing StmtInfoSet to copy
     StmtInfoSet(StmtInfoSet* other);
 
-    // variables being iterated over
+    //! Variables being iterated over
     std::vector<std::string> iterators;
-    // constraints on iteration (inequalities and equalities)
+    //! Constraints on iteration -- inequalities and equalities
     std::vector<std::shared_ptr<
         std::tuple<std::string, std::string, BinaryOperatorKind>>>
         constraints;
-    // execution schedule, which begins at 0
+    //! Execution schedule
     std::vector<std::shared_ptr<ScheduleVal>> schedule;
 
-    // get a string representing the iteration space
+    //! Get a string representing the iteration space
     std::string getIterSpaceString();
 
-    // get a string representing the execution schedule
+    //! Get a string representing the execution schedule
     std::string getExecScheduleString();
 
-    // move statement number forward in the schedule
+    //! Move statement number forward in the execution schedule
     void advanceSchedule();
 
-    // get the dimension of this execution schedule
+    //! Get the dimension of the execution schedule
     int getScheduleDimension() { return schedule.size(); }
 
-    // zero-pad this execution schedule up to a certain dimension
+    //! Zero-pad this execution schedule up to a certain dimension
     void zeroPadScheduleDimension(int dim);
 
     // enter* and exit* methods add iterators and constraints when entering a
     // new scope, remove when leaving the scope
 
+    //! Add context information from a for loop
     void enterFor(ForStmt* forStmt);
 
+    //! Remove context information from a for loop
     void exitFor();
 
+    //! Add context information from an if statement
     void enterIf(IfStmt* ifStmt);
 
+    //! Remove context information from an if statement
     void exitIf();
 
    private:
-    // convenience function to add a new constraint from the given parameters
+    //! Convenience function to add a new constraint from the given parameters
     void makeAndInsertConstraint(Expr* lower, Expr* upper,
                                  BinaryOperatorKind oper);
 
+    //! Convenience function to add a new constraint from the given parameters
     void makeAndInsertConstraint(std::string lower, Expr* upper,
                                  BinaryOperatorKind oper);
 };
 
-// one entry in an execution schedule, which may be a varible or a number
+/*!
+ * \struct ScheduleVal
+
+ * \brief An entry of an execution schedule, which may be a variable or
+ * simply a number.
+ */
 struct ScheduleVal {
     ScheduleVal(std::string var);
     ScheduleVal(int num);
 
     std::string var;
     int num;
+    //! Whether this ScheduleVal contains a variable
     bool valueIsVar;
 };
 
