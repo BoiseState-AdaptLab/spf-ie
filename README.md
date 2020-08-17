@@ -46,3 +46,11 @@ $ ./build/new-pdfg-c mysourcefile.cpp
 where *mysourcefile.cpp* is the input file.
 Example files are provided in the test folder.
 
+Documentation
+-------------
+The CMake target `docs` generates Doxygen documentation in HTML and LaTeX
+formats, outputting to the `docs/` directory. From the project root, run:
+```bash
+$ cmake --build build --target docs
+```
+
