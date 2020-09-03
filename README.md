@@ -23,7 +23,8 @@ Requirements
 - **CMake:** Download and install CMake from [here](https://cmake.org/download/),
 or however else you prefer.
 - **LLVM and Clang:** Follow [these instructions](https://github.com/BoiseState-AdaptLab/learningClangLLVM)
-explaining how to install and use LLVM and Clang.
+explaining how to install and use LLVM and Clang. In addition, LLVM must be
+built with the options `LLVM_ENABLE_EH` and `LLVM_ENABLE_RTTI` set to `ON`.
 
 
 Building
