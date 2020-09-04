@@ -47,6 +47,18 @@ void PDFGLFuncBuilder::printInfo() {
         llvm::outs() << "S" << i << ": "
                      << stmtInfoSets[i].getExecScheduleString() << "\n";
     }
+    llvm::outs() << "\nArray reads:\n";
+    for (std::vector<StmtInfoSet>::size_type i = 0; i != stmtInfoSets.size();
+         ++i) {
+        llvm::outs() << "S" << i << ": " << stmtInfoSets[i].getReadsString()
+                     << "\n";
+    }
+    llvm::outs() << "\nArray writes:\n";
+    for (std::vector<StmtInfoSet>::size_type i = 0; i != stmtInfoSets.size();
+         ++i) {
+        llvm::outs() << "S" << i << ": " << stmtInfoSets[i].getWritesString()
+                     << "\n";
+    }
     llvm::outs() << "\n";
 }
 
@@ -82,6 +94,22 @@ void PDFGLFuncBuilder::processSingleStmt(Stmt* stmt) {
         processBody(asIfStmt->getThen());
         currentStmtInfoSet.exitIf();
     } else {
+        // capture reads and writes made in statement
+        Expr* readExpr = nullptr;
+        if (DeclStmt* asDeclStmt = dyn_cast<DeclStmt>(stmt)) {
+            VarDecl* decl = cast<VarDecl>(asDeclStmt->getSingleDecl());
+            if (decl->hasInit()) {
+                readExpr = dyn_cast<ArraySubscriptExpr>(decl->getInit());
+            }
+        } else if (BinaryOperator* asBinOper = dyn_cast<BinaryOperator>(stmt)) {
+            currentStmtInfoSet.writes.push_back(
+                Utils::exprToString(asBinOper->getLHS()));
+            readExpr = asBinOper->getRHS();
+        }
+        if (readExpr) {
+            currentStmtInfoSet.processReads(readExpr);
+        }
+
         currentStmtInfoSet.advanceSchedule();
         addStmt(stmt);
     }
@@ -91,7 +119,8 @@ void PDFGLFuncBuilder::addStmt(Stmt* stmt) {
     stmts.push_back(stmt);
     largestScheduleDimension = std::max(
         largestScheduleDimension, currentStmtInfoSet.getScheduleDimension());
-    stmtInfoSets.push_back(StmtInfoSet(&currentStmtInfoSet));
+    stmtInfoSets.push_back(currentStmtInfoSet);
+    currentStmtInfoSet = StmtInfoSet(&currentStmtInfoSet);
 }
 
 }  // namespace pdfg_c

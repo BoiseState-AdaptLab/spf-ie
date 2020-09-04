@@ -34,7 +34,9 @@ struct ScheduleVal;
 struct StmtInfoSet {
     StmtInfoSet();
 
-    //! Copy the information from an existing StmtInfoSet
+    //! Copy the information from an existing StmtInfoSet.
+    //! Preserves only information that builds up in nested contexts,
+    //! excluding information that is only applicable per-statement.
     //! \param[in] other Existing StmtInfoSet to copy
     StmtInfoSet(StmtInfoSet* other);
 
@@ -46,12 +48,22 @@ struct StmtInfoSet {
         constraints;
     //! Execution schedule
     std::vector<std::shared_ptr<ScheduleVal>> schedule;
+    //! Array positions read from
+    std::vector<std::string> reads;
+    //! Array positions written to
+    std::vector<std::string> writes;
 
     //! Get a string representing the iteration space
     std::string getIterSpaceString();
 
     //! Get a string representing the execution schedule
     std::string getExecScheduleString();
+
+    //! Get a string representing the data reads
+    std::string getReadsString();
+
+    //! Get a string representing the data writes
+    std::string getWritesString();
 
     //! Move statement number forward in the execution schedule
     void advanceSchedule();
@@ -61,6 +73,10 @@ struct StmtInfoSet {
 
     //! Zero-pad this execution schedule up to a certain dimension
     void zeroPadScheduleDimension(int dim);
+
+    //! Add all the arrays accessed in an expression to the statement's reads
+    void processReads(Expr* expr);
+
 
     // enter* and exit* methods add iterators and constraints when entering a
     // new scope, remove when leaving the scope

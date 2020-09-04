@@ -79,6 +79,34 @@ std::string StmtInfoSet::getExecScheduleString() {
     return os.str();
 }
 
+std::string StmtInfoSet::getReadsString() {
+    std::string output;
+    llvm::raw_string_ostream os(output);
+    os << "{";
+    for (auto it = reads.begin(); it != reads.end(); ++it) {
+        if (it != reads.begin()) {
+            os << ", ";
+        }
+        os << *it;
+    }
+    os << "}";
+    return os.str();
+}
+
+std::string StmtInfoSet::getWritesString() {
+    std::string output;
+    llvm::raw_string_ostream os(output);
+    os << "{";
+    for (auto it = writes.begin(); it != writes.end(); ++it) {
+        if (it != writes.begin()) {
+            os << ", ";
+        }
+        os << *it;
+    }
+    os << "}";
+    return os.str();
+}
+
 void StmtInfoSet::advanceSchedule() {
     if (schedule.empty() || schedule.back()->valueIsVar) {
         schedule.push_back(std::make_shared<ScheduleVal>(0));
@@ -92,6 +120,16 @@ void StmtInfoSet::advanceSchedule() {
 void StmtInfoSet::zeroPadScheduleDimension(int dim) {
     for (int i = getScheduleDimension(); i < dim; ++i) {
         schedule.push_back(std::make_shared<ScheduleVal>(0));
+    }
+}
+
+void StmtInfoSet::processReads(Expr* expr) {
+    Expr* usableExpr = expr->IgnoreParenImpCasts();
+    if (BinaryOperator* binOper = dyn_cast<BinaryOperator>(usableExpr)) {
+        processReads(binOper->getLHS());
+        processReads(binOper->getRHS());
+    } else if (isa<ArraySubscriptExpr>(usableExpr)) {
+        reads.push_back(Utils::exprToString(usableExpr));
     }
 }
 
