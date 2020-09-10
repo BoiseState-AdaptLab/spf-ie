@@ -98,11 +98,14 @@ void PDFGLFuncBuilder::processSingleStmt(Stmt* stmt) {
         if (DeclStmt* asDeclStmt = dyn_cast<DeclStmt>(stmt)) {
             VarDecl* decl = cast<VarDecl>(asDeclStmt->getSingleDecl());
             if (decl->hasInit()) {
-                currentStmtInfoSet.processReads(dyn_cast<ArraySubscriptExpr>(decl->getInit()));
+                currentStmtInfoSet.processReads(
+                    dyn_cast<ArraySubscriptExpr>(decl->getInit()));
             }
         } else if (BinaryOperator* asBinOper = dyn_cast<BinaryOperator>(stmt)) {
-            currentStmtInfoSet.writes.push_back(
-                Utils::exprToString(asBinOper->getLHS()));
+            if (ArraySubscriptExpr* lhsAsArrayAccess =
+                    dyn_cast<ArraySubscriptExpr>(asBinOper->getLHS())) {
+                currentStmtInfoSet.processWrite(lhsAsArrayAccess);
+            }
             if (asBinOper->isCompoundAssignmentOp()) {
                 currentStmtInfoSet.processReads(asBinOper->getLHS());
             }

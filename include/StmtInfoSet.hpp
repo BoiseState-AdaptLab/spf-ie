@@ -11,6 +11,7 @@
 #define PDFG_STMTINFOSET_HPP
 
 #include <memory>
+#include <stack>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -18,6 +19,9 @@
 #include "clang/AST/Expr.h"
 #include "clang/AST/OperationKinds.h"
 #include "clang/AST/Stmt.h"
+
+//! Maximum allowed array dimension (a safe estimate to avoid stack overflow)
+#define MAX_ARRAY_DIM 50
 
 using namespace clang;
 
@@ -77,6 +81,8 @@ struct StmtInfoSet {
     //! Add all the arrays accessed in an expression to the statement's reads
     void processReads(Expr* expr);
 
+    //! Add the arrays accessed in an expression to the statement's writes
+    void processWrite(ArraySubscriptExpr* expr);
 
     // enter* and exit* methods add iterators and constraints when entering a
     // new scope, remove when leaving the scope
@@ -101,6 +107,18 @@ struct StmtInfoSet {
     //! Convenience function to add a new constraint from the given parameters
     void makeAndInsertConstraint(std::string lower, Expr* upper,
                                  BinaryOperatorKind oper);
+
+    //! Get a correctly-formatted string representing an array (data) access
+    std::string getArrayAccessString(ArraySubscriptExpr* expr);
+
+    //! Retrieve (flatly) base + all indexes accessed in a potentially
+    //! multi-dimensional array access
+    //! \param[in] fullExpr array access to process
+    //! \param[out] currentInfo currently collected info, which is complete when
+    //! the method exits
+    //! \return 0 if success, 1 if array dimension too large
+    int getArrayAccessInfo(ArraySubscriptExpr* fullExpr,
+                           std::stack<Expr*>* currentInfo);
 };
 
 /*!

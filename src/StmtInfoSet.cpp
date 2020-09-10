@@ -1,6 +1,7 @@
 #include "StmtInfoSet.hpp"
 
 #include <memory>
+#include <stack>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -128,9 +129,14 @@ void StmtInfoSet::processReads(Expr* expr) {
     if (BinaryOperator* binOper = dyn_cast<BinaryOperator>(usableExpr)) {
         processReads(binOper->getLHS());
         processReads(binOper->getRHS());
-    } else if (isa<ArraySubscriptExpr>(usableExpr)) {
-        reads.push_back(Utils::exprToString(usableExpr));
+    } else if (ArraySubscriptExpr* asArrayAccess =
+                   dyn_cast<ArraySubscriptExpr>(usableExpr)) {
+        reads.push_back(getArrayAccessString(asArrayAccess));
     }
+}
+
+void StmtInfoSet::processWrite(ArraySubscriptExpr* expr) {
+    writes.push_back(getArrayAccessString(expr));
 }
 
 void StmtInfoSet::enterFor(ForStmt* forStmt) {
@@ -254,6 +260,46 @@ void StmtInfoSet::makeAndInsertConstraint(std::string lower, Expr* upper,
         std::make_shared<
             std::tuple<std::string, std::string, BinaryOperatorKind>>(
             lower, Utils::exprToString(upper), oper));
+}
+
+std::string StmtInfoSet::getArrayAccessString(ArraySubscriptExpr* expr) {
+    std::string output;
+    llvm::raw_string_ostream os(output);
+    std::stack<Expr*> info;
+    if (getArrayAccessInfo(expr, &info)) {
+        Utils::printErrorAndExit("Array dimension exceeds maximum of " +
+                                     std::to_string(MAX_ARRAY_DIM),
+                                 expr);
+    }
+    os << Utils::exprToString(info.top()) << "(";
+    info.pop();
+    bool first = true;
+    while (!info.empty()) {
+        if (!first) {
+            os << ",";
+        } else {
+            first = false;
+        }
+        os << Utils::exprToString(info.top());
+        info.pop();
+    }
+    os << ")";
+    return os.str();
+}
+
+int StmtInfoSet::getArrayAccessInfo(ArraySubscriptExpr* fullExpr,
+                                    std::stack<Expr*>* currentInfo) {
+    if (currentInfo->size() >= MAX_ARRAY_DIM) {
+        return 1;
+    }
+    currentInfo->push(fullExpr->getIdx());
+    Expr* baseExpr = fullExpr->getBase()->IgnoreParenImpCasts();
+    if (ArraySubscriptExpr* baseArrayAccess =
+            dyn_cast<ArraySubscriptExpr>(baseExpr)) {
+        return getArrayAccessInfo(baseArrayAccess, currentInfo);
+    }
+    currentInfo->push(baseExpr);
+    return 0;
 }
 
 /* ScheduleVal */
