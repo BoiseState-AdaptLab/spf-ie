@@ -95,19 +95,18 @@ void PDFGLFuncBuilder::processSingleStmt(Stmt* stmt) {
         currentStmtInfoSet.exitIf();
     } else {
         // capture reads and writes made in statement
-        Expr* readExpr = nullptr;
         if (DeclStmt* asDeclStmt = dyn_cast<DeclStmt>(stmt)) {
             VarDecl* decl = cast<VarDecl>(asDeclStmt->getSingleDecl());
             if (decl->hasInit()) {
-                readExpr = dyn_cast<ArraySubscriptExpr>(decl->getInit());
+                currentStmtInfoSet.processReads(dyn_cast<ArraySubscriptExpr>(decl->getInit()));
             }
         } else if (BinaryOperator* asBinOper = dyn_cast<BinaryOperator>(stmt)) {
             currentStmtInfoSet.writes.push_back(
                 Utils::exprToString(asBinOper->getLHS()));
-            readExpr = asBinOper->getRHS();
-        }
-        if (readExpr) {
-            currentStmtInfoSet.processReads(readExpr);
+            if (asBinOper->isCompoundAssignmentOp()) {
+                currentStmtInfoSet.processReads(asBinOper->getLHS());
+            }
+            currentStmtInfoSet.processReads(asBinOper->getRHS());
         }
 
         currentStmtInfoSet.advanceSchedule();
