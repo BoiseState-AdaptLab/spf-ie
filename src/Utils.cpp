@@ -41,13 +41,6 @@ std::string Utils::stmtToString(Stmt* stmt) {
         .str();
 }
 
-std::string Utils::exprToString(Expr* expr) {
-    return Lexer::getSourceText(
-               CharSourceRange::getTokenRange(expr->getSourceRange()),
-               Context->getSourceManager(), Context->getLangOpts())
-        .str();
-}
-
 std::string Utils::binaryOperatorKindToString(BinaryOperatorKind bo) {
     if (!operatorStrings.count(bo)) {
         printErrorAndExit("Invalid operator type encountered.");

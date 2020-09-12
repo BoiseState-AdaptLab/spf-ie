@@ -148,7 +148,7 @@ void StmtInfoSet::enterFor(ForStmt* forStmt) {
     if (BinaryOperator* init = dyn_cast<BinaryOperator>(forStmt->getInit())) {
         makeAndInsertConstraint(init->getRHS(), init->getLHS(),
                                 BinaryOperatorKind::BO_LE);
-        initVar = Utils::exprToString(init->getLHS());
+        initVar = Utils::stmtToString(init->getLHS());
     } else if (DeclStmt* init = dyn_cast<DeclStmt>(forStmt->getInit())) {
         if (VarDecl* initDecl = dyn_cast<VarDecl>(init->getSingleDecl())) {
             makeAndInsertConstraint(initDecl->getNameAsString(),
@@ -197,13 +197,13 @@ void StmtInfoSet::enterFor(ForStmt* forStmt) {
             // (e.g. with i = i + 1, this is i + 1)
             BinaryOperator* secondOp = cast<BinaryOperator>(incOper->getRHS());
             // Get variable being incremented
-            std::string iterStr = Utils::exprToString(incOper->getLHS());
+            std::string iterStr = Utils::stmtToString(incOper->getLHS());
             if (secondOp->getOpcode() == BO_Add) {
                 // Get our lh and rh expression, also in string form
                 Expr* lhs = secondOp->getLHS();
                 Expr* rhs = secondOp->getRHS();
-                std::string lhsStr = Utils::exprToString(lhs);
-                std::string rhsStr = Utils::exprToString(rhs);
+                std::string lhsStr = Utils::stmtToString(lhs);
+                std::string rhsStr = Utils::stmtToString(rhs);
                 Expr::EvalResult result;
                 // one side must be iter var, other must be 1
                 validIncrement = (lhsStr.compare(iterStr) == 0 &&
@@ -251,7 +251,7 @@ void StmtInfoSet::exitIf() { constraints.pop_back(); }
 
 void StmtInfoSet::makeAndInsertConstraint(Expr* lower, Expr* upper,
                                           BinaryOperatorKind oper) {
-    makeAndInsertConstraint(Utils::exprToString(lower), upper, oper);
+    makeAndInsertConstraint(Utils::stmtToString(lower), upper, oper);
 }
 
 void StmtInfoSet::makeAndInsertConstraint(std::string lower, Expr* upper,
@@ -259,7 +259,7 @@ void StmtInfoSet::makeAndInsertConstraint(std::string lower, Expr* upper,
     constraints.push_back(
         std::make_shared<
             std::tuple<std::string, std::string, BinaryOperatorKind>>(
-            lower, Utils::exprToString(upper), oper));
+            lower, Utils::stmtToString(upper), oper));
 }
 
 std::string StmtInfoSet::getArrayAccessString(ArraySubscriptExpr* expr) {
@@ -271,7 +271,7 @@ std::string StmtInfoSet::getArrayAccessString(ArraySubscriptExpr* expr) {
                                      std::to_string(MAX_ARRAY_DIM),
                                  expr);
     }
-    os << Utils::exprToString(info.top()) << "(";
+    os << Utils::stmtToString(info.top()) << "(";
     info.pop();
     bool first = true;
     while (!info.empty()) {
@@ -280,7 +280,7 @@ std::string StmtInfoSet::getArrayAccessString(ArraySubscriptExpr* expr) {
         } else {
             first = false;
         }
-        os << Utils::exprToString(info.top());
+        os << Utils::stmtToString(info.top());
         info.pop();
     }
     os << ")";

@@ -32,9 +32,6 @@ class Utils {
     //! Get the source code of a statement as a string
     static std::string stmtToString(Stmt* stmt);
 
-    //! Get the source code of an expression as a string
-    static std::string exprToString(Expr* expr);
-
     //! Get a string representation of a binary operator
     static std::string binaryOperatorKindToString(BinaryOperatorKind bo);
 
