@@ -280,7 +280,14 @@ std::string StmtInfoSet::getArrayAccessString(ArraySubscriptExpr* expr) {
         } else {
             first = false;
         }
-        os << Utils::stmtToString(info.top());
+        std::string indexString;
+        if (ArraySubscriptExpr* asArrayAccess = dyn_cast<ArraySubscriptExpr>(
+                info.top()->IgnoreParenImpCasts())) {
+            indexString = getArrayAccessString(asArrayAccess);
+        } else {
+            indexString = Utils::stmtToString(info.top());
+        }
+        os << indexString;
         info.pop();
     }
     os << ")";
