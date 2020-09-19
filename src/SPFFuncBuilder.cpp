@@ -1,12 +1,14 @@
 #include "SPFFuncBuilder.hpp"
 
 #include <algorithm>
+#include <map>
 #include <sstream>
 #include <vector>
 
 #include "Utils.hpp"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Stmt.h"
+#include "iegenlib.h"
 
 using namespace clang;
 
@@ -24,6 +26,44 @@ void SPFFuncBuilder::processFunction(FunctionDecl* funcDecl) {
     } else {
         Utils::printErrorAndExit("Invalid function body", funcDecl->getBody());
     }
+
+    std::map<std::string, iegenlib::Set> iterSpaces;
+    std::map<std::string, iegenlib::Relation> executionSchedules;
+    std::vector<IEGenDataAccess> reads;
+    std::vector<IEGenDataAccess> writes;
+    for (std::vector<StmtInfoSet>::size_type i = 0; i != stmtInfoSets.size();
+         ++i) {
+        std::string stmt = "S" + std::to_string(i);
+        iterSpaces.emplace(stmt,
+                           iegenlib::Set(stmtInfoSets[i].getIterSpaceString()));
+        executionSchedules.emplace(
+            stmt, iegenlib::Relation(stmtInfoSets[i].getExecScheduleString()));
+        for (auto it = stmtInfoSets[i].dataReads.begin();
+             it != stmtInfoSets[i].dataReads.end(); ++it) {
+            /* reads.push_back(IEGenDataAccess( */
+            /*     stmt, Utils::getArrayAccessString(*it), */
+            /*     Utils::stmtToString(getArrayAccessInfo(*it).top()), */
+            /*     iegenlib::Relation(.....))); */
+        }
+    }
+
+    llvm::outs() << "iegen iterspace sets:\n";
+    for (auto it = iterSpaces.begin(); it != iterSpaces.end(); ++it) {
+        llvm::outs() << "stmt " << it->first
+                     << ", iterspace: " << it->second.prettyPrintString()
+                     << "\n";
+    }
+    llvm::outs() << "\n";
+
+    llvm::outs() << "iegen execschedule relations:\n";
+    for (auto it = executionSchedules.begin(); it != executionSchedules.end();
+         ++it) {
+        llvm::outs() << "stmt " << it->first
+                     << ", schedule: " << it->second.prettyPrintString()
+                     << "\n";
+    }
+
+    llvm::outs() << "\n\n";
 }
 
 void SPFFuncBuilder::printInfo() {
@@ -77,7 +117,8 @@ void SPFFuncBuilder::processSingleStmt(Stmt* stmt) {
     if (isa<WhileStmt>(stmt) || isa<CompoundStmt>(stmt) ||
         isa<SwitchStmt>(stmt) || isa<DoStmt>(stmt) || isa<LabelStmt>(stmt) ||
         isa<AttributedStmt>(stmt) || isa<GotoStmt>(stmt) ||
-        isa<ContinueStmt>(stmt) || isa<BreakStmt>(stmt)) {
+        isa<ContinueStmt>(stmt) || isa<BreakStmt>(stmt) ||
+        isa<CallExpr>(stmt)) {
         std::ostringstream errorMsg;
         errorMsg << "Unsupported compound stmt type "
                  << stmt->getStmtClassName();
@@ -98,8 +139,10 @@ void SPFFuncBuilder::processSingleStmt(Stmt* stmt) {
         if (DeclStmt* asDeclStmt = dyn_cast<DeclStmt>(stmt)) {
             VarDecl* decl = cast<VarDecl>(asDeclStmt->getSingleDecl());
             if (decl->hasInit()) {
-                currentStmtInfoSet.processReads(
-                    dyn_cast<ArraySubscriptExpr>(decl->getInit()));
+                if (ArraySubscriptExpr* initAsArrayAccess =
+                        dyn_cast<ArraySubscriptExpr>(decl->getInit())) {
+                    currentStmtInfoSet.processReads(initAsArrayAccess);
+                }
             }
         } else if (BinaryOperator* asBinOper = dyn_cast<BinaryOperator>(stmt)) {
             if (ArraySubscriptExpr* lhsAsArrayAccess =

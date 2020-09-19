@@ -48,6 +48,58 @@ std::string Utils::binaryOperatorKindToString(BinaryOperatorKind bo) {
     return operatorStrings.at(bo).str();
 }
 
+std::string Utils::getArrayAccessString(ArraySubscriptExpr* expr) {
+    std::string output;
+    llvm::raw_string_ostream os(output);
+    std::stack<Expr*> info = getArrayAccessInfo(expr);
+    os << Utils::stmtToString(info.top()) << "(";
+    info.pop();
+    bool first = true;
+    while (!info.empty()) {
+        if (!first) {
+            os << ",";
+        } else {
+            first = false;
+        }
+        std::string indexString;
+        if (ArraySubscriptExpr* asArrayAccess = dyn_cast<ArraySubscriptExpr>(
+                info.top()->IgnoreParenImpCasts())) {
+            indexString = getArrayAccessString(asArrayAccess);
+        } else {
+            indexString = Utils::stmtToString(info.top());
+        }
+        os << indexString;
+        info.pop();
+    }
+    os << ")";
+    return os.str();
+}
+
+std::stack<Expr*> Utils::getArrayAccessInfo(ArraySubscriptExpr* fullExpr) {
+    std::stack<Expr*> info;
+    if (getArrayAccessInfo(fullExpr, &info)) {
+        Utils::printErrorAndExit("Array dimension exceeds maximum of " +
+                                     std::to_string(MAX_ARRAY_DIM),
+                                 fullExpr);
+    }
+    return info;
+}
+
+int Utils::getArrayAccessInfo(ArraySubscriptExpr* fullExpr,
+                              std::stack<Expr*>* currentInfo) {
+    if (currentInfo->size() >= MAX_ARRAY_DIM) {
+        return 1;
+    }
+    currentInfo->push(fullExpr->getIdx());
+    Expr* baseExpr = fullExpr->getBase()->IgnoreParenImpCasts();
+    if (ArraySubscriptExpr* baseArrayAccess =
+            dyn_cast<ArraySubscriptExpr>(baseExpr)) {
+        return getArrayAccessInfo(baseArrayAccess, currentInfo);
+    }
+    currentInfo->push(baseExpr);
+    return 0;
+}
+
 std::map<BinaryOperatorKind, llvm::StringRef> Utils::operatorStrings = {
     {BinaryOperatorKind::BO_LT, "<"}, {BinaryOperatorKind::BO_LE, "<="},
     {BinaryOperatorKind::BO_GT, ">"}, {BinaryOperatorKind::BO_GE, ">="},

@@ -43,7 +43,6 @@ std::string StmtInfoSet::getIterSpaceString() {
             if (it != constraints.begin()) {
                 os << " and ";
             }
-            BinaryOperatorKind bo = std::get<2>(**it);
             os << std::get<0>(**it) << " "
                << Utils::binaryOperatorKindToString(std::get<2>(**it)) << " "
                << std::get<1>(**it);
@@ -81,31 +80,11 @@ std::string StmtInfoSet::getExecScheduleString() {
 }
 
 std::string StmtInfoSet::getReadsString() {
-    std::string output;
-    llvm::raw_string_ostream os(output);
-    os << "{";
-    for (auto it = reads.begin(); it != reads.end(); ++it) {
-        if (it != reads.begin()) {
-            os << ", ";
-        }
-        os << *it;
-    }
-    os << "}";
-    return os.str();
+    return getDataAccessesString(&dataReads);
 }
 
 std::string StmtInfoSet::getWritesString() {
-    std::string output;
-    llvm::raw_string_ostream os(output);
-    os << "{";
-    for (auto it = writes.begin(); it != writes.end(); ++it) {
-        if (it != writes.begin()) {
-            os << ", ";
-        }
-        os << *it;
-    }
-    os << "}";
-    return os.str();
+    return getDataAccessesString(&dataWrites);
 }
 
 void StmtInfoSet::advanceSchedule() {
@@ -131,12 +110,12 @@ void StmtInfoSet::processReads(Expr* expr) {
         processReads(binOper->getRHS());
     } else if (ArraySubscriptExpr* asArrayAccess =
                    dyn_cast<ArraySubscriptExpr>(usableExpr)) {
-        reads.push_back(getArrayAccessString(asArrayAccess));
+        dataReads.push_back(asArrayAccess);
     }
 }
 
 void StmtInfoSet::processWrite(ArraySubscriptExpr* expr) {
-    writes.push_back(getArrayAccessString(expr));
+    dataWrites.push_back(expr);
 }
 
 void StmtInfoSet::enterFor(ForStmt* forStmt) {
@@ -262,51 +241,23 @@ void StmtInfoSet::makeAndInsertConstraint(std::string lower, Expr* upper,
             lower, Utils::stmtToString(upper), oper));
 }
 
-std::string StmtInfoSet::getArrayAccessString(ArraySubscriptExpr* expr) {
+std::string StmtInfoSet::getDataAccessesString(
+    std::vector<ArraySubscriptExpr*>* accesses) {
     std::string output;
     llvm::raw_string_ostream os(output);
-    std::stack<Expr*> info;
-    if (getArrayAccessInfo(expr, &info)) {
-        Utils::printErrorAndExit("Array dimension exceeds maximum of " +
-                                     std::to_string(MAX_ARRAY_DIM),
-                                 expr);
-    }
-    os << Utils::stmtToString(info.top()) << "(";
-    info.pop();
-    bool first = true;
-    while (!info.empty()) {
-        if (!first) {
-            os << ",";
-        } else {
-            first = false;
+    if (!accesses->empty()) {
+        os << "{\n";
+        for (auto it = accesses->begin(); it != accesses->end(); ++it) {
+            if (it != accesses->begin()) {
+                os << ",\n";
+            }
+            os << "    " << Utils::getArrayAccessString(*it);
         }
-        std::string indexString;
-        if (ArraySubscriptExpr* asArrayAccess = dyn_cast<ArraySubscriptExpr>(
-                info.top()->IgnoreParenImpCasts())) {
-            indexString = getArrayAccessString(asArrayAccess);
-        } else {
-            indexString = Utils::stmtToString(info.top());
-        }
-        os << indexString;
-        info.pop();
+        os << "\n}";
+    } else {
+        os << "{}";
     }
-    os << ")";
     return os.str();
-}
-
-int StmtInfoSet::getArrayAccessInfo(ArraySubscriptExpr* fullExpr,
-                                    std::stack<Expr*>* currentInfo) {
-    if (currentInfo->size() >= MAX_ARRAY_DIM) {
-        return 1;
-    }
-    currentInfo->push(fullExpr->getIdx());
-    Expr* baseExpr = fullExpr->getBase()->IgnoreParenImpCasts();
-    if (ArraySubscriptExpr* baseArrayAccess =
-            dyn_cast<ArraySubscriptExpr>(baseExpr)) {
-        return getArrayAccessInfo(baseArrayAccess, currentInfo);
-    }
-    currentInfo->push(baseExpr);
-    return 0;
 }
 
 /* ScheduleVal */

@@ -7,6 +7,7 @@
 #include "StmtInfoSet.hpp"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Stmt.h"
+#include "iegenlib.h"
 
 using namespace clang;
 
@@ -55,6 +56,20 @@ class SPFFuncBuilder {
     //! Add info about a completed statement to the builder
     //! \param[in] stmt Completed statement to save
     void addStmt(Stmt* stmt);
+};
+
+struct IEGenDataAccess {
+    IEGenDataAccess(std::string stmt, std::string accessExpression,
+                   std::string arrayAccessed, iegenlib::Relation access)
+        : stmt(stmt),
+          accessExpression(accessExpression),
+          arrayAccessed(arrayAccessed),
+          access(access) {}
+
+    std::string stmt;
+    std::string accessExpression;
+    std::string arrayAccessed;
+    iegenlib::Relation access;
 };
 
 }  // namespace spf_ie

@@ -20,9 +20,6 @@
 #include "clang/AST/OperationKinds.h"
 #include "clang/AST/Stmt.h"
 
-//! Maximum allowed array dimension (a safe estimate to avoid stack overflow)
-#define MAX_ARRAY_DIM 50
-
 using namespace clang;
 
 namespace spf_ie {
@@ -53,9 +50,9 @@ struct StmtInfoSet {
     //! Execution schedule
     std::vector<std::shared_ptr<ScheduleVal>> schedule;
     //! Array positions read from
-    std::vector<std::string> reads;
+    std::vector<ArraySubscriptExpr*> dataReads;
     //! Array positions written to
-    std::vector<std::string> writes;
+    std::vector<ArraySubscriptExpr*> dataWrites;
 
     //! Get a string representing the iteration space
     std::string getIterSpaceString();
@@ -108,17 +105,9 @@ struct StmtInfoSet {
     void makeAndInsertConstraint(std::string lower, Expr* upper,
                                  BinaryOperatorKind oper);
 
-    //! Get a correctly-formatted string representing an array (data) access
-    std::string getArrayAccessString(ArraySubscriptExpr* expr);
-
-    //! Retrieve (flatly) base + all indexes accessed in a potentially
-    //! multi-dimensional array access
-    //! \param[in] fullExpr array access to process
-    //! \param[out] currentInfo currently collected info, which is complete when
-    //! the method exits
-    //! \return 0 if success, 1 if array dimension too large
-    int getArrayAccessInfo(ArraySubscriptExpr* fullExpr,
-                           std::stack<Expr*>* currentInfo);
+    //! Get printable string representing the given data accesses
+    std::string getDataAccessesString(
+        std::vector<ArraySubscriptExpr*>* accesses);
 };
 
 /*!
