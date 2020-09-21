@@ -2,7 +2,7 @@
 
 #include <map>
 
-#include "PDFGDriver.hpp"
+#include "Driver.hpp"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/Stmt.h"
@@ -14,7 +14,7 @@
 
 using namespace clang;
 
-namespace pdfg_c {
+namespace spf_ie {
 
 void Utils::printErrorAndExit(llvm::StringRef message) {
     printErrorAndExit(message, nullptr);
@@ -53,4 +53,4 @@ std::map<BinaryOperatorKind, llvm::StringRef> Utils::operatorStrings = {
     {BinaryOperatorKind::BO_GT, ">"}, {BinaryOperatorKind::BO_GE, ">="},
     {BinaryOperatorKind::BO_EQ, "="}, {BinaryOperatorKind::BO_NE, "!="}};
 
-}  // namespace pdfg_c
+}  // namespace spf_ie

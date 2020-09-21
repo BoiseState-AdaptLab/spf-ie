@@ -1,4 +1,4 @@
-#include "PDFGLFuncBuilder.hpp"
+#include "SPFFuncBuilder.hpp"
 
 #include <algorithm>
 #include <sstream>
@@ -10,11 +10,11 @@
 
 using namespace clang;
 
-namespace pdfg_c {
+namespace spf_ie {
 
-PDFGLFuncBuilder::PDFGLFuncBuilder() : largestScheduleDimension(0){};
+SPFFuncBuilder::SPFFuncBuilder() : largestScheduleDimension(0){};
 
-void PDFGLFuncBuilder::processFunction(FunctionDecl* funcDecl) {
+void SPFFuncBuilder::processFunction(FunctionDecl* funcDecl) {
     functionName = funcDecl->getQualifiedNameAsString();
     if (CompoundStmt* funcBody = dyn_cast<CompoundStmt>(funcDecl->getBody())) {
         processBody(funcBody);
@@ -26,7 +26,7 @@ void PDFGLFuncBuilder::processFunction(FunctionDecl* funcDecl) {
     }
 }
 
-void PDFGLFuncBuilder::printInfo() {
+void SPFFuncBuilder::printInfo() {
     llvm::outs() << "FUNCTION: " << functionName << "\n";
     Utils::printSmallLine();
     llvm::outs() << "\n";
@@ -62,7 +62,7 @@ void PDFGLFuncBuilder::printInfo() {
     llvm::outs() << "\n";
 }
 
-void PDFGLFuncBuilder::processBody(Stmt* stmt) {
+void SPFFuncBuilder::processBody(Stmt* stmt) {
     if (CompoundStmt* asCompoundStmt = dyn_cast<CompoundStmt>(stmt)) {
         for (auto it : asCompoundStmt->body()) {
             processSingleStmt(it);
@@ -72,7 +72,7 @@ void PDFGLFuncBuilder::processBody(Stmt* stmt) {
     }
 }
 
-void PDFGLFuncBuilder::processSingleStmt(Stmt* stmt) {
+void SPFFuncBuilder::processSingleStmt(Stmt* stmt) {
     // fail on disallowed statement types
     if (isa<WhileStmt>(stmt) || isa<CompoundStmt>(stmt) ||
         isa<SwitchStmt>(stmt) || isa<DoStmt>(stmt) || isa<LabelStmt>(stmt) ||
@@ -117,7 +117,7 @@ void PDFGLFuncBuilder::processSingleStmt(Stmt* stmt) {
     }
 }
 
-void PDFGLFuncBuilder::addStmt(Stmt* stmt) {
+void SPFFuncBuilder::addStmt(Stmt* stmt) {
     stmts.push_back(stmt);
     largestScheduleDimension = std::max(
         largestScheduleDimension, currentStmtInfoSet.getScheduleDimension());
@@ -125,4 +125,4 @@ void PDFGLFuncBuilder::addStmt(Stmt* stmt) {
     currentStmtInfoSet = StmtInfoSet(&currentStmtInfoSet);
 }
 
-}  // namespace pdfg_c
+}  // namespace spf_ie

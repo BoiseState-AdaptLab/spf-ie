@@ -1,5 +1,5 @@
 /*!
- * \file PDFGDriver.cpp
+ * \file Driver.cpp
  *
  * \brief Driver for the program, processing command-line input.
  *
@@ -9,11 +9,11 @@
  * \author Anna Rift
  */
 
-#include "PDFGDriver.hpp"
+#include "Driver.hpp"
 
 #include <memory>
 
-#include "PDFGLFuncBuilder.hpp"
+#include "SPFFuncBuilder.hpp"
 #include "clang/AST/ASTConsumer.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
@@ -29,13 +29,13 @@
 using namespace clang;
 using namespace clang::tooling;
 
-namespace pdfg_c {
+namespace spf_ie {
 
 ASTContext *Context;
 
-class PDFGConsumer : public ASTConsumer {
+class SPFConsumer : public ASTConsumer {
    public:
-    explicit PDFGConsumer(llvm::StringRef fileName)
+    explicit SPFConsumer(llvm::StringRef fileName)
         : fileName(fileName.str()) {}
     virtual void HandleTranslationUnit(ASTContext &Ctx) {
         // initializing globally-accessible ASTContext
@@ -46,8 +46,8 @@ class PDFGConsumer : public ASTConsumer {
         for (auto it : Context->getTranslationUnitDecl()->decls()) {
             FunctionDecl *func = dyn_cast<FunctionDecl>(it);
             if (func && func->doesThisDeclarationHaveABody()) {
-                std::unique_ptr<PDFGLFuncBuilder> builder =
-                    std::make_unique<PDFGLFuncBuilder>();
+                std::unique_ptr<SPFFuncBuilder> builder =
+                    std::make_unique<SPFFuncBuilder>();
                 builder->processFunction(func);
                 builder->printInfo();
             }
@@ -58,25 +58,25 @@ class PDFGConsumer : public ASTConsumer {
     std::string fileName;
 };
 
-class PDFGFrontendAction : public ASTFrontendAction {
+class SPFFrontendAction : public ASTFrontendAction {
    public:
     virtual std::unique_ptr<ASTConsumer> CreateASTConsumer(
         CompilerInstance &Compiler, llvm::StringRef InFile) {
-        return std::unique_ptr<ASTConsumer>(new PDFGConsumer(InFile));
+        return std::unique_ptr<ASTConsumer>(new SPFConsumer(InFile));
     }
 };
 
-}  // namespace pdfg_c
+}  // namespace spf_ie
 
-using namespace pdfg_c;
+using namespace spf_ie;
 
-static llvm::cl::OptionCategory PDFGToolCategory("pdfg-c options");
+static llvm::cl::OptionCategory SPFToolCategory("spf-ie options");
 
 //! Instantiate and run the Clang tool
 int main(int argc, const char **argv) {
-    CommonOptionsParser OptionsParser(argc, argv, PDFGToolCategory);
+    CommonOptionsParser OptionsParser(argc, argv, SPFToolCategory);
     ClangTool Tool(OptionsParser.getCompilations(),
                    OptionsParser.getSourcePathList());
 
-    return Tool.run(newFrontendActionFactory<PDFGFrontendAction>().get());
+    return Tool.run(newFrontendActionFactory<SPFFrontendAction>().get());
 }

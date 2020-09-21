@@ -1,5 +1,5 @@
-#ifndef PDFG_UTILS_HPP
-#define PDFG_UTILS_HPP
+#ifndef SPFIE_UTILS_HPP
+#define SPFIE_UTILS_HPP
 
 #include <map>
 
@@ -10,7 +10,7 @@
 
 using namespace clang;
 
-namespace pdfg_c {
+namespace spf_ie {
 
 /*!
  * \class Utils
@@ -42,6 +42,6 @@ class Utils {
     Utils() = delete;
 };
 
-}  // namespace pdfg_c
+}  // namespace spf_ie
 
 #endif

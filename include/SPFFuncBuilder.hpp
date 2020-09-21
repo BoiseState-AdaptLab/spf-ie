@@ -1,5 +1,5 @@
-#ifndef PDFG_PDFGLFUNCBUILDER_HPP
-#define PDFG_PDFGLFUNCBUILDER_HPP
+#ifndef SPFIE_SPFFUNCBUILDER_HPP
+#define SPFIE_SPFFUNCBUILDER_HPP
 
 #include <string>
 #include <vector>
@@ -10,19 +10,19 @@
 
 using namespace clang;
 
-namespace pdfg_c {
+namespace spf_ie {
 
 /*!
- * \class PDFGLFuncBuilder
+ * \class SPFFuncBuilder
  *
- * \brief Class handling building up the polyhedral model for a function
+ * \brief Class handling building up the sparse polyhedral model for a function
  *
  * Contains the entry point for function processing. Recursively visits each
  * statement in the source.
  */
-class PDFGLFuncBuilder {
+class SPFFuncBuilder {
    public:
-    explicit PDFGLFuncBuilder();
+    explicit SPFFuncBuilder();
     //! Entry point for each function; gathers information about its
     //! statements
     //! \param[in] funcDecl Function declaration to process
@@ -57,6 +57,6 @@ class PDFGLFuncBuilder {
     void addStmt(Stmt* stmt);
 };
 
-}  // namespace pdfg_c
+}  // namespace spf_ie
 
 #endif

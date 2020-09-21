@@ -1,4 +1,4 @@
-Polyhedral Dataflow Graph Compiler
+SPF-IE
 ==================================
 
 
@@ -10,21 +10,28 @@ Authors
 
 Description
 -----------
-This compiler collects information from C/C++ source code for
-[the Polyhedral Dataflow Graph Representation](https://github.com/BoiseState-AdaptLab/PolyhedralDataflowIR),
-with the hopes of using it to generate optimized code.
+This tool generates the [Sparse Polyhedral Framework](https://doi.org/10.1016/j.parco.2016.02.004)
+representation of C/C++ source code (gathering information from Clang's AST),
+using IEGenLib to handle the mathematical objects involved. The eventual goal
+is to use this representation for optimizing transformations, the results of
+which can be used to generate more efficient inspector/executor code. SPF-IE
+is pronounced like "spiffy".
 
 It supplants (and was initially a rewrite of)
 [PDFG-IR_C_frontend](https://github.com/BoiseState-AdaptLab/PDFG-IR_C_frontend).
 
 
-Requirements
+Dependencies
 ------------
 - **CMake:** Download and install CMake from [here](https://cmake.org/download/),
 or however else you prefer.
 - **LLVM and Clang:** Follow [these instructions](https://github.com/BoiseState-AdaptLab/learningClangLLVM)
 explaining how to install and use LLVM and Clang. In addition, LLVM must be
 built with the options `LLVM_ENABLE_EH` and `LLVM_ENABLE_RTTI` set to `ON`.
+Developed with LLVM 11 -- using other versions may not work properly.
+- **IEGenLib:** Automatically cloned and built from
+[here](https://github.com/CompOpt4Apps/IEGenLib) -- you don't have to do
+anything for this dependency.
 
 
 Building
@@ -42,7 +49,7 @@ $ cmake --build .
 Usage
 -----
 ```bash
-$ ./build/new-pdfg-c mysourcefile.cpp
+$ ./build/spf-ie mysourcefile.cpp
 ```
 where *mysourcefile.cpp* is the input file.
 Example files are provided in the test folder.

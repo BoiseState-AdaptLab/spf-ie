@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.9)
-project (new-pdfg-c C CXX)
+project (spf-ie C CXX)
 
 include(ExternalProject)
 
@@ -37,7 +37,6 @@ set(LLVM_ENABLE_RTTI ON)
 ExternalProject_Add(iegenlib_in
     GIT_REPOSITORY "https://github.com/CompOpt4Apps/IEGenLib.git"
     GIT_TAG "0cfa0a82fc83cb9fa61376ed98fc2786f6e18cb6"
-    GIT_SHALLOW TRUE
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/IEGenLib
     BUILD_IN_SOURCE TRUE
     CONFIGURE_COMMAND "./configure"
@@ -48,8 +47,8 @@ link_directories("lib/IEGenLib/iegen/lib")
 
 
 set (PROJECT_SOURCES
-    PDFGDriver.cpp
-    PDFGLFuncBuilder.cpp
+    Driver.cpp
+    SPFFuncBuilder.cpp
     StmtInfoSet.cpp
     Utils.cpp
 )

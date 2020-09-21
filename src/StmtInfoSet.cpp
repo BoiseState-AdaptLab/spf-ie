@@ -6,7 +6,7 @@
 #include <tuple>
 #include <vector>
 
-#include "PDFGDriver.hpp"
+#include "Driver.hpp"
 #include "Utils.hpp"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Expr.h"
@@ -15,7 +15,7 @@
 
 using namespace clang;
 
-namespace pdfg_c {
+namespace spf_ie {
 
 /* StmtInfoSet */
 
@@ -315,4 +315,4 @@ ScheduleVal::ScheduleVal(std::string var) : var(var), valueIsVar(true) {}
 
 ScheduleVal::ScheduleVal(int num) : num(num), valueIsVar(false) {}
 
-}  // namespace pdfg_c
+}  // namespace spf_ie

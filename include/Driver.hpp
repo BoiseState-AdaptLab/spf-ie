@@ -1,9 +1,9 @@
-#ifndef PDFG_PDFGDRIVER_HPP
-#define PDFG_PDFGDRIVER_HPP
+#ifndef SPFIE_DRIVER_HPP
+#define SPFIE_DRIVER_HPP
 
 #include "clang/AST/ASTContext.h"
 
-namespace pdfg_c {
+namespace spf_ie {
 
 //! Globally-accessible pointer to the ASTContext, initialized before the
 //! tool runs.

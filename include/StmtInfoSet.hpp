@@ -7,8 +7,8 @@
  * \author Aaron Orenstein
  */
 
-#ifndef PDFG_STMTINFOSET_HPP
-#define PDFG_STMTINFOSET_HPP
+#ifndef SPFIE_STMTINFOSET_HPP
+#define SPFIE_STMTINFOSET_HPP
 
 #include <memory>
 #include <stack>
@@ -25,7 +25,7 @@
 
 using namespace clang;
 
-namespace pdfg_c {
+namespace spf_ie {
 
 struct ScheduleVal;
 
@@ -137,6 +137,6 @@ struct ScheduleVal {
     bool valueIsVar;
 };
 
-}  // namespace pdfg_c
+}  // namespace spf_ie
 
 #endif
