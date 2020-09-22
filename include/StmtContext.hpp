@@ -1,14 +1,15 @@
 /*!
- * \file StmtInfoSet.hpp
+ * \file StmtContext.hpp
  *
- * \brief Structs representing all information associated with a statement.
+ * \brief Structs representing the information associated with a statement
+ * based on its position in the code and surrounding control structures
  *
  * \author Anna Rift
  * \author Aaron Orenstein
  */
 
-#ifndef SPFIE_STMTINFOSET_HPP
-#define SPFIE_STMTINFOSET_HPP
+#ifndef SPFIE_STMTCONTEXT_HPP
+#define SPFIE_STMTCONTEXT_HPP
 
 #include <memory>
 #include <stack>
@@ -28,19 +29,19 @@ namespace spf_ie {
 struct ScheduleVal;
 
 /*!
- * \struct StmtInfoSet
+ * \struct StmtContext
  *
  * \brief Contains associated information for a statement, such as iteration
  * space and execution schedule.
  */
-struct StmtInfoSet {
-    StmtInfoSet();
+struct StmtContext {
+    StmtContext();
 
-    //! Copy the information from an existing StmtInfoSet.
+    //! Copy the information from an existing StmtContext.
     //! Preserves only information that builds up in nested contexts,
     //! excluding information that is only applicable per-statement.
-    //! \param[in] other Existing StmtInfoSet to copy
-    StmtInfoSet(StmtInfoSet* other);
+    //! \param[in] other Existing StmtContext to copy
+    StmtContext(StmtContext* other);
 
     //! Variables being iterated over
     std::vector<std::string> iterators;
@@ -75,12 +76,6 @@ struct StmtInfoSet {
 
     //! Zero-pad this execution schedule up to a certain dimension
     void zeroPadScheduleDimension(int dim);
-
-    //! Add all the arrays accessed in an expression to the statement's reads
-    void processReads(Expr* expr);
-
-    //! Add the arrays accessed in an expression to the statement's writes
-    void processWrite(ArraySubscriptExpr* expr);
 
     // enter* and exit* methods add iterators and constraints when entering a
     // new scope, remove when leaving the scope

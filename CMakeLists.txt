@@ -48,8 +48,8 @@ link_directories("lib/IEGenLib/iegen/lib")
 
 set (PROJECT_SOURCES
     Driver.cpp
-    SPFFuncBuilder.cpp
-    StmtInfoSet.cpp
+    SPFComputationBuilder.cpp
+    StmtContext.cpp
     Utils.cpp
     ArrayAccess.cpp
 )

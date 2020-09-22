@@ -1,10 +1,11 @@
-#ifndef SPFIE_SPFFUNCBUILDER_HPP
-#define SPFIE_SPFFUNCBUILDER_HPP
+#ifndef SPFIE_SPFCOMPUTATIONBUILDER_HPP
+#define SPFIE_SPFCOMPUTATIONBUILDER_HPP
 
 #include <string>
 #include <vector>
 
-#include "StmtInfoSet.hpp"
+#include "SPFComputation.hpp"
+#include "StmtContext.hpp"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/Stmt.h"
@@ -15,16 +16,16 @@ using namespace clang;
 namespace spf_ie {
 
 /*!
- * \class SPFFuncBuilder
+ * \class SPFComputationBuilder
  *
  * \brief Class handling building up the sparse polyhedral model for a function
  *
  * Contains the entry point for function processing. Recursively visits each
  * statement in the source.
  */
-class SPFFuncBuilder {
+class SPFComputationBuilder {
    public:
-    explicit SPFFuncBuilder();
+    explicit SPFComputationBuilder();
     //! Entry point for each function; gathers information about its
     //! statements
     //! \param[in] funcDecl Function declaration to process
@@ -34,17 +35,15 @@ class SPFFuncBuilder {
     void printInfo();
 
    private:
-    //! Name of the function being processed
-    std::string functionName;
-    //! Statements that have completed processing
-    std::vector<Stmt*> stmts;
-    //! Context information attached to each completed statement
-    std::vector<StmtInfoSet> stmtInfoSets;
+    //! Number of the statement currently being processed
+    unsigned int stmtNumber;
     //! The information about the context we are currently in, which is
     //! copied for completed statements
-    StmtInfoSet currentStmtInfoSet;
+    StmtContext currentStmtContext;
     //! The length of the longest schedule tuple
     int largestScheduleDimension;
+    //! SPFComputation being built up
+    SPFComputation computation;
 
     //! Process the body of a control structure, such as a for loop
     //! \param[in] stmt Body statement (which may be compound) to process

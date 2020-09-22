@@ -1,4 +1,4 @@
-#include "StmtInfoSet.hpp"
+#include "StmtContext.hpp"
 
 #include <memory>
 #include <stack>
@@ -18,17 +18,17 @@ using namespace clang;
 
 namespace spf_ie {
 
-/* StmtInfoSet */
+/* StmtContext */
 
-StmtInfoSet::StmtInfoSet() {}
+StmtContext::StmtContext() {}
 
-StmtInfoSet::StmtInfoSet(StmtInfoSet* other) {
+StmtContext::StmtContext(StmtContext* other) {
     iterators = other->iterators;
     constraints = other->constraints;
     schedule = other->schedule;
 }
 
-std::string StmtInfoSet::getIterSpaceString() {
+std::string StmtContext::getIterSpaceString() {
     std::string output;
     llvm::raw_string_ostream os(output);
     if (!constraints.empty()) {
@@ -55,7 +55,7 @@ std::string StmtInfoSet::getIterSpaceString() {
     return os.str();
 }
 
-std::string StmtInfoSet::getExecScheduleString() {
+std::string StmtContext::getExecScheduleString() {
     std::string output;
     llvm::raw_string_ostream os(output);
     os << "{[";
@@ -80,15 +80,15 @@ std::string StmtInfoSet::getExecScheduleString() {
     return os.str();
 }
 
-std::string StmtInfoSet::getReadsString() {
+std::string StmtContext::getReadsString() {
     return getDataAccessesString(&dataReads);
 }
 
-std::string StmtInfoSet::getWritesString() {
+std::string StmtContext::getWritesString() {
     return getDataAccessesString(&dataWrites);
 }
 
-void StmtInfoSet::advanceSchedule() {
+void StmtContext::advanceSchedule() {
     if (schedule.empty() || schedule.back()->valueIsVar) {
         schedule.push_back(std::make_shared<ScheduleVal>(0));
     } else {
@@ -98,28 +98,13 @@ void StmtInfoSet::advanceSchedule() {
     }
 }
 
-void StmtInfoSet::zeroPadScheduleDimension(int dim) {
+void StmtContext::zeroPadScheduleDimension(int dim) {
     for (int i = getScheduleDimension(); i < dim; ++i) {
         schedule.push_back(std::make_shared<ScheduleVal>(0));
     }
 }
 
-void StmtInfoSet::processReads(Expr* expr) {
-    Expr* usableExpr = expr->IgnoreParenImpCasts();
-    if (BinaryOperator* binOper = dyn_cast<BinaryOperator>(usableExpr)) {
-        processReads(binOper->getLHS());
-        processReads(binOper->getRHS());
-    } else if (ArraySubscriptExpr* asArrayAccessExpr =
-                   dyn_cast<ArraySubscriptExpr>(usableExpr)) {
-        dataReads.push_back(ArrayAccess::makeArrayAccess(asArrayAccessExpr));
-    }
-}
-
-void StmtInfoSet::processWrite(ArraySubscriptExpr* expr) {
-    dataWrites.push_back(ArrayAccess::makeArrayAccess(expr));
-}
-
-void StmtInfoSet::enterFor(ForStmt* forStmt) {
+void StmtContext::enterFor(ForStmt* forStmt) {
     std::string error = std::string();
     std::string errorReason = std::string();
 
@@ -209,7 +194,7 @@ void StmtInfoSet::enterFor(ForStmt* forStmt) {
     }
 }
 
-void StmtInfoSet::exitFor() {
+void StmtContext::exitFor() {
     constraints.pop_back();
     constraints.pop_back();
     iterators.pop_back();
@@ -217,7 +202,7 @@ void StmtInfoSet::exitFor() {
     schedule.pop_back();
 }
 
-void StmtInfoSet::enterIf(IfStmt* ifStmt) {
+void StmtContext::enterIf(IfStmt* ifStmt) {
     if (BinaryOperator* cond = dyn_cast<BinaryOperator>(ifStmt->getCond())) {
         makeAndInsertConstraint(cond->getLHS(), cond->getRHS(),
                                 cond->getOpcode());
@@ -227,14 +212,14 @@ void StmtInfoSet::enterIf(IfStmt* ifStmt) {
     }
 }
 
-void StmtInfoSet::exitIf() { constraints.pop_back(); }
+void StmtContext::exitIf() { constraints.pop_back(); }
 
-void StmtInfoSet::makeAndInsertConstraint(Expr* lower, Expr* upper,
+void StmtContext::makeAndInsertConstraint(Expr* lower, Expr* upper,
                                           BinaryOperatorKind oper) {
     makeAndInsertConstraint(Utils::stmtToString(lower), upper, oper);
 }
 
-void StmtInfoSet::makeAndInsertConstraint(std::string lower, Expr* upper,
+void StmtContext::makeAndInsertConstraint(std::string lower, Expr* upper,
                                           BinaryOperatorKind oper) {
     constraints.push_back(
         std::make_shared<
@@ -242,7 +227,7 @@ void StmtInfoSet::makeAndInsertConstraint(std::string lower, Expr* upper,
             lower, Utils::stmtToString(upper), oper));
 }
 
-std::string StmtInfoSet::getDataAccessesString(
+std::string StmtContext::getDataAccessesString(
     std::vector<ArrayAccess>* accesses) {
     std::string output;
     llvm::raw_string_ostream os(output);

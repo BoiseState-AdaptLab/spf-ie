@@ -13,7 +13,8 @@
 
 #include <memory>
 
-#include "SPFFuncBuilder.hpp"
+#include "SPFComputationBuilder.hpp"
+#include "Utils.hpp"
 #include "clang/AST/ASTConsumer.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
@@ -35,21 +36,24 @@ ASTContext *Context;
 
 class SPFConsumer : public ASTConsumer {
    public:
-    explicit SPFConsumer(llvm::StringRef fileName)
-        : fileName(fileName.str()) {}
+    explicit SPFConsumer(llvm::StringRef fileName) : fileName(fileName.str()) {}
     virtual void HandleTranslationUnit(ASTContext &Ctx) {
         // initializing globally-accessible ASTContext
         Context = &Ctx;
         llvm::errs() << "\nProcessing: " << fileName << "\n";
         llvm::errs() << "=================================================\n\n";
+        std::unique_ptr<SPFComputationBuilder> builder =
+            std::make_unique<SPFComputationBuilder>();
         // process each function (with a body) in the file
         for (auto it : Context->getTranslationUnitDecl()->decls()) {
             FunctionDecl *func = dyn_cast<FunctionDecl>(it);
             if (func && func->doesThisDeclarationHaveABody()) {
-                std::unique_ptr<SPFFuncBuilder> builder =
-                    std::make_unique<SPFFuncBuilder>();
-                builder->processFunction(func);
-                builder->printInfo();
+                SPFComputation computation = builder->processFunction(func);
+                llvm::outs()
+                    << "FUNCTION: " << func->getQualifiedNameAsString() << "\n";
+                Utils::printSmallLine();
+                llvm::outs() << "\n";
+                computation.printInfo();
             }
         }
     }
