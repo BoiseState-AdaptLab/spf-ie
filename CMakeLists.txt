@@ -51,6 +51,7 @@ set (PROJECT_SOURCES
     SPFFuncBuilder.cpp
     StmtInfoSet.cpp
     Utils.cpp
+    ArrayAccess.cpp
 )
 list (TRANSFORM PROJECT_SOURCES PREPEND "src/")
 

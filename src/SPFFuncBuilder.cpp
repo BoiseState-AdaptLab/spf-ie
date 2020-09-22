@@ -14,6 +14,8 @@ using namespace clang;
 
 namespace spf_ie {
 
+/* SPFFuncBuilder */
+
 SPFFuncBuilder::SPFFuncBuilder() : largestScheduleDimension(0){};
 
 void SPFFuncBuilder::processFunction(FunctionDecl* funcDecl) {
@@ -29,8 +31,6 @@ void SPFFuncBuilder::processFunction(FunctionDecl* funcDecl) {
 
     std::map<std::string, iegenlib::Set> iterSpaces;
     std::map<std::string, iegenlib::Relation> executionSchedules;
-    std::vector<IEGenDataAccess> reads;
-    std::vector<IEGenDataAccess> writes;
     for (std::vector<StmtInfoSet>::size_type i = 0; i != stmtInfoSets.size();
          ++i) {
         std::string stmt = "S" + std::to_string(i);
@@ -38,13 +38,6 @@ void SPFFuncBuilder::processFunction(FunctionDecl* funcDecl) {
                            iegenlib::Set(stmtInfoSets[i].getIterSpaceString()));
         executionSchedules.emplace(
             stmt, iegenlib::Relation(stmtInfoSets[i].getExecScheduleString()));
-        for (auto it = stmtInfoSets[i].dataReads.begin();
-             it != stmtInfoSets[i].dataReads.end(); ++it) {
-            /* reads.push_back(IEGenDataAccess( */
-            /*     stmt, Utils::getArrayAccessString(*it), */
-            /*     Utils::stmtToString(getArrayAccessInfo(*it).top()), */
-            /*     iegenlib::Relation(.....))); */
-        }
     }
 
     llvm::outs() << "iegen iterspace sets:\n";

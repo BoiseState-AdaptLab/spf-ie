@@ -8,9 +8,6 @@
 #include "clang/AST/Stmt.h"
 #include "llvm/ADT/StringRef.h"
 
-//! Maximum allowed array dimension (a safe estimate to avoid stack overflow)
-#define MAX_ARRAY_DIM 50
-
 using namespace clang;
 
 namespace spf_ie {
@@ -37,24 +34,6 @@ class Utils {
 
     //! Get a string representation of a binary operator
     static std::string binaryOperatorKindToString(BinaryOperatorKind bo);
-
-    //! Get a correctly-formatted string representing an array (data) access
-    static std::string getArrayAccessString(ArraySubscriptExpr* expr);
-
-    //! Retrieve (flatly) base + all indexes accessed in a potentially
-    //! multi-dimensional array access
-    //! \param[in] fullExpr array access to process
-    //! \return stack containing all expressions involved in array access
-    //! (base and indexes)
-    static std::stack<Expr*> getArrayAccessInfo(ArraySubscriptExpr* fullExpr);
-
-    //! Do the actual recursive work of getting array access info
-    //! \param[in] fullExpr array access to process
-    //! \param[out] currentInfo currently collected info, which is complete when
-    //! the method exits
-    //! \return 0 if success, 1 if array dimension too large
-    static int getArrayAccessInfo(ArraySubscriptExpr* fullExpr,
-                                  std::stack<Expr*>* currentInfo);
 
    private:
     //! String representations of valid operators for use in constraints

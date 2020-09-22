@@ -6,6 +6,7 @@
 #include <tuple>
 #include <vector>
 
+#include "ArrayAccess.hpp"
 #include "Driver.hpp"
 #include "Utils.hpp"
 #include "clang/AST/Decl.h"
@@ -108,14 +109,14 @@ void StmtInfoSet::processReads(Expr* expr) {
     if (BinaryOperator* binOper = dyn_cast<BinaryOperator>(usableExpr)) {
         processReads(binOper->getLHS());
         processReads(binOper->getRHS());
-    } else if (ArraySubscriptExpr* asArrayAccess =
+    } else if (ArraySubscriptExpr* asArrayAccessExpr =
                    dyn_cast<ArraySubscriptExpr>(usableExpr)) {
-        dataReads.push_back(asArrayAccess);
+        dataReads.push_back(ArrayAccess::makeArrayAccess(asArrayAccessExpr));
     }
 }
 
 void StmtInfoSet::processWrite(ArraySubscriptExpr* expr) {
-    dataWrites.push_back(expr);
+    dataWrites.push_back(ArrayAccess::makeArrayAccess(expr));
 }
 
 void StmtInfoSet::enterFor(ForStmt* forStmt) {
@@ -242,7 +243,7 @@ void StmtInfoSet::makeAndInsertConstraint(std::string lower, Expr* upper,
 }
 
 std::string StmtInfoSet::getDataAccessesString(
-    std::vector<ArraySubscriptExpr*>* accesses) {
+    std::vector<ArrayAccess>* accesses) {
     std::string output;
     llvm::raw_string_ostream os(output);
     if (!accesses->empty()) {
@@ -251,7 +252,7 @@ std::string StmtInfoSet::getDataAccessesString(
             if (it != accesses->begin()) {
                 os << ",\n";
             }
-            os << "    " << Utils::getArrayAccessString(*it);
+            os << "    " << (*it).toString();
         }
         os << "\n}";
     } else {

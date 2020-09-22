@@ -16,6 +16,7 @@
 #include <tuple>
 #include <vector>
 
+#include "ArrayAccess.hpp"
 #include "clang/AST/Expr.h"
 #include "clang/AST/OperationKinds.h"
 #include "clang/AST/Stmt.h"
@@ -50,9 +51,9 @@ struct StmtInfoSet {
     //! Execution schedule
     std::vector<std::shared_ptr<ScheduleVal>> schedule;
     //! Array positions read from
-    std::vector<ArraySubscriptExpr*> dataReads;
+    std::vector<ArrayAccess> dataReads;
     //! Array positions written to
-    std::vector<ArraySubscriptExpr*> dataWrites;
+    std::vector<ArrayAccess> dataWrites;
 
     //! Get a string representing the iteration space
     std::string getIterSpaceString();
@@ -107,7 +108,7 @@ struct StmtInfoSet {
 
     //! Get printable string representing the given data accesses
     std::string getDataAccessesString(
-        std::vector<ArraySubscriptExpr*>* accesses);
+        std::vector<ArrayAccess>* accesses);
 };
 
 /*!
