@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "ArrayAccess.hpp"
+#include "ExecSchedule.hpp"
 #include "clang/AST/Expr.h"
 #include "clang/AST/OperationKinds.h"
 #include "clang/AST/Stmt.h"
@@ -25,8 +26,6 @@
 using namespace clang;
 
 namespace spf_ie {
-
-struct ScheduleVal;
 
 /*!
  * \struct StmtContext
@@ -50,7 +49,7 @@ struct StmtContext {
         std::tuple<std::string, std::string, BinaryOperatorKind>>>
         constraints;
     //! Execution schedule
-    std::vector<std::shared_ptr<ScheduleVal>> schedule;
+    ExecSchedule schedule;
     //! Array positions read from
     std::vector<ArrayAccess> dataReads;
     //! Array positions written to
@@ -68,14 +67,11 @@ struct StmtContext {
     //! Get a string representing the data writes
     std::string getWritesString();
 
-    //! Move statement number forward in the execution schedule
-    void advanceSchedule();
+    //! Add all the arrays accessed in an expression to the statement's reads
+    void processReads(Expr* expr);
 
-    //! Get the dimension of the execution schedule
-    int getScheduleDimension() { return schedule.size(); }
-
-    //! Zero-pad this execution schedule up to a certain dimension
-    void zeroPadScheduleDimension(int dim);
+    //! Add the arrays accessed in an expression to the statement's writes
+    void processWrite(ArraySubscriptExpr* expr);
 
     // enter* and exit* methods add iterators and constraints when entering a
     // new scope, remove when leaving the scope
@@ -104,22 +100,6 @@ struct StmtContext {
     //! Get printable string representing the given data accesses
     std::string getDataAccessesString(
         std::vector<ArrayAccess>* accesses);
-};
-
-/*!
- * \struct ScheduleVal
-
- * \brief An entry of an execution schedule, which may be a variable or
- * simply a number.
- */
-struct ScheduleVal {
-    ScheduleVal(std::string var);
-    ScheduleVal(int num);
-
-    std::string var;
-    int num;
-    //! Whether this ScheduleVal contains a variable
-    bool valueIsVar;
 };
 
 }  // namespace spf_ie

@@ -5,10 +5,7 @@
 #include <string>
 #include <unordered_set>
 
-#include "ArrayAccess.hpp"
 #include "iegenlib.h"
-
-using namespace clang;
 
 namespace spf_ie {
 
@@ -21,14 +18,12 @@ struct IEGenStmtInfo;
  * further use.
  */
 struct SPFComputation {
-    SPFComputation();
-
     //! Print out all the information represented in this Computation for
     //! debug purposes
     void printInfo();
 
     //! Data spaces accessed in the computation
-    std::vector<std::string> dataSpaces;
+    std::unordered_set<std::string> dataSpaces;
     //! Map of statement names -> the statement's corresponding information
     std::map<std::string, IEGenStmtInfo> stmtsInfoMap;
 };
@@ -40,13 +35,7 @@ struct SPFComputation {
  * objects.
  */
 struct IEGenStmtInfo {
-    StmtInfo();
-
-    //! Add all the arrays accessed in an expression to the statement's reads
-    void processReads(Expr* expr);
-
-    //! Add the arrays accessed in an expression to the statement's writes
-    void processWrite(ArraySubscriptExpr* expr);
+    IEGenStmtInfo() : iterationSpace("{}"), executionSchedule("{[]->[]}"){};
 
     //! Source code of the statement, for debugging purposes
     std::string stmtSourceCode;

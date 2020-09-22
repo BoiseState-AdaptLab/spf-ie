@@ -21,51 +21,22 @@ SPFComputationBuilder::SPFComputationBuilder()
     : stmtNumber(0), largestScheduleDimension(0){};
 
 SPFComputation SPFComputationBuilder::buildComputationFromFunction(
-    computation = SPFComputation(); FunctionDecl * funcDecl) {
-    functionName = funcDecl->getQualifiedNameAsString();
+    FunctionDecl* funcDecl) {
+    computation = SPFComputation();
     if (CompoundStmt* funcBody = dyn_cast<CompoundStmt>(funcDecl->getBody())) {
         processBody(funcBody);
-        for (auto it = computation.executionSchedules.begin();
-             it != computation.executionSchedules.end(); ++it) {
-            (*it).zeroPadScheduleDimension(largestScheduleDimension);
+        unsigned int i = 0;
+        for (auto it = computation.stmtsInfoMap.begin();
+             it != computation.stmtsInfoMap.end(); ++it) {
+            stmtContexts[i].schedule.zeroPadDimension(largestScheduleDimension);
+            it->second.executionSchedule =
+                iegenlib::Relation(stmtContexts[i].getExecScheduleString());
+            i++;
         }
         return computation;
     } else {
         Utils::printErrorAndExit("Invalid function body", funcDecl->getBody());
     }
-}
-
-void SPFComputationBuilder::printInfo() {
-    llvm::outs() << "Statements:\n";
-    for (std::vector<Stmt>::size_type i = 0; i != stmts.size(); ++i) {
-        llvm::outs() << "S" << i << ": " << Utils::stmtToString(stmts[i])
-                     << "\n";
-    }
-    llvm::outs() << "\nIteration spaces:\n";
-    for (std::vector<StmtInfoSet>::size_type i = 0; i != stmtInfoSets.size();
-         ++i) {
-        llvm::outs() << "S" << i << ": " << stmtInfoSets[i].getIterSpaceString()
-                     << "\n";
-    }
-    llvm::outs() << "\nExecution schedules:\n";
-    for (std::vector<StmtInfoSet>::size_type i = 0; i != stmtInfoSets.size();
-         ++i) {
-        llvm::outs() << "S" << i << ": "
-                     << stmtInfoSets[i].getExecScheduleString() << "\n";
-    }
-    llvm::outs() << "\nArray reads:\n";
-    for (std::vector<StmtInfoSet>::size_type i = 0; i != stmtInfoSets.size();
-         ++i) {
-        llvm::outs() << "S" << i << ": " << stmtInfoSets[i].getReadsString()
-                     << "\n";
-    }
-    llvm::outs() << "\nArray writes:\n";
-    for (std::vector<StmtInfoSet>::size_type i = 0; i != stmtInfoSets.size();
-         ++i) {
-        llvm::outs() << "S" << i << ": " << stmtInfoSets[i].getWritesString()
-                     << "\n";
-    }
-    llvm::outs() << "\n";
 }
 
 void SPFComputationBuilder::processBody(Stmt* stmt) {
@@ -92,7 +63,7 @@ void SPFComputationBuilder::processSingleStmt(Stmt* stmt) {
     }
 
     if (ForStmt* asForStmt = dyn_cast<ForStmt>(stmt)) {
-        currentStmtContext.advanceSchedule();
+        currentStmtContext.schedule.advanceSchedule();
         currentStmtContext.enterFor(asForStmt);
         processBody(asForStmt->getBody());
         currentStmtContext.exitFor();
@@ -101,7 +72,7 @@ void SPFComputationBuilder::processSingleStmt(Stmt* stmt) {
         processBody(asIfStmt->getThen());
         currentStmtContext.exitIf();
     } else {
-        currentStmtContext.advanceSchedule();
+        currentStmtContext.schedule.advanceSchedule();
         addStmt(stmt);
     }
 }
@@ -127,17 +98,20 @@ void SPFComputationBuilder::addStmt(Stmt* stmt) {
         currentStmtContext.processReads(asBinOper->getRHS());
     }
 
-    // store processed statement and its info
+    // store processed statement and some of its info (execution schedules are
+    // saved until the end, since padding is required)
     largestScheduleDimension = std::max(
-        largestScheduleDimension, currentStmtContext.getScheduleDimension());
+        largestScheduleDimension, currentStmtContext.schedule.getDimension());
     IEGenStmtInfo stmtInfo;
     stmtInfo.stmtSourceCode = Utils::stmtToString(stmt);
     stmtInfo.iterationSpace =
         iegenlib::Set(currentStmtContext.getIterSpaceString());
-    stmtInfo.executionSchedule =
-        iegenlib::Relation(currentStmtContext.getExecScheduleString());
+    // TODO: add data accesses (and spaces accessed) to stmtInfo
+
     computation.stmtsInfoMap.emplace("S" + std::to_string(stmtNumber++),
                                      stmtInfo);
+    stmtContexts.push_back(currentStmtContext);
+    currentStmtContext = StmtContext(&currentStmtContext);
 }
 
 }  // namespace spf_ie

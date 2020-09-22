@@ -8,6 +8,7 @@
 
 #include "ArrayAccess.hpp"
 #include "Driver.hpp"
+#include "ExecSchedule.hpp"
 #include "Utils.hpp"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Expr.h"
@@ -66,8 +67,9 @@ std::string StmtContext::getExecScheduleString() {
         os << *it;
     }
     os << "]->[";
-    for (auto it = schedule.begin(); it != schedule.end(); ++it) {
-        if (it != schedule.begin()) {
+    for (auto it = schedule.scheduleTuple.begin();
+         it != schedule.scheduleTuple.end(); ++it) {
+        if (it != schedule.scheduleTuple.begin()) {
             os << ",";
         }
         if ((*it)->valueIsVar) {
@@ -88,20 +90,19 @@ std::string StmtContext::getWritesString() {
     return getDataAccessesString(&dataWrites);
 }
 
-void StmtContext::advanceSchedule() {
-    if (schedule.empty() || schedule.back()->valueIsVar) {
-        schedule.push_back(std::make_shared<ScheduleVal>(0));
-    } else {
-        std::shared_ptr<ScheduleVal> top = schedule.back();
-        schedule.pop_back();
-        schedule.push_back(std::make_shared<ScheduleVal>(top->num + 1));
+void StmtContext::processReads(Expr* expr) {
+    Expr* usableExpr = expr->IgnoreParenImpCasts();
+    if (BinaryOperator* binOper = dyn_cast<BinaryOperator>(usableExpr)) {
+        processReads(binOper->getLHS());
+        processReads(binOper->getRHS());
+    } else if (ArraySubscriptExpr* asArrayAccessExpr =
+                   dyn_cast<ArraySubscriptExpr>(usableExpr)) {
+        dataReads.push_back(ArrayAccess::makeArrayAccess(asArrayAccessExpr));
     }
 }
 
-void StmtContext::zeroPadScheduleDimension(int dim) {
-    for (int i = getScheduleDimension(); i < dim; ++i) {
-        schedule.push_back(std::make_shared<ScheduleVal>(0));
-    }
+void StmtContext::processWrite(ArraySubscriptExpr* expr) {
+    dataWrites.push_back(ArrayAccess::makeArrayAccess(expr));
 }
 
 void StmtContext::enterFor(ForStmt* forStmt) {
@@ -190,7 +191,7 @@ void StmtContext::enterFor(ForStmt* forStmt) {
             "Invalid " + error + " in for loop -- " + errorReason, forStmt);
     } else {
         iterators.push_back(initVar);
-        schedule.push_back(std::make_shared<ScheduleVal>(initVar));
+        schedule.pushValue(initVar);
     }
 }
 
@@ -198,8 +199,8 @@ void StmtContext::exitFor() {
     constraints.pop_back();
     constraints.pop_back();
     iterators.pop_back();
-    schedule.pop_back();
-    schedule.pop_back();
+    schedule.popValue();
+    schedule.popValue();
 }
 
 void StmtContext::enterIf(IfStmt* ifStmt) {
@@ -245,11 +246,5 @@ std::string StmtContext::getDataAccessesString(
     }
     return os.str();
 }
-
-/* ScheduleVal */
-
-ScheduleVal::ScheduleVal(std::string var) : var(var), valueIsVar(true) {}
-
-ScheduleVal::ScheduleVal(int num) : num(num), valueIsVar(false) {}
 
 }  // namespace spf_ie

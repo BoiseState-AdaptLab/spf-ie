@@ -25,23 +25,22 @@ namespace spf_ie {
  */
 class SPFComputationBuilder {
    public:
-    explicit SPFComputationBuilder();
-    //! Entry point for each function; gathers information about its
-    //! statements
+    SPFComputationBuilder();
+    //! Entry point for each function; gather information about its
+    //! statements and data accesses into an SPFComputation
     //! \param[in] funcDecl Function declaration to process
-    void processFunction(FunctionDecl* funcDecl);
-
-    //! Print collected information to standard output
-    void printInfo();
+    SPFComputation buildComputationFromFunction(FunctionDecl* funcDecl);
 
    private:
     //! Number of the statement currently being processed
     unsigned int stmtNumber;
+    //! The length of the longest schedule tuple
+    int largestScheduleDimension;
     //! The information about the context we are currently in, which is
     //! copied for completed statements
     StmtContext currentStmtContext;
-    //! The length of the longest schedule tuple
-    int largestScheduleDimension;
+    //! Context information attached to each completed statement
+    std::vector<StmtContext> stmtContexts;
     //! SPFComputation being built up
     SPFComputation computation;
 

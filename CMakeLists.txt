@@ -50,8 +50,10 @@ set (PROJECT_SOURCES
     Driver.cpp
     SPFComputationBuilder.cpp
     StmtContext.cpp
-    Utils.cpp
+    SPFComputation.cpp
+    ExecSchedule.cpp
     ArrayAccess.cpp
+    Utils.cpp
 )
 list (TRANSFORM PROJECT_SOURCES PREPEND "src/")
 
