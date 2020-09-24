@@ -28,9 +28,12 @@ SPFComputation SPFComputationBuilder::buildComputationFromFunction(
         unsigned int i = 0;
         for (auto it = computation.stmtsInfoMap.begin();
              it != computation.stmtsInfoMap.end(); ++it) {
+            it->second.iterationSpace =
+                iegenlib::Set(stmtContexts[i].getIterSpaceString());
             stmtContexts[i].schedule.zeroPadDimension(largestScheduleDimension);
             it->second.executionSchedule =
                 iegenlib::Relation(stmtContexts[i].getExecScheduleString());
+            // TODO: add data accesses (and spaces accessed) to stmtInfo
             i++;
         }
         return computation;
@@ -98,18 +101,13 @@ void SPFComputationBuilder::addStmt(Stmt* stmt) {
         currentStmtContext.processReads(asBinOper->getRHS());
     }
 
-    // store processed statement and some of its info (execution schedules are
-    // saved until the end, since padding is required)
+    // increase largest schedule dimension, if necessary
     largestScheduleDimension = std::max(
         largestScheduleDimension, currentStmtContext.schedule.getDimension());
-    IEGenStmtInfo stmtInfo;
-    stmtInfo.stmtSourceCode = Utils::stmtToString(stmt);
-    stmtInfo.iterationSpace =
-        iegenlib::Set(currentStmtContext.getIterSpaceString());
-    // TODO: add data accesses (and spaces accessed) to stmtInfo
 
+    // store processed statement
     computation.stmtsInfoMap.emplace("S" + std::to_string(stmtNumber++),
-                                     stmtInfo);
+                                     IEGenStmtInfo(Utils::stmtToString(stmt)));
     stmtContexts.push_back(currentStmtContext);
     currentStmtContext = StmtContext(&currentStmtContext);
 }

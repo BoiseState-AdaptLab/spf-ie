@@ -35,7 +35,10 @@ struct SPFComputation {
  * objects.
  */
 struct IEGenStmtInfo {
-    IEGenStmtInfo() : iterationSpace("{}"), executionSchedule("{[]->[]}"){};
+    IEGenStmtInfo(std::string stmt)
+        : iterationSpace("{}"),
+          executionSchedule("{[]->[]}"),
+          stmtSourceCode(stmt){};
 
     //! Source code of the statement, for debugging purposes
     std::string stmtSourceCode;

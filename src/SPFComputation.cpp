@@ -1,6 +1,7 @@
 #include "SPFComputation.hpp"
 
 #include <sstream>
+#include <unordered_set>
 #include <vector>
 
 #include "Utils.hpp"
@@ -12,6 +13,16 @@ namespace spf_ie {
 /* SPFComputation */
 
 void SPFComputation::printInfo() {
+    std::ostringstream dataSpacesOutput;
+    dataSpacesOutput << "{";
+    for (auto it = dataSpaces.begin(); it != dataSpaces.end(); ++it) {
+        if (it != dataSpaces.begin()) {
+            dataSpacesOutput << ", ";
+        }
+        dataSpacesOutput << *it;
+    }
+    dataSpacesOutput << "}\n";
+
     std::ostringstream stmts;
     std::ostringstream iterSpaces;
     std::ostringstream execSchedules;
@@ -53,6 +64,7 @@ void SPFComputation::printInfo() {
     llvm::outs() << "Statements:\n" << stmts.str();
     llvm::outs() << "\nIteration spaces:\n" << iterSpaces.str();
     llvm::outs() << "\nExecution schedules:\n" << execSchedules.str();
+    llvm::outs() << "\nData spaces: " << dataSpacesOutput.str();
     llvm::outs() << "\nArray reads:\n" << dataReads.str();
     llvm::outs() << "\nArray writes:\n" << dataWrites.str();
     llvm::outs() << "\n";

@@ -48,12 +48,12 @@ class SPFConsumer : public ASTConsumer {
         for (auto it : Context->getTranslationUnitDecl()->decls()) {
             FunctionDecl *func = dyn_cast<FunctionDecl>(it);
             if (func && func->doesThisDeclarationHaveABody()) {
-                SPFComputation computation =
-                    builder->buildComputationFromFunction(func);
                 llvm::outs()
                     << "FUNCTION: " << func->getQualifiedNameAsString() << "\n";
                 Utils::printSmallLine();
                 llvm::outs() << "\n";
+                SPFComputation computation =
+                    builder->buildComputationFromFunction(func);
                 computation.printInfo();
             }
         }
