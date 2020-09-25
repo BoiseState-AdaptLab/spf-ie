@@ -17,7 +17,7 @@
 #include <tuple>
 #include <vector>
 
-#include "ArrayAccess.hpp"
+#include "DataAccessHandler.hpp"
 #include "ExecSchedule.hpp"
 #include "clang/AST/Expr.h"
 #include "clang/AST/OperationKinds.h"
@@ -50,10 +50,8 @@ struct StmtContext {
         constraints;
     //! Execution schedule
     ExecSchedule schedule;
-    //! Array positions read from
-    std::vector<ArrayAccess> dataReads;
-    //! Array positions written to
-    std::vector<ArrayAccess> dataWrites;
+    //! Data accesses (both reads and writes)
+    DataAccessHandler dataAccesses;
 
     //! Get a string representing the iteration space
     std::string getIterSpaceString();
@@ -61,17 +59,11 @@ struct StmtContext {
     //! Get a string representing the execution schedule
     std::string getExecScheduleString();
 
-    //! Get a string representing the data reads
-    std::string getReadsString();
+    //! Get strings representing each data read
+    std::vector<std::string> getReadsStrings();
 
-    //! Get a string representing the data writes
-    std::string getWritesString();
-
-    //! Add all the arrays accessed in an expression to the statement's reads
-    void processReads(Expr* expr);
-
-    //! Add the arrays accessed in an expression to the statement's writes
-    void processWrite(ArraySubscriptExpr* expr);
+    //! Get strings representing each data write
+    std::vector<std::string> getWritesStrings();
 
     // enter* and exit* methods add iterators and constraints when entering a
     // new scope, remove when leaving the scope
@@ -97,9 +89,9 @@ struct StmtContext {
     void makeAndInsertConstraint(std::string lower, Expr* upper,
                                  BinaryOperatorKind oper);
 
-    //! Get printable string representing the given data accesses
-    std::string getDataAccessesString(
-        std::vector<ArrayAccess>* accesses);
+    //! Get printable strings representing the given data accesses
+    std::vector<std::string> getDataAccessStrings(
+        std::map<std::string, ArrayAccess>* accesses);
 };
 
 }  // namespace spf_ie

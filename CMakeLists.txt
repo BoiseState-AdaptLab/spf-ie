@@ -52,7 +52,7 @@ set (PROJECT_SOURCES
     StmtContext.cpp
     SPFComputation.cpp
     ExecSchedule.cpp
-    ArrayAccess.cpp
+    DataAccessHandler.cpp
     Utils.cpp
 )
 list (TRANSFORM PROJECT_SOURCES PREPEND "src/")

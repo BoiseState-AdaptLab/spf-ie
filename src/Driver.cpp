@@ -32,7 +32,7 @@ using namespace clang::tooling;
 
 namespace spf_ie {
 
-ASTContext *Context;
+const ASTContext *Context;
 
 class SPFConsumer : public ASTConsumer {
    public:

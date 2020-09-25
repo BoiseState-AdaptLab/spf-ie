@@ -1,12 +1,13 @@
 #include "StmtContext.hpp"
 
 #include <memory>
+#include <sstream>
 #include <stack>
 #include <string>
 #include <tuple>
 #include <vector>
 
-#include "ArrayAccess.hpp"
+#include "DataAccessHandler.hpp"
 #include "Driver.hpp"
 #include "ExecSchedule.hpp"
 #include "Utils.hpp"
@@ -82,27 +83,12 @@ std::string StmtContext::getExecScheduleString() {
     return os.str();
 }
 
-std::string StmtContext::getReadsString() {
-    return getDataAccessesString(&dataReads);
+std::vector<std::string> StmtContext::getReadsStrings() {
+    return getDataAccessStrings(&dataAccesses.reads);
 }
 
-std::string StmtContext::getWritesString() {
-    return getDataAccessesString(&dataWrites);
-}
-
-void StmtContext::processReads(Expr* expr) {
-    Expr* usableExpr = expr->IgnoreParenImpCasts();
-    if (BinaryOperator* binOper = dyn_cast<BinaryOperator>(usableExpr)) {
-        processReads(binOper->getLHS());
-        processReads(binOper->getRHS());
-    } else if (ArraySubscriptExpr* asArrayAccessExpr =
-                   dyn_cast<ArraySubscriptExpr>(usableExpr)) {
-        dataReads.push_back(ArrayAccess::makeArrayAccess(asArrayAccessExpr));
-    }
-}
-
-void StmtContext::processWrite(ArraySubscriptExpr* expr) {
-    dataWrites.push_back(ArrayAccess::makeArrayAccess(expr));
+std::vector<std::string> StmtContext::getWritesStrings() {
+    return getDataAccessStrings(&dataAccesses.writes);
 }
 
 void StmtContext::enterFor(ForStmt* forStmt) {
@@ -228,23 +214,36 @@ void StmtContext::makeAndInsertConstraint(std::string lower, Expr* upper,
             lower, Utils::stmtToString(upper), oper));
 }
 
-std::string StmtContext::getDataAccessesString(
-    std::vector<ArrayAccess>* accesses) {
-    std::string output;
-    llvm::raw_string_ostream os(output);
-    if (!accesses->empty()) {
-        os << "{\n";
-        for (auto it = accesses->begin(); it != accesses->end(); ++it) {
-            if (it != accesses->begin()) {
-                os << ",\n";
-            }
-            os << "    " << (*it).toString();
+std::vector<std::string> StmtContext::getDataAccessStrings(
+    std::map<std::string, ArrayAccess>* accesses) {
+    std::ostringstream itersStrStream;
+    itersStrStream << "[";
+    for (auto it = iterators.begin(); it != iterators.end(); ++it) {
+        if (it != iterators.begin()) {
+            itersStrStream << ",";
         }
-        os << "\n}";
-    } else {
-        os << "{}";
+        itersStrStream << *it;
     }
-    return os.str();
+    itersStrStream << "]";
+    std::string itersStr = itersStrStream.str();
+
+    // build strings
+    std::vector<std::string> strings;
+    for (auto it = accesses->begin(); it != accesses->end(); ++it) {
+        std::ostringstream os;
+        os << "{" << itersStr << "->[";
+        for (auto it_indexes = it->second.indexes.begin();
+             it_indexes != it->second.indexes.end(); ++it_indexes) {
+            if (it_indexes != it->second.indexes.begin()) {
+                os << ",";
+            }
+            os << Utils::stmtToString(*it_indexes);
+        }
+        os << "]}";
+        strings.push_back(os.str());
+    }
+
+    return strings;
 }
 
 }  // namespace spf_ie

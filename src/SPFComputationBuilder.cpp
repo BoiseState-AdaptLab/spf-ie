@@ -25,6 +25,7 @@ SPFComputation SPFComputationBuilder::buildComputationFromFunction(
     computation = SPFComputation();
     if (CompoundStmt* funcBody = dyn_cast<CompoundStmt>(funcDecl->getBody())) {
         processBody(funcBody);
+
         unsigned int i = 0;
         for (auto it = computation.stmtsInfoMap.begin();
              it != computation.stmtsInfoMap.end(); ++it) {
@@ -33,7 +34,19 @@ SPFComputation SPFComputationBuilder::buildComputationFromFunction(
             stmtContexts[i].schedule.zeroPadDimension(largestScheduleDimension);
             it->second.executionSchedule =
                 iegenlib::Relation(stmtContexts[i].getExecScheduleString());
-            // TODO: add data accesses (and spaces accessed) to stmtInfo
+            std::vector<std::string> readStrings =
+                stmtContexts[i].getReadsStrings();
+            for (auto it_reads = readStrings.begin();
+                 it_reads != readStrings.end(); ++it_reads) {
+                it->second.dataReads.push_back(iegenlib::Relation(*it_reads));
+            }
+            std::vector<std::string> writeStrings =
+                stmtContexts[i].getWritesStrings();
+            for (auto it_writes = writeStrings.begin();
+                 it_writes != writeStrings.end(); ++it_writes) {
+                it->second.dataWrites.push_back(iegenlib::Relation(*it_writes));
+            }
+            // TODO: add data spaces
             i++;
         }
         return computation;
@@ -85,20 +98,17 @@ void SPFComputationBuilder::addStmt(Stmt* stmt) {
     if (DeclStmt* asDeclStmt = dyn_cast<DeclStmt>(stmt)) {
         VarDecl* decl = cast<VarDecl>(asDeclStmt->getSingleDecl());
         if (decl->hasInit()) {
-            if (ArraySubscriptExpr* initAsArrayAccess =
-                    dyn_cast<ArraySubscriptExpr>(decl->getInit())) {
-                currentStmtContext.processReads(initAsArrayAccess);
-            }
+            currentStmtContext.dataAccesses.processAsReads(decl->getInit());
         }
     } else if (BinaryOperator* asBinOper = dyn_cast<BinaryOperator>(stmt)) {
         if (ArraySubscriptExpr* lhsAsArrayAccess =
                 dyn_cast<ArraySubscriptExpr>(asBinOper->getLHS())) {
-            currentStmtContext.processWrite(lhsAsArrayAccess);
+            currentStmtContext.dataAccesses.processAsWrite(lhsAsArrayAccess);
         }
         if (asBinOper->isCompoundAssignmentOp()) {
-            currentStmtContext.processReads(asBinOper->getLHS());
+            currentStmtContext.dataAccesses.processAsReads(asBinOper->getLHS());
         }
-        currentStmtContext.processReads(asBinOper->getRHS());
+        currentStmtContext.dataAccesses.processAsReads(asBinOper->getRHS());
     }
 
     // increase largest schedule dimension, if necessary
