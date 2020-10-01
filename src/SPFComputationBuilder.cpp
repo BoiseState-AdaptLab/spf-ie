@@ -46,7 +46,10 @@ SPFComputation SPFComputationBuilder::buildComputationFromFunction(
                  it_writes != writeStrings.end(); ++it_writes) {
                 it->second.dataWrites.push_back(iegenlib::Relation(*it_writes));
             }
-            // TODO: add data spaces
+            auto stmtDataSpaces = stmtContexts[i].dataAccesses.dataSpaces;
+            computation.dataSpaces.insert(stmtDataSpaces.begin(),
+                                          stmtDataSpaces.end());
+
             i++;
         }
         return computation;

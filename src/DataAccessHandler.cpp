@@ -34,19 +34,6 @@ void DataAccessHandler::addDataAccess(ArraySubscriptExpr* fullExpr,
                                       bool isRead) {
     std::map<std::string, ArrayAccess>* mapToUse = (isRead ? &reads : &writes);
 
-    // check if this access is already stored in the proper location, skipping
-    // processing and insertion if so
-    bool duplicated = false;
-    for (auto it = mapToUse->begin(); it != mapToUse->end(); ++it) {
-        if (it->second.id == fullExpr->getID(*Context)) {
-            duplicated = true;
-            break;
-        }
-    }
-    if (duplicated) {
-        return;
-    }
-
     // extract information from subscript expression
     std::stack<Expr*> info;
     if (getArrayExprInfo(fullExpr, &info)) {
@@ -69,8 +56,8 @@ void DataAccessHandler::addDataAccess(ArraySubscriptExpr* fullExpr,
         indexes.push_back(info.top());
         info.pop();
     }
+    dataSpaces.emplace(Utils::stmtToString(base));
     ArrayAccess access = ArrayAccess(fullExpr->getID(*Context), base, indexes);
-
     mapToUse->emplace(makeStringForArrayAccess(&access), access);
 }
 

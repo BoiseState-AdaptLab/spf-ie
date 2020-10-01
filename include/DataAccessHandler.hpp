@@ -4,6 +4,7 @@
 #include <stack>
 #include <string>
 #include <vector>
+#include <unordered_set>
 
 #include "clang/AST/Expr.h"
 
@@ -47,6 +48,8 @@ struct DataAccessHandler {
     //! Add the array accessed as a write, and any accessed within it as reads
     void processAsWrite(ArraySubscriptExpr* expr);
 
+    //! Data spaces accessed
+    std::unordered_set<std::string> dataSpaces;
     //! Array reads
     std::map<std::string, ArrayAccess> reads;
     //! Array writes
