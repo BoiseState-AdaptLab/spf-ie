@@ -1,6 +1,7 @@
 #include "Utils.hpp"
 
 #include <map>
+#include <string>
 
 #include "Driver.hpp"
 #include "clang/AST/ASTContext.h"
@@ -9,18 +10,16 @@
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Lex/Lexer.h"
-#include "llvm/ADT/StringRef.h"
-#include "llvm/Support/raw_ostream.h"
 
 using namespace clang;
 
 namespace spf_ie {
 
-void Utils::printErrorAndExit(llvm::StringRef message) {
+void Utils::printErrorAndExit(std::string message) {
     printErrorAndExit(message, nullptr);
 }
 
-void Utils::printErrorAndExit(llvm::StringRef message, Stmt* stmt) {
+void Utils::printErrorAndExit(std::string message, Stmt* stmt) {
     llvm::errs() << "ERROR: " << message << "\n";
     if (stmt) {
         llvm::errs() << "At "
@@ -45,10 +44,10 @@ std::string Utils::binaryOperatorKindToString(BinaryOperatorKind bo) {
     if (!operatorStrings.count(bo)) {
         printErrorAndExit("Invalid operator type encountered.");
     }
-    return operatorStrings.at(bo).str();
+    return operatorStrings.at(bo);
 }
 
-std::map<BinaryOperatorKind, llvm::StringRef> Utils::operatorStrings = {
+std::map<BinaryOperatorKind, std::string> Utils::operatorStrings = {
     {BinaryOperatorKind::BO_LT, "<"}, {BinaryOperatorKind::BO_LE, "<="},
     {BinaryOperatorKind::BO_GT, ">"}, {BinaryOperatorKind::BO_GE, ">="},
     {BinaryOperatorKind::BO_EQ, "="}, {BinaryOperatorKind::BO_NE, "!="}};

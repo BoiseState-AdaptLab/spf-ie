@@ -31,24 +31,16 @@ StmtContext::StmtContext(StmtContext* other) {
 }
 
 std::string StmtContext::getIterSpaceString() {
-    std::string output;
-    llvm::raw_string_ostream os(output);
+    std::ostringstream os;
     if (!constraints.empty()) {
-        os << "{[";
-        for (auto it = iterators.begin(); it != iterators.end(); ++it) {
-            if (it != iterators.begin()) {
-                os << ",";
-            }
-            os << *it;
-        }
-        os << "]: ";
-        for (auto it = constraints.begin(); it != constraints.end(); ++it) {
-            if (it != constraints.begin()) {
+        os << "{" << getItersTupleString() << ": ";
+        for (const auto& it : constraints) {
+            if (it != *constraints.begin()) {
                 os << " and ";
             }
-            os << std::get<0>(**it) << " "
-               << Utils::binaryOperatorKindToString(std::get<2>(**it)) << " "
-               << std::get<1>(**it);
+            os << std::get<0>(*it) << " "
+               << Utils::binaryOperatorKindToString(std::get<2>(*it)) << " "
+               << std::get<1>(*it);
         }
         os << "}";
     } else {
@@ -58,25 +50,16 @@ std::string StmtContext::getIterSpaceString() {
 }
 
 std::string StmtContext::getExecScheduleString() {
-    std::string output;
-    llvm::raw_string_ostream os(output);
-    os << "{[";
-    for (auto it = iterators.begin(); it != iterators.end(); ++it) {
-        if (it != iterators.begin()) {
+    std::ostringstream os;
+    os << "{" << getItersTupleString() << "->[";
+    for (const auto& it : schedule.scheduleTuple) {
+        if (it != *schedule.scheduleTuple.begin()) {
             os << ",";
         }
-        os << *it;
-    }
-    os << "]->[";
-    for (auto it = schedule.scheduleTuple.begin();
-         it != schedule.scheduleTuple.end(); ++it) {
-        if (it != schedule.scheduleTuple.begin()) {
-            os << ",";
-        }
-        if ((*it)->valueIsVar) {
-            os << (*it)->var;
+        if (it->valueIsVar) {
+            os << it->var;
         } else {
-            os << (*it)->num;
+            os << it->num;
         }
     }
     os << "]}";
@@ -84,32 +67,21 @@ std::string StmtContext::getExecScheduleString() {
 }
 
 std::string StmtContext::getDataAccessString(ArrayAccess* access) {
-    std::ostringstream itersStrStream;
-    itersStrStream << "[";
-    for (auto it = iterators.begin(); it != iterators.end(); ++it) {
-        if (it != iterators.begin()) {
-            itersStrStream << ",";
-        }
-        itersStrStream << *it;
-    }
-    itersStrStream << "]";
-    std::string itersStr = itersStrStream.str();
-
     std::ostringstream os;
-    os << "{" << itersStr << "->[";
-    for (auto it = access->indexes.begin(); it != access->indexes.end(); ++it) {
-        if (it != access->indexes.begin()) {
+    os << "{" << getItersTupleString() << "->[";
+    for (const auto& it : access->indexes) {
+        if (it != *access->indexes.begin()) {
             os << ",";
         }
-        os << Utils::stmtToString(*it);
+        os << Utils::stmtToString(it);
     }
     os << "]}";
     return os.str();
 }
 
 void StmtContext::enterFor(ForStmt* forStmt) {
-    std::string error = std::string();
-    std::string errorReason = std::string();
+    std::string error;
+    std::string errorReason;
 
     // initializer
     std::string initVar;
@@ -228,6 +200,19 @@ void StmtContext::makeAndInsertConstraint(std::string lower, Expr* upper,
         std::make_shared<
             std::tuple<std::string, std::string, BinaryOperatorKind>>(
             lower, Utils::stmtToString(upper), oper));
+}
+
+std::string StmtContext::getItersTupleString() {
+    std::ostringstream os;
+    os << "[";
+    for (const auto& it : iterators) {
+        if (it != *iterators.begin()) {
+            os << ",";
+        }
+        os << it;
+    }
+    os << "]";
+    return os.str();
 }
 
 }  // namespace spf_ie

@@ -25,7 +25,6 @@
 #include "clang/Tooling/Tooling.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/CommandLine.h"
-#include "llvm/Support/raw_ostream.h"
 
 using namespace clang;
 using namespace clang::tooling;

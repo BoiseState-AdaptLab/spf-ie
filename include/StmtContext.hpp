@@ -85,6 +85,10 @@ struct StmtContext {
     //! Convenience function to add a new constraint from the given parameters
     void makeAndInsertConstraint(std::string lower, Expr* upper,
                                  BinaryOperatorKind oper);
+
+    //! Get the tuple of iterators as a string, for use in other to-string
+    //! methods. Output like "[i,j,k]"
+    std::string getItersTupleString();
 };
 
 }  // namespace spf_ie

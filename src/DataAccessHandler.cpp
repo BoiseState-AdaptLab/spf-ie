@@ -65,7 +65,7 @@ std::string DataAccessHandler::makeStringForArrayAccess(ArrayAccess* access) {
     os << Utils::stmtToString(access->base);
     os << "(";
     bool first = true;
-    for (auto it = access->indexes.begin(); it != access->indexes.end(); ++it) {
+    for (const auto& it : access->indexes) {
         if (!first) {
             os << ",";
         } else {
@@ -73,16 +73,15 @@ std::string DataAccessHandler::makeStringForArrayAccess(ArrayAccess* access) {
         }
         std::string indexString;
         if (ArraySubscriptExpr* asArrayAccess =
-                dyn_cast<ArraySubscriptExpr>((*it)->IgnoreParenImpCasts())) {
+                dyn_cast<ArraySubscriptExpr>(it->IgnoreParenImpCasts())) {
             // there is another array acccess used as an index for this one;
             // it should have already been processed (depth-first), so we look
             // for its string equivalent in thealready-processed accesses
             bool foundSubaccess = false;
-            for (auto it = arrayAccesses.begin(); it != arrayAccesses.end();
-                 ++it) {
-                if (it->second.id == asArrayAccess->getID(*Context)) {
+            for (const auto& it : arrayAccesses) {
+                if (it.second.id == asArrayAccess->getID(*Context)) {
                     foundSubaccess = true;
-                    indexString = it->first;
+                    indexString = it.first;
                     break;
                 }
             }
@@ -94,7 +93,7 @@ std::string DataAccessHandler::makeStringForArrayAccess(ArrayAccess* access) {
                     asArrayAccess);
             }
         } else {
-            indexString = Utils::stmtToString(*it);
+            indexString = Utils::stmtToString(it);
         }
         os << indexString;
     }
