@@ -22,7 +22,7 @@ void DataAccessHandler::processAsReads(Expr* expr) {
         processAsReads(binOper->getRHS());
     } else if (ArraySubscriptExpr* asArrayAccessExpr =
                    dyn_cast<ArraySubscriptExpr>(usableExpr)) {
-        addDataAccess(asArrayAccessExpr);
+        addDataAccess(asArrayAccessExpr, true);
     }
 }
 
@@ -32,8 +32,6 @@ void DataAccessHandler::processAsWrite(ArraySubscriptExpr* expr) {
 
 void DataAccessHandler::addDataAccess(ArraySubscriptExpr* fullExpr,
                                       bool isRead) {
-    std::map<std::string, ArrayAccess>* mapToUse = (isRead ? &reads : &writes);
-
     // extract information from subscript expression
     std::stack<Expr*> info;
     if (getArrayExprInfo(fullExpr, &info)) {
@@ -51,14 +49,15 @@ void DataAccessHandler::addDataAccess(ArraySubscriptExpr* fullExpr,
         // sub-accesses are always reads
         if (ArraySubscriptExpr* indexAsArrayAccess =
                 dyn_cast<ArraySubscriptExpr>(info.top())) {
-            addDataAccess(indexAsArrayAccess);
+            addDataAccess(indexAsArrayAccess, true);
         }
         indexes.push_back(info.top());
         info.pop();
     }
     dataSpaces.emplace(Utils::stmtToString(base));
-    ArrayAccess access = ArrayAccess(fullExpr->getID(*Context), base, indexes);
-    mapToUse->emplace(makeStringForArrayAccess(&access), access);
+    ArrayAccess access =
+        ArrayAccess(fullExpr->getID(*Context), base, indexes, isRead);
+    arrayAccesses.emplace(makeStringForArrayAccess(&access), access);
 }
 
 std::string DataAccessHandler::makeStringForArrayAccess(ArrayAccess* access) {
@@ -79,14 +78,8 @@ std::string DataAccessHandler::makeStringForArrayAccess(ArrayAccess* access) {
             // it should have already been processed (depth-first), so we look
             // for its string equivalent in thealready-processed accesses
             bool foundSubaccess = false;
-            for (auto it = reads.begin(); it != reads.end(); ++it) {
-                if (it->second.id == asArrayAccess->getID(*Context)) {
-                    foundSubaccess = true;
-                    indexString = it->first;
-                    break;
-                }
-            }
-            for (auto it = writes.begin(); it != writes.end(); ++it) {
+            for (auto it = arrayAccesses.begin(); it != arrayAccesses.end();
+                 ++it) {
                 if (it->second.id == asArrayAccess->getID(*Context)) {
                     foundSubaccess = true;
                     indexString = it->first;

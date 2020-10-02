@@ -2,6 +2,7 @@
 
 #include <sstream>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "Utils.hpp"
@@ -42,7 +43,8 @@ void SPFComputation::printInfo() {
             dataReads << "{\n";
             for (auto read_it = it->second.dataReads.begin();
                  read_it != it->second.dataReads.end(); ++read_it) {
-                dataReads << "    " << (*read_it).prettyPrintString() << "\n";
+                dataReads << "    " << read_it->first << ": "
+                          << read_it->second.prettyPrintString() << "\n";
             }
             dataReads << "}";
         }
@@ -54,7 +56,8 @@ void SPFComputation::printInfo() {
             dataWrites << "{\n";
             for (auto write_it = it->second.dataWrites.begin();
                  write_it != it->second.dataWrites.end(); ++write_it) {
-                dataWrites << "    " << (*write_it).prettyPrintString() << "\n";
+                dataWrites << "    " << write_it->first << ": "
+                           << write_it->second.prettyPrintString() << "\n";
             }
             dataWrites << "}";
         }

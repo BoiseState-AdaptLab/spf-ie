@@ -59,11 +59,8 @@ struct StmtContext {
     //! Get a string representing the execution schedule
     std::string getExecScheduleString();
 
-    //! Get strings representing each data read
-    std::vector<std::string> getReadsStrings();
-
-    //! Get strings representing each data write
-    std::vector<std::string> getWritesStrings();
+    //! Get a string representing the given data access
+    std::string getDataAccessString(ArrayAccess*);
 
     // enter* and exit* methods add iterators and constraints when entering a
     // new scope, remove when leaving the scope
@@ -88,10 +85,6 @@ struct StmtContext {
     //! Convenience function to add a new constraint from the given parameters
     void makeAndInsertConstraint(std::string lower, Expr* upper,
                                  BinaryOperatorKind oper);
-
-    //! Get printable strings representing the given data accesses
-    std::vector<std::string> getDataAccessStrings(
-        std::map<std::string, ArrayAccess>* accesses);
 };
 
 }  // namespace spf_ie

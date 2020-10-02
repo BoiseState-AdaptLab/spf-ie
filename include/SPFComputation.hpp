@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 #include <unordered_set>
+#include <utility>
 
 #include "iegenlib.h"
 
@@ -46,10 +47,10 @@ struct IEGenStmtInfo {
     iegenlib::Set iterationSpace;
     //! Execution schedule of a single statement
     iegenlib::Relation executionSchedule;
-    //! Read dependences of a statement
-    std::vector<iegenlib::Relation> dataReads;
-    //! Write dependences of a statement
-    std::vector<iegenlib::Relation> dataWrites;
+    //! Read dependences of a statement, pairing data space name to relation
+    std::vector<std::pair<std::string, iegenlib::Relation>> dataReads;
+    //! Write dependences of a statement, pairing data space name to relation
+    std::vector<std::pair<std::string, iegenlib::Relation>> dataWrites;
 };
 
 }  // namespace spf_ie

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <map>
 #include <sstream>
+#include <utility>
 #include <vector>
 
 #include "SPFComputation.hpp"
@@ -29,23 +30,39 @@ SPFComputation SPFComputationBuilder::buildComputationFromFunction(
         unsigned int i = 0;
         for (auto it = computation.stmtsInfoMap.begin();
              it != computation.stmtsInfoMap.end(); ++it) {
+            // iteration space
             it->second.iterationSpace =
                 iegenlib::Set(stmtContexts[i].getIterSpaceString());
+            // execution schedule
             stmtContexts[i].schedule.zeroPadDimension(largestScheduleDimension);
             it->second.executionSchedule =
                 iegenlib::Relation(stmtContexts[i].getExecScheduleString());
-            std::vector<std::string> readStrings =
-                stmtContexts[i].getReadsStrings();
-            for (auto it_reads = readStrings.begin();
-                 it_reads != readStrings.end(); ++it_reads) {
-                it->second.dataReads.push_back(iegenlib::Relation(*it_reads));
+            // data accesses
+            auto arrayAccesses = stmtContexts[i].dataAccesses.arrayAccesses;
+            for (auto it_accesses = arrayAccesses.begin();
+                 it_accesses != arrayAccesses.end(); ++it_accesses) {
+                (it_accesses->second.isRead ? it->second.dataReads
+                                            : it->second.dataWrites)
+                    .push_back(std::make_pair(
+                        Utils::stmtToString(it_accesses->second.base),
+                        stmtContexts[i].getDataAccessString(
+                            &it_accesses->second)));
             }
-            std::vector<std::string> writeStrings =
-                stmtContexts[i].getWritesStrings();
-            for (auto it_writes = writeStrings.begin();
-                 it_writes != writeStrings.end(); ++it_writes) {
-                it->second.dataWrites.push_back(iegenlib::Relation(*it_writes));
-            }
+            /* std::vector<std::string> readStrings = */
+            /*     stmtContexts[i].getReadsStrings(); */
+            /* for (auto it_reads = readStrings.begin(); */
+            /*      it_reads != readStrings.end(); ++it_reads) { */
+            /*     it->second.dataReads.push_back(iegenlib::Relation(*it_reads));
+             */
+            /* } */
+            /* std::vector<std::string> writeStrings = */
+            /*     stmtContexts[i].getWritesStrings(); */
+            /* for (auto it_writes = writeStrings.begin(); */
+            /*      it_writes != writeStrings.end(); ++it_writes) { */
+            /*     it->second.dataWrites.push_back(iegenlib::Relation(*it_writes));
+             */
+            /* } */
+            // data spaces
             auto stmtDataSpaces = stmtContexts[i].dataAccesses.dataSpaces;
             computation.dataSpaces.insert(stmtDataSpaces.begin(),
                                           stmtDataSpaces.end());

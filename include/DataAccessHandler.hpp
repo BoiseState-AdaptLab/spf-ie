@@ -3,8 +3,8 @@
 
 #include <stack>
 #include <string>
-#include <vector>
 #include <unordered_set>
+#include <vector>
 
 #include "clang/AST/Expr.h"
 
@@ -24,8 +24,8 @@ namespace spf_ie {
  * is difficult to work with for our purposes.
  */
 struct ArrayAccess {
-    ArrayAccess(int64_t id, Expr* base, std::vector<Expr*> indexes)
-        : id(id), base(base), indexes(indexes) {}
+    ArrayAccess(int64_t id, Expr* base, std::vector<Expr*> indexes, bool isRead)
+        : id(id), base(base), indexes(indexes), isRead(isRead) {}
 
     //! ID of original AST array access expression
     int64_t id;
@@ -33,6 +33,8 @@ struct ArrayAccess {
     Expr* base;
     //! Indexes accessed in the array
     std::vector<Expr*> indexes;
+    //! Whether this access is a read or not (a write)
+    bool isRead;
 };
 
 /*!
@@ -50,15 +52,13 @@ struct DataAccessHandler {
 
     //! Data spaces accessed
     std::unordered_set<std::string> dataSpaces;
-    //! Array reads
-    std::map<std::string, ArrayAccess> reads;
-    //! Array writes
-    std::map<std::string, ArrayAccess> writes;
+    //! Array accesses
+    std::map<std::string, ArrayAccess> arrayAccesses;
 
    private:
     //! Make an ArrayAccess from an ArraySubscriptExpr and add it to the
     //! appropriate map appropriate map
-    void addDataAccess(ArraySubscriptExpr* expr, bool isRead = true);
+    void addDataAccess(ArraySubscriptExpr* expr, bool isRead);
 
     //! Get a string representation of the array access, like A(i,j).
     //! This method isn't on ArrayAccess itself in case we run into something

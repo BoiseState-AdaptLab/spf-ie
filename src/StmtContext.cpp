@@ -83,12 +83,28 @@ std::string StmtContext::getExecScheduleString() {
     return os.str();
 }
 
-std::vector<std::string> StmtContext::getReadsStrings() {
-    return getDataAccessStrings(&dataAccesses.reads);
-}
+std::string StmtContext::getDataAccessString(ArrayAccess* access) {
+    std::ostringstream itersStrStream;
+    itersStrStream << "[";
+    for (auto it = iterators.begin(); it != iterators.end(); ++it) {
+        if (it != iterators.begin()) {
+            itersStrStream << ",";
+        }
+        itersStrStream << *it;
+    }
+    itersStrStream << "]";
+    std::string itersStr = itersStrStream.str();
 
-std::vector<std::string> StmtContext::getWritesStrings() {
-    return getDataAccessStrings(&dataAccesses.writes);
+    std::ostringstream os;
+    os << "{" << itersStr << "->[";
+    for (auto it = access->indexes.begin(); it != access->indexes.end(); ++it) {
+        if (it != access->indexes.begin()) {
+            os << ",";
+        }
+        os << Utils::stmtToString(*it);
+    }
+    os << "]}";
+    return os.str();
 }
 
 void StmtContext::enterFor(ForStmt* forStmt) {
@@ -212,38 +228,6 @@ void StmtContext::makeAndInsertConstraint(std::string lower, Expr* upper,
         std::make_shared<
             std::tuple<std::string, std::string, BinaryOperatorKind>>(
             lower, Utils::stmtToString(upper), oper));
-}
-
-std::vector<std::string> StmtContext::getDataAccessStrings(
-    std::map<std::string, ArrayAccess>* accesses) {
-    std::ostringstream itersStrStream;
-    itersStrStream << "[";
-    for (auto it = iterators.begin(); it != iterators.end(); ++it) {
-        if (it != iterators.begin()) {
-            itersStrStream << ",";
-        }
-        itersStrStream << *it;
-    }
-    itersStrStream << "]";
-    std::string itersStr = itersStrStream.str();
-
-    // build strings
-    std::vector<std::string> strings;
-    for (auto it = accesses->begin(); it != accesses->end(); ++it) {
-        std::ostringstream os;
-        os << "{" << itersStr << "->[";
-        for (auto it_indexes = it->second.indexes.begin();
-             it_indexes != it->second.indexes.end(); ++it_indexes) {
-            if (it_indexes != it->second.indexes.begin()) {
-                os << ",";
-            }
-            os << Utils::stmtToString(*it_indexes);
-        }
-        os << "]}";
-        strings.push_back(os.str());
-    }
-
-    return strings;
 }
 
 }  // namespace spf_ie
