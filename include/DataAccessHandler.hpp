@@ -53,7 +53,7 @@ struct DataAccessHandler {
     //! Data spaces accessed
     std::unordered_set<std::string> dataSpaces;
     //! Array accesses
-    std::map<std::string, ArrayAccess> arrayAccesses;
+    std::multimap<std::string, ArrayAccess> arrayAccesses;
 
    private:
     //! Make an ArrayAccess from an ArraySubscriptExpr and add it to the
