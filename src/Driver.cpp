@@ -29,6 +29,9 @@
 using namespace clang;
 using namespace clang::tooling;
 
+static llvm::cl::opt<bool> PrintOutputToConsole(
+    "print-info", llvm::cl::desc("Output info to console"));
+
 namespace spf_ie {
 
 const ASTContext *Context;
@@ -40,20 +43,28 @@ class SPFConsumer : public ASTConsumer {
         // initializing globally-accessible ASTContext
         Context = &Ctx;
         llvm::errs() << "\nProcessing: " << fileName << "\n";
-        llvm::errs() << "=================================================\n\n";
+        if (PrintOutputToConsole) {
+            llvm::errs()
+                << "=================================================\n\n";
+        }
         std::unique_ptr<SPFComputationBuilder> builder =
             std::make_unique<SPFComputationBuilder>();
         // process each function (with a body) in the file
         for (auto it : Context->getTranslationUnitDecl()->decls()) {
             FunctionDecl *func = dyn_cast<FunctionDecl>(it);
             if (func && func->doesThisDeclarationHaveABody()) {
-                llvm::outs()
-                    << "FUNCTION: " << func->getQualifiedNameAsString() << "\n";
-                Utils::printSmallLine();
-                llvm::outs() << "\n";
+                if (PrintOutputToConsole) {
+                    llvm::outs()
+                        << "FUNCTION: " << func->getQualifiedNameAsString()
+                        << "\n";
+                    Utils::printSmallLine();
+                    llvm::outs() << "\n";
+                }
                 SPFComputation computation =
                     builder->buildComputationFromFunction(func);
-                computation.printInfo();
+                if (PrintOutputToConsole) {
+                    computation.printInfo();
+                }
             }
         }
     }
@@ -78,6 +89,7 @@ static llvm::cl::OptionCategory SPFToolCategory("spf-ie options");
 
 //! Instantiate and run the Clang tool
 int main(int argc, const char **argv) {
+    PrintOutputToConsole.addCategory(SPFToolCategory);
     CommonOptionsParser OptionsParser(argc, argv, SPFToolCategory);
     ClangTool Tool(OptionsParser.getCompilations(),
                    OptionsParser.getSourcePathList());
