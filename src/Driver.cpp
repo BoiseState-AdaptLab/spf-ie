@@ -47,8 +47,7 @@ class SPFConsumer : public ASTConsumer {
             llvm::errs()
                 << "=================================================\n\n";
         }
-        std::unique_ptr<SPFComputationBuilder> builder =
-            std::make_unique<SPFComputationBuilder>();
+        SPFComputationBuilder builder;
         // process each function (with a body) in the file
         for (auto it : Context->getTranslationUnitDecl()->decls()) {
             FunctionDecl *func = dyn_cast<FunctionDecl>(it);
@@ -61,7 +60,7 @@ class SPFConsumer : public ASTConsumer {
                     llvm::outs() << "\n";
                 }
                 SPFComputation computation =
-                    builder->buildComputationFromFunction(func);
+                    builder.buildComputationFromFunction(func);
                 if (PrintOutputToConsole) {
                     computation.printInfo();
                 }

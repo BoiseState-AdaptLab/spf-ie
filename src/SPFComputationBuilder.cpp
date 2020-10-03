@@ -18,12 +18,17 @@ namespace spf_ie {
 
 /* SPFComputationBuilder */
 
-SPFComputationBuilder::SPFComputationBuilder()
-    : stmtNumber(0), largestScheduleDimension(0){};
+SPFComputationBuilder::SPFComputationBuilder(){};
 
 SPFComputation SPFComputationBuilder::buildComputationFromFunction(
     FunctionDecl* funcDecl) {
+    // reset builder components
+    stmtNumber = 0;
+    largestScheduleDimension = 0;
+    currentStmtContext = StmtContext();
+    stmtContexts.clear();
     computation = SPFComputation();
+
     if (CompoundStmt* funcBody = dyn_cast<CompoundStmt>(funcDecl->getBody())) {
         processBody(funcBody);
 
