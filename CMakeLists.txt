@@ -43,11 +43,10 @@ ExternalProject_Add(iegenlib_in
 )
 # add link dirs for IEGenLib and its dependencies
 link_directories("lib/IEGenLib/lib/installed/lib")
+link_directories("lib/IEGenLib/build/lib/gtest")
 link_directories("lib/IEGenLib/iegen/lib")
 
-
-set (PROJECT_SOURCES
-    Driver.cpp
+set (BASE_SOURCES
     SPFComputationBuilder.cpp
     StmtContext.cpp
     SPFComputation.cpp
@@ -55,36 +54,61 @@ set (PROJECT_SOURCES
     DataAccessHandler.cpp
     Utils.cpp
 )
-list (TRANSFORM PROJECT_SOURCES PREPEND "src/")
+list (TRANSFORM BASE_SOURCES PREPEND "src/")
+
+set (PROJECT_SOURCES src/Driver.cpp ${BASE_SOURCES})
+
+set (TEST_SOURCES src/SPFComputationTest.cpp ${BASE_SOURCES})
 
 add_clang_executable(${CMAKE_PROJECT_NAME} ${PROJECT_SOURCES})
 add_dependencies(${CMAKE_PROJECT_NAME} iegenlib_in)
 
+add_clang_executable("${CMAKE_PROJECT_NAME}_t" EXCLUDE_FROM_ALL ${TEST_SOURCES})
+add_dependencies("${CMAKE_PROJECT_NAME}_t" iegenlib_in)
+add_test("${CMAKE_PROJECT_NAME}_tests" "${CMAKE_PROJECT_NAME}_t")
+
+add_custom_command(OUTPUT spfie_test
+                COMMAND "./${CMAKE_PROJECT_NAME}_t"
+                DEPENDS "${CMAKE_PROJECT_NAME}_t"
+                COMMENT "Run spf-ie tests"
+)
+add_custom_target(test DEPENDS spfie_test)
+
 # Add directories to include
-target_include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "include")
+include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "include")
 # LLVM/Clang
-target_include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "${LLVM_INCLUDE_DIRS}")
-target_include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "${LLVM_SRC}/llvm/include")
-target_include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "${CLANG_INCLUDE_DIRS}")
+include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "${LLVM_INCLUDE_DIRS}")
+include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "${LLVM_SRC}/llvm/include")
+include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "${CLANG_INCLUDE_DIRS}")
 # IEGenLib and deps
-target_include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "lib/IEGenLib/iegen/include/iegenlib")
-target_include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "lib/IEGenLib/lib/installed/include")
-target_include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "lib/IEGenLib/lib/gtest/include")
+include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "lib/IEGenLib/iegen/include/iegenlib")
+include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "lib/IEGenLib/lib/installed/include")
+include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "lib/IEGenLib/lib/gtest/include")
 
 # Find libraries corresponding to LLVM components we need
 llvm_map_components_to_libnames(LLVM_LIBS support)
 
+set (BASE_LIBS
+    ${LLVM_LIBS}
+    clangAST
+    clangBasic
+    clangSerialization
+    clangFrontend
+    clangTooling
+    clangLex
+    iegenlib
+    gmp
+    isl
+)
+
 target_link_libraries(${CMAKE_PROJECT_NAME}
             PRIVATE
-            ${LLVM_LIBS}
-            clangAST
-            clangBasic
-            clangSerialization
-            clangFrontend
-            clangTooling
-            clangLex
-            iegenlib
-            gmp
-            isl
+            ${BASE_LIBS}
+)
+
+target_link_libraries("${CMAKE_PROJECT_NAME}_t"
+            PRIVATE
+            ${BASE_LIBS}
+            gtest
 )
 
