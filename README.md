@@ -32,6 +32,7 @@ Developed with LLVM 11 -- using other versions may not work properly.
 - **IEGenLib:** Automatically cloned and built from
 [here](https://github.com/CompOpt4Apps/IEGenLib) -- you don't have to do
 anything for this dependency.
+- **Google Test:** Automatically built as a dependency of IEGenLib.
 
 
 Building
@@ -53,6 +54,16 @@ $ ./build/spf-ie mysourcefile.cpp
 ```
 where *mysourcefile.cpp* is the input file.
 Example files are provided in the test folder.
+
+
+Testing
+-------
+From project root, run:
+```bash
+$ cmake --build build --target test
+```
+This will build (if necessary) and execute the project's regression tests.
+
 
 Documentation
 -------------
