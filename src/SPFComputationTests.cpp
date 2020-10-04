@@ -1,3 +1,11 @@
+/*!
+ * \file SPFComputationTests.cpp
+ *
+ * \brief Regression tests which compare built SPFComputations to expected
+ * values.
+ *
+ * \author Anna Rift
+ */
 #include <iostream>
 #include <map>
 #include <memory>
@@ -17,17 +25,26 @@
 #include "clang/Tooling/Tooling.h"
 #include "gtest/gtest.h"
 #include "iegenlib.h"
-#include "llvm/ADT/StringRef.h"
 
 using namespace clang;
 using namespace spf_ie;
 
 const ASTContext* spf_ie::Context;
 
+/*!
+ * \class SPFComputationTests
+ *
+ * \brief Google Test fixture for SPFComputationBuilder.
+ *
+ * Contains tools for efficiently regression testing the output of the
+ * SPFComputationBuilder against expected values for a given piece of code.
+ */
 class SPFComputationTests : public ::testing::Test {
    protected:
     virtual void SetUp() override {}
     virtual void TearDown() override {}
+
+    //! Build SPFComputations from every function in the provided code.
     std::vector<SPFComputation> buildSPFComputationsFromCode(std::string code) {
         std::unique_ptr<ASTUnit> AST = tooling::buildASTFromCode(
             code, "input.cpp", std::make_shared<PCHContainerOperations>());
@@ -45,6 +62,8 @@ class SPFComputationTests : public ::testing::Test {
         return computations;
     }
 
+    //! Use assertions/expectations to compare an SPFComputation to expected
+    //! values.
     void compareComputationToExpectations(
         const SPFComputation& computation, int expectedNumStmts,
         const std::unordered_set<std::string>& expectedDataSpaces,
@@ -102,7 +121,7 @@ class SPFComputationTests : public ::testing::Test {
     }
 };
 
-// test that the matrix add computation is built up as expected
+//! Test that the matrix add Computation is built up as expected
 TEST_F(SPFComputationTests, matrix_add) {
     std::string code =
         "void matrix_add(int a, int b, int x[a][b], int y[a][b], int sum[a][b]) { \
@@ -137,7 +156,7 @@ TEST_F(SPFComputationTests, matrix_add) {
         expectedExecSchedules, expectedReads, expectedWrites);
 }
 
-// set up and run tests
+//! Set up and run tests
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
