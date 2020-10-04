@@ -58,7 +58,7 @@ list (TRANSFORM BASE_SOURCES PREPEND "src/")
 
 set (PROJECT_SOURCES src/Driver.cpp ${BASE_SOURCES})
 
-set (TEST_SOURCES src/SPFComputationTest.cpp ${BASE_SOURCES})
+set (TEST_SOURCES src/SPFComputationTests.cpp ${BASE_SOURCES})
 
 add_clang_executable(${CMAKE_PROJECT_NAME} ${PROJECT_SOURCES})
 add_dependencies(${CMAKE_PROJECT_NAME} iegenlib_in)
