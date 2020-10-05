@@ -85,7 +85,7 @@ class SPFComputationTests : public ::testing::Test {
         for (const auto& it : computation.stmtsInfoMap) {
             // statement name
             std::string stmtName = "S" + std::to_string(i);
-            SCOPED_TRACE(stmtName);
+            SCOPED_TRACE(stmtName + ": " + it.second.stmtSourceCode);
             ASSERT_EQ(it.first, stmtName);
             // iteration space
             EXPECT_EQ(it.second.iterationSpace.prettyPrintString(),
@@ -124,15 +124,16 @@ class SPFComputationTests : public ::testing::Test {
 //! Test that the matrix add Computation is built up as expected
 TEST_F(SPFComputationTests, matrix_add) {
     std::string code =
-        "void matrix_add(int a, int b, int x[a][b], int y[a][b], int sum[a][b]) { \
-    int i; \
-    int j; \
-    for (i = 0; i < a; i++) { \
-        for (j = 0; j < b; j++) { \
-            sum[i][j] = x[i][j] + y[i][j]; \
-        } \
-    } \
+        "void matrix_add(int a, int b, int x[a][b], int y[a][b], int sum[a][b]) {\
+    int i;\
+    int j;\
+    for (i = 0; i < a; i++) {\
+        for (j = 0; j < b; j++) {\
+            sum[i][j] = x[i][j] + y[i][j];\
+        }\
+    }\
 }";
+
     std::vector<SPFComputation> computations =
         buildSPFComputationsFromCode(code);
     ASSERT_EQ(computations.size(), 1);
@@ -150,6 +151,65 @@ TEST_F(SPFComputationTests, matrix_add) {
             {}, {}, {{"x", "{[i,j]->[i,j]}"}, {"y", "{[i,j]->[i,j]}"}}};
     std::vector<std::vector<std::pair<std::string, std::string>>>
         expectedWrites = {{}, {}, {{"sum", "{[i,j]->[i,j]}"}}};
+
+    compareComputationToExpectations(
+        computation, expectedNumStmts, expectedDataSpaces, expectedIterSpaces,
+        expectedExecSchedules, expectedReads, expectedWrites);
+}
+
+TEST_F(SPFComputationTests, forward_solve) {
+    std::string code =
+        "int forward_solve(int n, int l[n][n], double b[n], double x[n]) {\
+    int i;\
+    for (i = 0; i < n; i++) {\
+        x[i] = b[i];\
+    }\
+\
+    int j;\
+    for (j = 0; j < n; j++) {\
+        x[j] /= l[j][j];\
+        for (i = j + 1; i < n; i++) {\
+            /* if (l[i][j]) */\
+            x[i] -= l[i][j] * x[j];\
+        }\
+    }\
+\
+    return 0;\
+}";
+
+    std::vector<SPFComputation> computations =
+        buildSPFComputationsFromCode(code);
+    ASSERT_EQ(computations.size(), 1);
+    SPFComputation computation = computations.back();
+
+    unsigned int expectedNumStmts = 6;
+    std::unordered_set<std::string> expectedDataSpaces = {"x", "b", "l"};
+    std::vector<std::string> expectedIterSpaces = {
+        "{[]}",
+        "{[i]: 0 <= i && i < n}",
+        "{[]}",
+        "{[j]: 0 <= j && j < n}",
+        "{[j,i]: 0 <= j && j < n && j + 1 <= i && i < n}",
+        "{[]}"};
+    std::vector<std::string> expectedExecSchedules = {
+        "{[]->[0,0,0,0,0]}",  "{[i]->[1,i,0,0,0]}",   "{[]->[2,0,0,0,0]}",
+        "{[j]->[3,j,0,0,0]}", "{[j,i]->[3,j,1,i,0]}", "{[]->[4,0,0,0,0]}"};
+    std::vector<std::vector<std::pair<std::string, std::string>>>
+        expectedReads = {{},
+                         {{"b", "{[i]->[i]}"}},
+                         {},
+                         {{"x", "{[j]->[j]}"}, {"l", "{[j]->[j]}"}},
+                         {{"x", "{[j,i]->[i]}"},
+                          {"l", "{[j,i]->[i,j]}"},
+                          {"x", "{[j,i]->[j]}"}},
+                         {}};
+    std::vector<std::vector<std::pair<std::string, std::string>>>
+        expectedWrites = {{},
+                          {{"x", "{[i]->[i]}"}},
+                          {},
+                          {{"x", "{[j]->[j]}"}},
+                          {{"x", "{[j,i]->[i]}"}},
+                          {}};
 
     compareComputationToExpectations(
         computation, expectedNumStmts, expectedDataSpaces, expectedIterSpaces,
