@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
+#include <utility>
 
 #include "clang/AST/Expr.h"
 
@@ -53,7 +54,7 @@ struct DataAccessHandler {
     //! Data spaces accessed
     std::unordered_set<std::string> dataSpaces;
     //! Array accesses
-    std::multimap<std::string, ArrayAccess> arrayAccesses;
+    std::vector<std::pair<std::string, ArrayAccess>> arrayAccesses;
 
    private:
     //! Make an ArrayAccess from an ArraySubscriptExpr and add it to the

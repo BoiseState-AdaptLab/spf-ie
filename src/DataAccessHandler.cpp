@@ -57,7 +57,7 @@ void DataAccessHandler::addDataAccess(ArraySubscriptExpr* fullExpr,
     dataSpaces.emplace(Utils::stmtToString(base));
     ArrayAccess access =
         ArrayAccess(fullExpr->getID(*Context), base, indexes, isRead);
-    arrayAccesses.emplace(makeStringForArrayAccess(&access), access);
+    arrayAccesses.push_back({makeStringForArrayAccess(&access), access});
 }
 
 std::string DataAccessHandler::makeStringForArrayAccess(ArrayAccess* access) {
