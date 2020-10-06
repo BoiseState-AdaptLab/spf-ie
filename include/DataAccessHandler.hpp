@@ -4,8 +4,8 @@
 #include <stack>
 #include <string>
 #include <unordered_set>
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include "clang/AST/Expr.h"
 
@@ -51,6 +51,25 @@ struct DataAccessHandler {
     //! Add the array accessed as a write, and any accessed within it as reads
     void processAsWrite(ArraySubscriptExpr* expr);
 
+    //! Make ArrayAccess and sub-accesses (recursively) from the given
+    //! expression
+    //! \param[in] expr Expression to process
+    //! \param[in] isRead Whether this access is a read
+    //! \param[in,out] accessComponents Current list of sub-accesses; after
+    //! processing completes, the last element will be the outermost access.
+    static void buildDataAccess(
+        ArraySubscriptExpr* expr, bool isRead,
+        std::vector<std::pair<std::string, ArrayAccess>>& accessComponents);
+
+    //! Get a string representation of the array access, like A(i,j).
+    //! This method isn't on ArrayAccess itself in case we run into something
+    //! like A[B[i]]; in this case, the B[j] component will already have a
+    //! string representation saved, and we use that instead of building a new
+    //! one.
+    static std::string makeStringForArrayAccess(
+        ArrayAccess* access,
+        const std::vector<std::pair<std::string, ArrayAccess>>& components);
+
     //! Data spaces accessed
     std::unordered_set<std::string> dataSpaces;
     //! Array accesses
@@ -60,13 +79,6 @@ struct DataAccessHandler {
     //! Make an ArrayAccess from an ArraySubscriptExpr and add it to the
     //! appropriate map appropriate map
     void addDataAccess(ArraySubscriptExpr* expr, bool isRead);
-
-    //! Get a string representation of the array access, like A(i,j).
-    //! This method isn't on ArrayAccess itself in case we run into something
-    //! like A[B[i]]; in this case, the B[j] component will already have a
-    //! string representation saved, and we use that instead of building a new
-    //! one.
-    std::string makeStringForArrayAccess(ArrayAccess* access);
 
     //! Do the recursive work of getting array access info
     //! \param[in] fullExpr array access to process

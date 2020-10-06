@@ -3,6 +3,7 @@
 #include <sstream>
 #include <stack>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "Driver.hpp"
@@ -32,6 +33,18 @@ void DataAccessHandler::processAsWrite(ArraySubscriptExpr* expr) {
 
 void DataAccessHandler::addDataAccess(ArraySubscriptExpr* fullExpr,
                                       bool isRead) {
+    std::vector<std::pair<std::string, ArrayAccess>> accesses;
+    buildDataAccess(fullExpr, isRead, accesses);
+
+    for (const auto& accessInfo : accesses) {
+        dataSpaces.emplace(Utils::stmtToString(accessInfo.second.base));
+        arrayAccesses.push_back(accessInfo);
+    }
+}
+
+void DataAccessHandler::buildDataAccess(
+    ArraySubscriptExpr* fullExpr, bool isRead,
+    std::vector<std::pair<std::string, ArrayAccess>>& accessComponents) {
     // extract information from subscript expression
     std::stack<Expr*> info;
     if (getArrayExprInfo(fullExpr, &info)) {
@@ -49,18 +62,20 @@ void DataAccessHandler::addDataAccess(ArraySubscriptExpr* fullExpr,
         // sub-accesses are always reads
         if (ArraySubscriptExpr* indexAsArrayAccess =
                 dyn_cast<ArraySubscriptExpr>(info.top())) {
-            addDataAccess(indexAsArrayAccess, true);
+            buildDataAccess(indexAsArrayAccess, true, accessComponents);
         }
         indexes.push_back(info.top());
         info.pop();
     }
-    dataSpaces.emplace(Utils::stmtToString(base));
     ArrayAccess access =
         ArrayAccess(fullExpr->getID(*Context), base, indexes, isRead);
-    arrayAccesses.push_back({makeStringForArrayAccess(&access), access});
+    accessComponents.push_back(
+        {makeStringForArrayAccess(&access, accessComponents), access});
 }
 
-std::string DataAccessHandler::makeStringForArrayAccess(ArrayAccess* access) {
+std::string DataAccessHandler::makeStringForArrayAccess(
+    ArrayAccess* access,
+    const std::vector<std::pair<std::string, ArrayAccess>>& components) {
     std::ostringstream os;
     os << Utils::stmtToString(access->base);
     os << "(";
@@ -78,7 +93,7 @@ std::string DataAccessHandler::makeStringForArrayAccess(ArrayAccess* access) {
             // it should have already been processed (depth-first), so we look
             // for its string equivalent in thealready-processed accesses
             bool foundSubaccess = false;
-            for (const auto& it : arrayAccesses) {
+            for (const auto& it : components) {
                 if (it.second.id == asArrayAccess->getID(*Context)) {
                     foundSubaccess = true;
                     indexString = it.first;
