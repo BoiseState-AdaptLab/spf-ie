@@ -89,6 +89,10 @@ struct StmtContext {
     void makeAndInsertConstraint(std::string lower, Expr* upper,
                                  BinaryOperatorKind oper);
 
+    //! Get the source code of an expression, with array accesses changed to
+    //! function calls (for example, "i < A[i]" becomes "i < A(i)")
+    static std::string exprToStringWithSafeArrays(Expr* expr);
+
     //! Get the tuple of iterators as a string, for use in other to-string
     //! methods. Output like "[i,j,k]"
     std::string getItersTupleString();

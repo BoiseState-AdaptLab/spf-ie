@@ -32,6 +32,23 @@ class Utils {
     //! Get the source code of a statement as a string
     static std::string stmtToString(Stmt* stmt);
 
+    //! Get a copy of the given string with all instances of the substring to
+    //! find replaced as specified
+    //! \param[in] input String to perform substitutions on (will not be
+    //! modified)
+    //! \param[in] toFind String to find (and replace) within input
+    //! \param[in] replaceWith String to use as replacement
+    static std::string replaceInString(std::string input, std::string toFind,
+                                       std::string replaceWith);
+
+    //! Retrieve "all" array accesses, from left to right, contained in an
+    //! expression.
+    //! Recurses into BinaryOperators.
+    //! \param[in] expr Expression to process
+    //! \param[out] currentList List of accesses
+    static void getExprArrayAccesses(Expr* expr,
+                              std::vector<ArraySubscriptExpr*>& currentList);
+
     //! Get a string representation of a binary operator
     static std::string binaryOperatorKindToString(BinaryOperatorKind bo);
 

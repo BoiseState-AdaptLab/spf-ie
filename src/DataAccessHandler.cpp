@@ -17,13 +17,10 @@ namespace spf_ie {
 /* DataAccessHandler */
 
 void DataAccessHandler::processAsReads(Expr* expr) {
-    Expr* usableExpr = expr->IgnoreParenImpCasts();
-    if (BinaryOperator* binOper = dyn_cast<BinaryOperator>(usableExpr)) {
-        processAsReads(binOper->getLHS());
-        processAsReads(binOper->getRHS());
-    } else if (ArraySubscriptExpr* asArrayAccessExpr =
-                   dyn_cast<ArraySubscriptExpr>(usableExpr)) {
-        addDataAccess(asArrayAccessExpr, true);
+    std::vector<ArraySubscriptExpr*> reads;
+    Utils::getExprArrayAccesses(expr, reads);
+    for (const auto& read : reads) {
+        addDataAccess(read, true);
     }
 }
 

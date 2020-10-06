@@ -169,8 +169,9 @@ TEST_F(SPFComputationTests, forward_solve) {
     for (j = 0; j < n; j++) {\
         x[j] /= l[j][j];\
         for (i = j + 1; i < n; i++) {\
-            /* if (l[i][j]) */\
-            x[i] -= l[i][j] * x[j];\
+            if (l[i][j] > 0) {\
+                x[i] -= l[i][j] * x[j];\
+            }\
         }\
     }\
 \
@@ -189,7 +190,7 @@ TEST_F(SPFComputationTests, forward_solve) {
         "{[i]: 0 <= i && i < n}",
         "{[]}",
         "{[j]: 0 <= j && j < n}",
-        "{[j,i]: 0 <= j && j < n && j + 1 <= i && i < n}",
+        "{[j,i]: 0 <= j && j < n && j + 1 <= i && i < n && l(i,j) > 0}",
         "{[]}"};
     std::vector<std::string> expectedExecSchedules = {
         "{[]->[0,0,0,0,0]}",  "{[i]->[1,i,0,0,0]}",   "{[]->[2,0,0,0,0]}",

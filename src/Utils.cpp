@@ -40,6 +40,29 @@ std::string Utils::stmtToString(Stmt* stmt) {
         .str();
 }
 
+std::string Utils::replaceInString(std::string input, std::string toFind,
+                                   std::string replaceWith) {
+    size_t pos = input.find(toFind);
+    if (pos == std::string::npos) {
+        return input;
+    } else {
+        return replaceInString(input.replace(pos, toFind.length(), replaceWith),
+                               toFind, replaceWith);
+    }
+}
+
+void Utils::getExprArrayAccesses(
+    Expr* expr, std::vector<ArraySubscriptExpr*>& currentList) {
+    Expr* usableExpr = expr->IgnoreParenImpCasts();
+    if (BinaryOperator* binOper = dyn_cast<BinaryOperator>(usableExpr)) {
+        getExprArrayAccesses(binOper->getLHS(), currentList);
+        getExprArrayAccesses(binOper->getRHS(), currentList);
+    } else if (ArraySubscriptExpr* asArrayAccessExpr =
+                   dyn_cast<ArraySubscriptExpr>(usableExpr)) {
+        currentList.push_back(asArrayAccessExpr);
+    }
+}
+
 std::string Utils::binaryOperatorKindToString(BinaryOperatorKind bo) {
     if (!operatorStrings.count(bo)) {
         printErrorAndExit("Invalid operator type encountered.");

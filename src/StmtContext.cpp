@@ -193,7 +193,7 @@ void StmtContext::exitIf() { constraints.pop_back(); }
 
 void StmtContext::makeAndInsertConstraint(Expr* lower, Expr* upper,
                                           BinaryOperatorKind oper) {
-    makeAndInsertConstraint(Utils::stmtToString(lower), upper, oper);
+    makeAndInsertConstraint(exprToStringWithSafeArrays(lower), upper, oper);
 }
 
 void StmtContext::makeAndInsertConstraint(std::string lower, Expr* upper,
@@ -201,7 +201,22 @@ void StmtContext::makeAndInsertConstraint(std::string lower, Expr* upper,
     constraints.push_back(
         std::make_shared<
             std::tuple<std::string, std::string, BinaryOperatorKind>>(
-            lower, Utils::stmtToString(upper), oper));
+            lower, exprToStringWithSafeArrays(upper), oper));
+}
+
+std::string StmtContext::exprToStringWithSafeArrays(Expr* expr) {
+    std::string initialStr = Utils::stmtToString(expr);
+    std::vector<ArraySubscriptExpr*> accesses;
+    Utils::getExprArrayAccesses(expr, accesses);
+    for (const auto& access : accesses) {
+        std::vector<std::pair<std::string, ArrayAccess>> accessComponents;
+        DataAccessHandler::buildDataAccess(access, true, accessComponents);
+        std::string accessStr = DataAccessHandler::makeStringForArrayAccess(
+            &accessComponents.back().second, accessComponents);
+        initialStr = Utils::replaceInString(
+            initialStr, Utils::stmtToString(access), accessStr);
+    }
+    return initialStr;
 }
 
 std::string StmtContext::getItersTupleString() {
