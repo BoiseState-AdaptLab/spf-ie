@@ -198,7 +198,7 @@ TEST_F(SPFComputationTests, forward_solve) {
         expectedReads = {{},
                          {{"b", "{[i]->[i]}"}},
                          {},
-                         {{"x", "{[j]->[j]}"}, {"l", "{[j]->[j]}"}},
+                         {{"x", "{[j]->[j]}"}, {"l", "{[j]->[j,j]}"}},
                          {{"x", "{[j,i]->[i]}"},
                           {"l", "{[j,i]->[i,j]}"},
                           {"x", "{[j,i]->[j]}"}},
