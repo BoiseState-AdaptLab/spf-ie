@@ -177,10 +177,12 @@ void StmtContext::exitFor() {
     schedule.popValue();
 }
 
-void StmtContext::enterIf(IfStmt* ifStmt) {
+void StmtContext::enterIf(IfStmt* ifStmt, bool invert) {
     if (BinaryOperator* cond = dyn_cast<BinaryOperator>(ifStmt->getCond())) {
-        makeAndInsertConstraint(cond->getLHS(), cond->getRHS(),
-                                cond->getOpcode());
+        makeAndInsertConstraint(
+            cond->getLHS(), cond->getRHS(),
+            (invert ? Utils::invertRelationalOperator(cond->getOpcode())
+                    : cond->getOpcode()));
     } else {
         Utils::printErrorAndExit(
             "If statement condition must be a binary operation", ifStmt);

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <map>
 #include <sstream>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -81,10 +82,9 @@ void SPFComputationBuilder::processSingleStmt(Stmt* stmt) {
         isa<AttributedStmt>(stmt) || isa<GotoStmt>(stmt) ||
         isa<ContinueStmt>(stmt) || isa<BreakStmt>(stmt) ||
         isa<CallExpr>(stmt)) {
-        std::ostringstream errorMsg;
-        errorMsg << "Unsupported compound stmt type "
-                 << stmt->getStmtClassName();
-        Utils::printErrorAndExit(errorMsg.str(), stmt);
+        Utils::printErrorAndExit("Unsupported compound stmt type " +
+                                     std::string(stmt->getStmtClassName()),
+                                 stmt);
     }
 
     if (ForStmt* asForStmt = dyn_cast<ForStmt>(stmt)) {
@@ -93,9 +93,21 @@ void SPFComputationBuilder::processSingleStmt(Stmt* stmt) {
         processBody(asForStmt->getBody());
         currentStmtContext.exitFor();
     } else if (IfStmt* asIfStmt = dyn_cast<IfStmt>(stmt)) {
+        if (asIfStmt->getConditionVariable()) {
+            Utils::printErrorAndExit(
+                "If statement condition variable declarations are unsupported",
+                asIfStmt);
+        }
         currentStmtContext.enterIf(asIfStmt);
         processBody(asIfStmt->getThen());
         currentStmtContext.exitIf();
+        // treat else clause (if present) as another if statement, but with
+        // condition inverted
+        if (asIfStmt->hasElseStorage()) {
+            currentStmtContext.enterIf(asIfStmt, true);
+            processBody(asIfStmt->getElse());
+            currentStmtContext.exitIf();
+        }
     } else {
         currentStmtContext.schedule.advanceSchedule();
         addStmt(stmt);

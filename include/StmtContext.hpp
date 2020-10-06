@@ -72,7 +72,10 @@ struct StmtContext {
     void exitFor();
 
     //! Add context information from an if statement
-    void enterIf(IfStmt* ifStmt);
+    //! \param[in] ifStmt If statement to use
+    //! \param[in] invert Whether to invert the if condition (for use in
+    //! else clauses)
+    void enterIf(IfStmt* ifStmt, bool invert = false);
 
     //! Remove context information from an if statement
     void exitIf();
