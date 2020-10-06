@@ -35,6 +35,9 @@ class Utils {
     //! Get a string representation of a binary operator
     static std::string binaryOperatorKindToString(BinaryOperatorKind bo);
 
+    //! Get the inverse of a relational operator, ie >= becomes <
+    static BinaryOperatorKind invertRelationalOperator(BinaryOperatorKind bo);
+
    private:
     //! String representations of valid operators for use in constraints
     static std::map<BinaryOperatorKind, std::string> operatorStrings;

@@ -47,6 +47,31 @@ std::string Utils::binaryOperatorKindToString(BinaryOperatorKind bo) {
     return operatorStrings.at(bo);
 }
 
+BinaryOperatorKind Utils::invertRelationalOperator(BinaryOperatorKind bo) {
+    switch (bo) {
+        case BinaryOperatorKind::BO_LT:
+            return BinaryOperatorKind::BO_GE;
+            break;
+        case BinaryOperatorKind::BO_LE:
+            return BinaryOperatorKind::BO_GT;
+            break;
+        case BinaryOperatorKind::BO_GT:
+            return BinaryOperatorKind::BO_LE;
+            break;
+        case BinaryOperatorKind::BO_GE:
+            return BinaryOperatorKind::BO_LT;
+            break;
+        case BinaryOperatorKind::BO_EQ:
+            return BinaryOperatorKind::BO_NE;
+            break;
+        case BinaryOperatorKind::BO_NE:
+            return BinaryOperatorKind::BO_EQ;
+            break;
+        default:
+            printErrorAndExit("Invalid relational operator encountered.");
+    }
+}
+
 std::map<BinaryOperatorKind, std::string> Utils::operatorStrings = {
     {BinaryOperatorKind::BO_LT, "<"}, {BinaryOperatorKind::BO_LE, "<="},
     {BinaryOperatorKind::BO_GT, ">"}, {BinaryOperatorKind::BO_GE, ">="},
