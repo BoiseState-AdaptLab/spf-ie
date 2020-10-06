@@ -42,6 +42,9 @@ struct StmtContext {
     //! \param[in] other Existing StmtContext to copy
     StmtContext(StmtContext* other);
 
+    //! Actual AST Stmt
+    Stmt* stmt;
+
     //! Variables being iterated over
     std::vector<std::string> iterators;
     //! Constraints on iteration -- inequalities and equalities
@@ -52,6 +55,10 @@ struct StmtContext {
     ExecSchedule schedule;
     //! Data accesses (both reads and writes)
     DataAccessHandler dataAccesses;
+
+    //! Data spaces which are held invariant in the current context, grouped
+    //! by the loop that they are invariant in
+    std::vector<std::vector<std::string>> invariants;
 
     //! Get a string representing the iteration space
     std::string getIterSpaceString();

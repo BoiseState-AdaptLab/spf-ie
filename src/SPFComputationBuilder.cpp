@@ -45,12 +45,27 @@ SPFComputation SPFComputationBuilder::buildComputationFromFunction(
             // data accesses
             auto arrayAccesses = stmtContexts[i].dataAccesses.arrayAccesses;
             for (auto& it_accesses : arrayAccesses) {
+                std::string dataSpaceAccessed =
+                    Utils::stmtToString(it_accesses.second.base);
+                if (!it_accesses.second.isRead) {
+                    for (const auto& invariantGroup :
+                         stmtContexts[i].invariants) {
+                        if (std::find(
+                                invariantGroup.begin(), invariantGroup.end(),
+                                dataSpaceAccessed) != invariantGroup.end()) {
+                            Utils::printErrorAndExit(
+                                "Code may not modify loop-invariant data "
+                                "space '" +
+                                    dataSpaceAccessed + "'",
+                                stmtContexts[i].stmt);
+                        }
+                    }
+                }
                 (it_accesses.second.isRead ? it.second.dataReads
                                            : it.second.dataWrites)
                     .push_back(std::make_pair(
-                        Utils::stmtToString(it_accesses.second.base),
-                        stmtContexts[i].getDataAccessString(
-                            &it_accesses.second)));
+                        dataSpaceAccessed, stmtContexts[i].getDataAccessString(
+                                               &it_accesses.second)));
             }
             // data spaces
             auto stmtDataSpaces = stmtContexts[i].dataAccesses.dataSpaces;
@@ -139,6 +154,7 @@ void SPFComputationBuilder::addStmt(Stmt* stmt) {
     // store processed statement
     computation.stmtsInfoMap.emplace("S" + std::to_string(stmtNumber++),
                                      IEGenStmtInfo(Utils::stmtToString(stmt)));
+    currentStmtContext.stmt = stmt;
     stmtContexts.push_back(currentStmtContext);
     currentStmtContext = StmtContext(&currentStmtContext);
 }

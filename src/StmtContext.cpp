@@ -28,6 +28,7 @@ StmtContext::StmtContext(StmtContext* other) {
     iterators = other->iterators;
     constraints = other->constraints;
     schedule = other->schedule;
+    invariants = other->invariants;
 }
 
 std::string StmtContext::getIterSpaceString() {
@@ -108,6 +109,23 @@ void StmtContext::enterFor(ForStmt* forStmt) {
     if (BinaryOperator* cond = dyn_cast<BinaryOperator>(forStmt->getCond())) {
         makeAndInsertConstraint(cond->getLHS(), cond->getRHS(),
                                 cond->getOpcode());
+        // add any data spaces accessed in the condition to loop invariants
+        std::vector<std::string> newInvariants;
+        std::vector<ArraySubscriptExpr*> accessExprs;
+        Utils::getExprArrayAccesses(cond->getLHS(), accessExprs);
+        Utils::getExprArrayAccesses(cond->getRHS(), accessExprs);
+        std::vector<std::pair<std::string, ArrayAccess>> accessComponents;
+        for (const auto& accessExpr : accessExprs) {
+            DataAccessHandler::buildDataAccess(accessExpr, true,
+                                               accessComponents);
+        }
+        for (const auto& accessInfo : accessComponents) {
+            newInvariants.push_back(
+                Utils::stmtToString(accessInfo.second.base));
+            llvm::errs() << "adding invariant "
+                         << Utils::stmtToString(accessInfo.second.base) << "\n";
+        }
+        invariants.push_back(newInvariants);
     } else {
         error = "condition";
         errorReason = "must be a binary operation";
@@ -175,6 +193,7 @@ void StmtContext::exitFor() {
     iterators.pop_back();
     schedule.popValue();
     schedule.popValue();
+    invariants.pop_back();
 }
 
 void StmtContext::enterIf(IfStmt* ifStmt, bool invert) {
