@@ -46,14 +46,11 @@ class Utils {
     //! Recurses into BinaryOperators.
     //! \param[in] expr Expression to process
     //! \param[out] currentList List of accesses
-    static void getExprArrayAccesses(Expr* expr,
-                              std::vector<ArraySubscriptExpr*>& currentList);
+    static void getExprArrayAccesses(
+        Expr* expr, std::vector<ArraySubscriptExpr*>& currentList);
 
     //! Get a string representation of a binary operator
     static std::string binaryOperatorKindToString(BinaryOperatorKind bo);
-
-    //! Get the inverse of a relational operator, ie >= becomes <
-    static BinaryOperatorKind invertRelationalOperator(BinaryOperatorKind bo);
 
    private:
     //! String representations of valid operators for use in constraints

@@ -200,7 +200,7 @@ void StmtContext::enterIf(IfStmt* ifStmt, bool invert) {
     if (BinaryOperator* cond = dyn_cast<BinaryOperator>(ifStmt->getCond())) {
         makeAndInsertConstraint(
             cond->getLHS(), cond->getRHS(),
-            (invert ? Utils::invertRelationalOperator(cond->getOpcode())
+            (invert ? BinaryOperator::negateComparisonOp(cond->getOpcode())
                     : cond->getOpcode()));
     } else {
         Utils::printErrorAndExit(
