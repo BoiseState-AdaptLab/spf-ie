@@ -217,6 +217,12 @@ void StmtContext::makeAndInsertConstraint(Expr* lower, Expr* upper,
 
 void StmtContext::makeAndInsertConstraint(std::string lower, Expr* upper,
                                           BinaryOperatorKind oper) {
+    if (oper == BinaryOperatorKind::BO_NE) {
+        Utils::printErrorAndExit(
+            "Not-equal conditions are unsupported by SPF: in condition " +
+                lower + " != " + Utils::stmtToString(upper),
+            upper);
+    }
     constraints.push_back(
         std::make_shared<
             std::tuple<std::string, std::string, BinaryOperatorKind>>(
