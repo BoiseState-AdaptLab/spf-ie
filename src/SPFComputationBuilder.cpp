@@ -2,8 +2,10 @@
 
 #include <algorithm>
 #include <map>
+#include <memory>
 #include <sstream>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -21,35 +23,36 @@ namespace spf_ie {
 
 SPFComputationBuilder::SPFComputationBuilder(){};
 
-SPFComputation SPFComputationBuilder::buildComputationFromFunction(
-    FunctionDecl* funcDecl) {
-    // reset builder components
-    stmtNumber = 0;
-    largestScheduleDimension = 0;
-    currentStmtContext = StmtContext();
-    stmtContexts.clear();
-    computation = SPFComputation();
-
+std::unique_ptr<SPFComputation>
+SPFComputationBuilder::buildComputationFromFunction(FunctionDecl* funcDecl) {
     if (CompoundStmt* funcBody = dyn_cast<CompoundStmt>(funcDecl->getBody())) {
+        // reset builder components
+        stmtNumber = 0;
+        largestScheduleDimension = 0;
+        currentStmtContext = StmtContext();
+        stmtContexts.clear();
+        computation = std::make_unique<SPFComputation>();
+
+        // perform processing
         processBody(funcBody);
 
+        // collect results into Computation
         unsigned int i = 0;
-        for (auto& it : computation.stmtsInfoMap) {
+        for (auto& stmtContext : stmtContexts) {
             // iteration space
-            it.second.iterationSpace =
-                iegenlib::Set(stmtContexts[i].getIterSpaceString());
+            std::string iterationSpace = stmtContext.getIterSpaceString();
             // execution schedule
-            stmtContexts[i].schedule.zeroPadDimension(largestScheduleDimension);
-            it.second.executionSchedule =
-                iegenlib::Relation(stmtContexts[i].getExecScheduleString());
+            // zero-pad schedule to maximum dimension encountered
+            stmtContext.schedule.zeroPadDimension(largestScheduleDimension);
+            std::string executionSchedule = stmtContext.getExecScheduleString();
             // data accesses
-            auto arrayAccesses = stmtContexts[i].dataAccesses.arrayAccesses;
-            for (auto& it_accesses : arrayAccesses) {
+            std::vector<std::pair<std::string, std::string>> dataReads;
+            std::vector<std::pair<std::string, std::string>> dataWrites;
+            for (auto& it_accesses : stmtContext.dataAccesses.arrayAccesses) {
                 std::string dataSpaceAccessed =
                     Utils::stmtToString(it_accesses.second.base);
                 if (!it_accesses.second.isRead) {
-                    for (const auto& invariantGroup :
-                         stmtContexts[i].invariants) {
+                    for (const auto& invariantGroup : stmtContext.invariants) {
                         if (std::find(
                                 invariantGroup.begin(), invariantGroup.end(),
                                 dataSpaceAccessed) != invariantGroup.end()) {
@@ -57,24 +60,31 @@ SPFComputation SPFComputationBuilder::buildComputationFromFunction(
                                 "Code may not modify loop-invariant data "
                                 "space '" +
                                     dataSpaceAccessed + "'",
-                                stmtContexts[i].stmt);
+                                stmtContext.stmt);
                         }
                     }
                 }
-                (it_accesses.second.isRead ? it.second.dataReads
-                                           : it.second.dataWrites)
+                (it_accesses.second.isRead ? dataReads : dataWrites)
                     .push_back(std::make_pair(
-                        dataSpaceAccessed, stmtContexts[i].getDataAccessString(
-                                               &it_accesses.second)));
+                        dataSpaceAccessed,
+                        stmtContext.getDataAccessString(&it_accesses.second)));
             }
-            // data spaces
-            auto stmtDataSpaces = stmtContexts[i].dataAccesses.dataSpaces;
-            computation.dataSpaces.insert(stmtDataSpaces.begin(),
-                                          stmtDataSpaces.end());
+
+            // insert Computation data spaces
+            auto stmtDataSpaces = stmtContext.dataAccesses.dataSpaces;
+            computation->dataSpaces.insert(stmtDataSpaces.begin(),
+                                           stmtDataSpaces.end());
+
+            // create and insert IEGenStmtInfo
+            computation->stmtsInfoMap.emplace(
+                "S" + std::to_string(i),
+                IEGenStmtInfo(Utils::stmtToString(stmtContext.stmt),
+                              iterationSpace, executionSchedule, dataReads,
+                              dataWrites));
 
             i++;
         }
-        return computation;
+        return std::move(computation);
     } else {
         Utils::printErrorAndExit("Invalid function body", funcDecl->getBody());
     }
@@ -152,11 +162,10 @@ void SPFComputationBuilder::addStmt(Stmt* stmt) {
         largestScheduleDimension, currentStmtContext.schedule.getDimension());
 
     // store processed statement
-    computation.stmtsInfoMap.emplace("S" + std::to_string(stmtNumber++),
-                                     IEGenStmtInfo(Utils::stmtToString(stmt)));
     currentStmtContext.stmt = stmt;
     stmtContexts.push_back(currentStmtContext);
     currentStmtContext = StmtContext(&currentStmtContext);
+    stmtNumber++;
 }
 
 }  // namespace spf_ie

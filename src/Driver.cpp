@@ -59,10 +59,10 @@ class SPFConsumer : public ASTConsumer {
                     Utils::printSmallLine();
                     llvm::outs() << "\n";
                 }
-                SPFComputation computation =
+                std::unique_ptr<SPFComputation> computation =
                     builder.buildComputationFromFunction(func);
                 if (PrintOutputToConsole) {
-                    computation.printInfo();
+                    computation->printInfo();
                 }
             }
         }

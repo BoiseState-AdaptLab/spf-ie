@@ -1,6 +1,7 @@
 #ifndef SPFIE_SPFCOMPUTATIONBUILDER_HPP
 #define SPFIE_SPFCOMPUTATIONBUILDER_HPP
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -29,7 +30,8 @@ class SPFComputationBuilder {
     //! Entry point for each function; gather information about its
     //! statements and data accesses into an SPFComputation
     //! \param[in] funcDecl Function declaration to process
-    SPFComputation buildComputationFromFunction(FunctionDecl* funcDecl);
+    std::unique_ptr<SPFComputation> buildComputationFromFunction(
+        FunctionDecl* funcDecl);
 
    private:
     //! Number of the statement currently being processed
@@ -42,7 +44,7 @@ class SPFComputationBuilder {
     //! Context information attached to each completed statement
     std::vector<StmtContext> stmtContexts;
     //! SPFComputation being built up
-    SPFComputation computation;
+    std::unique_ptr<SPFComputation> computation;
 
     //! Process the body of a control structure, such as a for loop
     //! \param[in] stmt Body statement (which may be compound) to process

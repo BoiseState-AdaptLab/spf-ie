@@ -23,9 +23,9 @@ void SPFComputation::printInfo() {
     for (const auto& it : stmtsInfoMap) {
         stmts << it.first << ": " << it.second.stmtSourceCode << "\n";
         iterSpaces << it.first << ": "
-                   << it.second.iterationSpace.prettyPrintString() << "\n";
+                   << it.second.iterationSpace->prettyPrintString() << "\n";
         execSchedules << it.first << ": "
-                      << it.second.executionSchedule.prettyPrintString()
+                      << it.second.executionSchedule->prettyPrintString()
                       << "\n";
         dataReads << it.first << ":";
         if (it.second.dataReads.empty()) {
@@ -34,7 +34,7 @@ void SPFComputation::printInfo() {
             dataReads << "{\n";
             for (const auto& read_it : it.second.dataReads) {
                 dataReads << "    " << read_it.first << ": "
-                          << read_it.second.prettyPrintString() << "\n";
+                          << read_it.second->prettyPrintString() << "\n";
             }
             dataReads << "}";
         }
@@ -46,7 +46,7 @@ void SPFComputation::printInfo() {
             dataWrites << "{\n";
             for (const auto& write_it : it.second.dataWrites) {
                 dataWrites << "    " << write_it.first << ": "
-                           << write_it.second.prettyPrintString() << "\n";
+                           << write_it.second->prettyPrintString() << "\n";
             }
             dataWrites << "}";
         }

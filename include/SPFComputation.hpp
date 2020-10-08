@@ -2,9 +2,11 @@
 #define SPFIE_SPFCOMPUTATION_HPP
 
 #include <map>
+#include <memory>
 #include <string>
 #include <unordered_set>
 #include <utility>
+#include <vector>
 
 #include "iegenlib.h"
 
@@ -36,21 +38,39 @@ struct SPFComputation {
  * objects.
  */
 struct IEGenStmtInfo {
-    IEGenStmtInfo(std::string stmt)
-        : iterationSpace("{}"),
-          executionSchedule("{[]->[]}"),
-          stmtSourceCode(stmt){};
+    IEGenStmtInfo(
+        std::string stmtSourceCode, std::string iterationSpaceStr,
+        std::string executionScheduleStr,
+        std::vector<std::pair<std::string, std::string>> dataReadsStrs,
+        std::vector<std::pair<std::string, std::string>> dataWritesStrs)
+        : stmtSourceCode(stmtSourceCode) {
+        iterationSpace = std::make_unique<iegenlib::Set>(iterationSpaceStr);
+        executionSchedule =
+            std::make_unique<iegenlib::Relation>(executionScheduleStr);
+        for (const auto& readInfo : dataReadsStrs) {
+            dataReads.push_back(
+                {readInfo.first,
+                 std::make_unique<iegenlib::Relation>(readInfo.second)});
+        }
+        for (const auto& writeInfo : dataWritesStrs) {
+            dataWrites.push_back(
+                {writeInfo.first,
+                 std::make_unique<iegenlib::Relation>(writeInfo.second)});
+        }
+    };
 
     //! Source code of the statement, for debugging purposes
     std::string stmtSourceCode;
     //! Iteration space of a statement
-    iegenlib::Set iterationSpace;
+    std::unique_ptr<iegenlib::Set> iterationSpace;
     //! Execution schedule of a single statement
-    iegenlib::Relation executionSchedule;
+    std::unique_ptr<iegenlib::Relation> executionSchedule;
     //! Read dependences of a statement, pairing data space name to relation
-    std::vector<std::pair<std::string, iegenlib::Relation>> dataReads;
+    std::vector<std::pair<std::string, std::unique_ptr<iegenlib::Relation>>>
+        dataReads;
     //! Write dependences of a statement, pairing data space name to relation
-    std::vector<std::pair<std::string, iegenlib::Relation>> dataWrites;
+    std::vector<std::pair<std::string, std::unique_ptr<iegenlib::Relation>>>
+        dataWrites;
 };
 
 }  // namespace spf_ie
