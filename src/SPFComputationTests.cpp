@@ -1,8 +1,8 @@
 /*!
  * \file SPFComputationTests.cpp
  *
- * \brief Regression tests which compare built SPFComputations to expected
- * values.
+ * \brief Regression tests which compare built SPFComputations to
+ * expected values.
  *
  * \author Anna Rift
  */
@@ -45,13 +45,13 @@ class SPFComputationTests : public ::testing::Test {
     virtual void TearDown() override {}
 
     //! Build SPFComputations from every function in the provided code.
-    std::vector<std::unique_ptr<SPFComputation>> buildSPFComputationsFromCode(
-        std::string code) {
+    std::vector<std::unique_ptr<libspf::SPFComputation>>
+    buildSPFComputationsFromCode(std::string code) {
         std::unique_ptr<ASTUnit> AST = tooling::buildASTFromCode(
             code, "input.cpp", std::make_shared<PCHContainerOperations>());
         Context = &AST->getASTContext();
 
-        std::vector<std::unique_ptr<SPFComputation>> computations;
+        std::vector<std::unique_ptr<libspf::SPFComputation>> computations;
         SPFComputationBuilder builder;
         for (auto it : Context->getTranslationUnitDecl()->decls()) {
             FunctionDecl* func = dyn_cast<FunctionDecl>(it);
@@ -63,10 +63,10 @@ class SPFComputationTests : public ::testing::Test {
         return computations;
     }
 
-    //! Use assertions/expectations to compare an SPFComputation to expected
-    //! values.
+    //! Use assertions/expectations to compare an SPFComputation to
+    //! expected values.
     void compareComputationToExpectations(
-        const SPFComputation* computation, int expectedNumStmts,
+        const libspf::SPFComputation* computation, int expectedNumStmts,
         const std::unordered_set<std::string>& expectedDataSpaces,
         const std::vector<std::string>& expectedIterSpaces,
         const std::vector<std::string>& expectedExecSchedules,
@@ -139,10 +139,10 @@ TEST_F(SPFComputationTests, matrix_add) {
     }\
 }";
 
-    std::vector<std::unique_ptr<SPFComputation>> computations =
+    std::vector<std::unique_ptr<libspf::SPFComputation>> computations =
         buildSPFComputationsFromCode(code);
     ASSERT_EQ(computations.size(), 1);
-    SPFComputation* computation = computations.back().get();
+    libspf::SPFComputation* computation = computations.back().get();
 
     // expected values for the computation
     unsigned int expectedNumStmts = 3;
@@ -183,10 +183,10 @@ TEST_F(SPFComputationTests, forward_solve) {
     return 0;\
 }";
 
-    std::vector<std::unique_ptr<SPFComputation>> computations =
+    std::vector<std::unique_ptr<libspf::SPFComputation>> computations =
         buildSPFComputationsFromCode(code);
     ASSERT_EQ(computations.size(), 1);
-    SPFComputation* computation = computations.back().get();
+    libspf::SPFComputation* computation = computations.back().get();
 
     unsigned int expectedNumStmts = 6;
     std::unordered_set<std::string> expectedDataSpaces = {"x", "b", "l"};
