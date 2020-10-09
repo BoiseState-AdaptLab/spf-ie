@@ -30,7 +30,7 @@ class SPFComputationBuilder {
     //! Entry point for each function; gather information about its
     //! statements and data accesses into an SPFComputation
     //! \param[in] funcDecl Function declaration to process
-    std::unique_ptr<SPFComputation> buildComputationFromFunction(
+    std::unique_ptr<libspf::SPFComputation> buildComputationFromFunction(
         FunctionDecl* funcDecl);
 
    private:
@@ -44,7 +44,7 @@ class SPFComputationBuilder {
     //! Context information attached to each completed statement
     std::vector<StmtContext> stmtContexts;
     //! SPFComputation being built up
-    std::unique_ptr<SPFComputation> computation;
+    std::unique_ptr<libspf::SPFComputation> computation;
 
     //! Process the body of a control structure, such as a for loop
     //! \param[in] stmt Body statement (which may be compound) to process

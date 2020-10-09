@@ -23,7 +23,7 @@ namespace spf_ie {
 
 SPFComputationBuilder::SPFComputationBuilder(){};
 
-std::unique_ptr<SPFComputation>
+std::unique_ptr<libspf::SPFComputation>
 SPFComputationBuilder::buildComputationFromFunction(FunctionDecl* funcDecl) {
     if (CompoundStmt* funcBody = dyn_cast<CompoundStmt>(funcDecl->getBody())) {
         // reset builder components
@@ -31,7 +31,7 @@ SPFComputationBuilder::buildComputationFromFunction(FunctionDecl* funcDecl) {
         largestScheduleDimension = 0;
         currentStmtContext = StmtContext();
         stmtContexts.clear();
-        computation = std::make_unique<SPFComputation>();
+        computation = std::make_unique<libspf::SPFComputation>();
 
         // perform processing
         processBody(funcBody);
@@ -78,9 +78,9 @@ SPFComputationBuilder::buildComputationFromFunction(FunctionDecl* funcDecl) {
             // create and insert IEGenStmtInfo
             computation->stmtsInfoMap.emplace(
                 "S" + std::to_string(i),
-                IEGenStmtInfo(Utils::stmtToString(stmtContext.stmt),
-                              iterationSpace, executionSchedule, dataReads,
-                              dataWrites));
+                libspf::IEGenStmtInfo(Utils::stmtToString(stmtContext.stmt),
+                                      iterationSpace, executionSchedule,
+                                      dataReads, dataWrites));
 
             i++;
         }
