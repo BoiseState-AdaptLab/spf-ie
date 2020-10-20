@@ -5,6 +5,7 @@ SPF-IE
 Authors
 -------
 - Anna Rift
+- Tobi Popoola
 - Aaron Orenstein
 
 
