@@ -54,7 +54,7 @@ class Utils {
 
    private:
     //! String representations of valid operators for use in constraints
-    static std::map<BinaryOperatorKind, std::string> operatorStrings;
+    static const std::map<BinaryOperatorKind, std::string> operatorStrings;
 
     Utils() = delete;
 };

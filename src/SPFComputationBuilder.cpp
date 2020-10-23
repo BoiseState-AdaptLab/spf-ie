@@ -51,6 +51,7 @@ SPFComputationBuilder::buildComputationFromFunction(FunctionDecl* funcDecl) {
             for (auto& it_accesses : stmtContext.dataAccesses.arrayAccesses) {
                 std::string dataSpaceAccessed =
                     Utils::stmtToString(it_accesses.second.base);
+                // enforce loop invariance
                 if (!it_accesses.second.isRead) {
                     for (const auto& invariantGroup : stmtContext.invariants) {
                         if (std::find(
@@ -64,6 +65,7 @@ SPFComputationBuilder::buildComputationFromFunction(FunctionDecl* funcDecl) {
                         }
                     }
                 }
+                // insert data access
                 (it_accesses.second.isRead ? dataReads : dataWrites)
                     .push_back(std::make_pair(
                         dataSpaceAccessed,

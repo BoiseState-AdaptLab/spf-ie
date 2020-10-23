@@ -70,7 +70,7 @@ std::string Utils::binaryOperatorKindToString(BinaryOperatorKind bo) {
     return operatorStrings.at(bo);
 }
 
-std::map<BinaryOperatorKind, std::string> Utils::operatorStrings = {
+const std::map<BinaryOperatorKind, std::string> Utils::operatorStrings = {
     {BinaryOperatorKind::BO_LT, "<"}, {BinaryOperatorKind::BO_LE, "<="},
     {BinaryOperatorKind::BO_GT, ">"}, {BinaryOperatorKind::BO_GE, ">="},
     {BinaryOperatorKind::BO_EQ, "="}, {BinaryOperatorKind::BO_NE, "!="}};
