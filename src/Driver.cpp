@@ -59,7 +59,7 @@ class SPFConsumer : public ASTConsumer {
                     Utils::printSmallLine();
                     llvm::outs() << "\n";
                 }
-                std::unique_ptr<libspf::SPFComputation> computation =
+                std::unique_ptr<iegenlib::Computation> computation =
                     builder.buildComputationFromFunction(func);
                 if (PrintOutputToConsole) {
                     computation->printInfo();

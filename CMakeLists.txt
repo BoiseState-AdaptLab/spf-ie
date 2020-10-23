@@ -35,8 +35,8 @@ set(LLVM_ENABLE_RTTI ON)
 
 # get IEGenLib
 ExternalProject_Add(iegenlib_in
-    GIT_REPOSITORY "https://github.com/CompOpt4Apps/IEGenLib.git"
-    GIT_TAG "0cfa0a82fc83cb9fa61376ed98fc2786f6e18cb6"
+    GIT_REPOSITORY "https://github.com/BoiseState-AdaptLab/IEGenLib.git"
+    GIT_TAG "187d137858a894ae7825e03b2dd64ce30159adb1"
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/IEGenLib
     BUILD_IN_SOURCE TRUE
     CONFIGURE_COMMAND "./configure"
@@ -46,16 +46,6 @@ link_directories("lib/IEGenLib/lib/installed/lib")
 link_directories("lib/IEGenLib/build/lib/gtest")
 link_directories("lib/IEGenLib/iegen/lib")
 
-# get libspf
-ExternalProject_Add(libspf_in
-    GIT_REPOSITORY "https://github.com/BoiseState-AdaptLab/libspf.git"
-    GIT_TAG "08a478a4fea71a42bdfb575265ceb0848a8427a3"
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/libspf
-    INSTALL_COMMAND ""
-    BUILD_IN_SOURCE TRUE
-)
-add_dependencies(libspf_in iegenlib_in)
-link_directories("lib/libspf")
 
 set (BASE_SOURCES
     SPFComputationBuilder.cpp
@@ -71,7 +61,7 @@ set (PROJECT_SOURCES src/Driver.cpp ${BASE_SOURCES})
 set (TEST_SOURCES src/SPFComputationTests.cpp ${BASE_SOURCES})
 
 add_clang_executable(${CMAKE_PROJECT_NAME} ${PROJECT_SOURCES})
-add_dependencies(${CMAKE_PROJECT_NAME} iegenlib_in libspf_in)
+add_dependencies(${CMAKE_PROJECT_NAME} iegenlib_in)
 
 add_clang_executable("${CMAKE_PROJECT_NAME}_t" EXCLUDE_FROM_ALL ${TEST_SOURCES})
 add_dependencies("${CMAKE_PROJECT_NAME}_t" iegenlib_in)
@@ -94,8 +84,6 @@ include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "${CLANG_INCLUDE_DIRS}")
 include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "lib/IEGenLib/iegen/include/iegenlib")
 include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "lib/IEGenLib/lib/installed/include")
 include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "lib/IEGenLib/lib/gtest/include")
-# libspf
-include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "lib/libspf/include")
 
 # Find libraries corresponding to LLVM components we need
 llvm_map_components_to_libnames(LLVM_LIBS support)
@@ -111,7 +99,6 @@ set (BASE_LIBS
     iegenlib
     gmp
     isl
-    libspf
 )
 
 target_link_libraries(${CMAKE_PROJECT_NAME}

@@ -5,7 +5,6 @@
 #include <string>
 #include <vector>
 
-#include "SPFComputation.hpp"
 #include "StmtContext.hpp"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Expr.h"
@@ -28,9 +27,9 @@ class SPFComputationBuilder {
    public:
     SPFComputationBuilder();
     //! Entry point for each function; gather information about its
-    //! statements and data accesses into an SPFComputation
+    //! statements and data accesses into an Computation
     //! \param[in] funcDecl Function declaration to process
-    std::unique_ptr<libspf::SPFComputation> buildComputationFromFunction(
+    std::unique_ptr<iegenlib::Computation> buildComputationFromFunction(
         FunctionDecl* funcDecl);
 
    private:
@@ -43,20 +42,20 @@ class SPFComputationBuilder {
     StmtContext currentStmtContext;
     //! Context information attached to each completed statement
     std::vector<StmtContext> stmtContexts;
-    //! SPFComputation being built up
-    std::unique_ptr<libspf::SPFComputation> computation;
+    //! Computation being built up
+    std::unique_ptr<iegenlib::Computation> computation;
 
     //! Process the body of a control structure, such as a for loop
     //! \param[in] stmt Body statement (which may be compound) to process
-    void processBody(Stmt* stmt);
+    void processBody(clang::Stmt* stmt);
 
     //! Process one statement, recursing on compound statements
     //! \param[in] stmt Statement to process
-    void processSingleStmt(Stmt* stmt);
+    void processSingleStmt(clang::Stmt* stmt);
 
     //! Add info about a completed statement to the builder
     //! \param[in] stmt Completed statement to save
-    void addStmt(Stmt* stmt);
+    void addStmt(clang::Stmt* stmt);
 };
 
 }  // namespace spf_ie

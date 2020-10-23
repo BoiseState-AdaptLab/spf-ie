@@ -15,7 +15,6 @@
 #include <vector>
 
 #include "Driver.hpp"
-#include "SPFComputation.hpp"
 #include "SPFComputationBuilder.hpp"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
@@ -45,13 +44,13 @@ class SPFComputationTests : public ::testing::Test {
     virtual void TearDown() override {}
 
     //! Build SPFComputations from every function in the provided code.
-    std::vector<std::unique_ptr<libspf::SPFComputation>>
+    std::vector<std::unique_ptr<iegenlib::Computation>>
     buildSPFComputationsFromCode(std::string code) {
         std::unique_ptr<ASTUnit> AST = tooling::buildASTFromCode(
             code, "input.cpp", std::make_shared<PCHContainerOperations>());
         Context = &AST->getASTContext();
 
-        std::vector<std::unique_ptr<libspf::SPFComputation>> computations;
+        std::vector<std::unique_ptr<iegenlib::Computation>> computations;
         SPFComputationBuilder builder;
         for (auto it : Context->getTranslationUnitDecl()->decls()) {
             FunctionDecl* func = dyn_cast<FunctionDecl>(it);
@@ -66,7 +65,7 @@ class SPFComputationTests : public ::testing::Test {
     //! Use assertions/expectations to compare an SPFComputation to
     //! expected values.
     void compareComputationToExpectations(
-        const libspf::SPFComputation* computation, int expectedNumStmts,
+        const iegenlib::Computation* computation, int expectedNumStmts,
         const std::unordered_set<std::string>& expectedDataSpaces,
         const std::vector<std::string>& expectedIterSpaces,
         const std::vector<std::string>& expectedExecSchedules,
@@ -80,48 +79,52 @@ class SPFComputationTests : public ::testing::Test {
         ASSERT_EQ(expectedReads.size(), expectedNumStmts);
         ASSERT_EQ(expectedWrites.size(), expectedNumStmts);
 
-        EXPECT_EQ(computation->dataSpaces, expectedDataSpaces);
-        ASSERT_EQ(computation->stmtsInfoMap.size(), expectedNumStmts);
-        unsigned int i = 0;
-        for (const auto& it : computation->stmtsInfoMap) {
-            // statement name
-            std::string stmtName = "S" + std::to_string(i);
-            SCOPED_TRACE(stmtName + ": " + it.second.stmtSourceCode);
-            ASSERT_EQ(it.first, stmtName);
+        EXPECT_EQ(computation->getDataSpaces(), expectedDataSpaces);
+        ASSERT_EQ(computation->getNumStmts(), expectedNumStmts);
+        for (int i = 0; i < expectedNumStmts; ++i) {
+            const iegenlib::Stmt* current = computation->getStmt(i);
+            // include statement number/source in trace
+            SCOPED_TRACE("S" + std::to_string(i) + ": " +
+                         current->getStmtSourceCode());
             // iteration space
-            EXPECT_EQ(it.second.iterationSpace->prettyPrintString(),
-                      std::make_unique<iegenlib::Set>(expectedIterSpaces[i])
-                          ->prettyPrintString());
+            auto* expectedIterSpace = new iegenlib::Set(expectedIterSpaces[i]);
+            EXPECT_EQ(current->getIterationSpace()->prettyPrintString(),
+                      expectedIterSpace->prettyPrintString());
+            delete expectedIterSpace;
             // execution schedule
-            EXPECT_EQ(
-                it.second.executionSchedule->prettyPrintString(),
-                std::make_unique<iegenlib::Relation>(expectedExecSchedules[i])
-                    ->prettyPrintString());
+            auto* expectedExecSchedule =
+                new iegenlib::Relation(expectedExecSchedules[i]);
+            EXPECT_EQ(current->getExecutionSchedule()->prettyPrintString(),
+                      expectedExecSchedule->prettyPrintString());
+            delete expectedExecSchedule;
             // reads
-            ASSERT_EQ(it.second.dataReads.size(), expectedReads[i].size());
+            auto dataReads = current->getDataReads();
+            ASSERT_EQ(dataReads.size(), expectedReads[i].size());
             unsigned int j = 0;
-            for (const auto& it_read : it.second.dataReads) {
+            for (const auto& it_read : dataReads) {
                 SCOPED_TRACE("read " + std::to_string(j));
                 EXPECT_EQ(it_read.first, expectedReads[i][j].first);
+                auto* expectedReadRel =
+                    new iegenlib::Relation(expectedReads[i][j].second);
                 EXPECT_EQ(it_read.second->prettyPrintString(),
-                          std::make_unique<iegenlib::Relation>(
-                              expectedReads[i][j].second)
-                              ->prettyPrintString());
+                          expectedReadRel->prettyPrintString());
+                delete expectedReadRel;
                 j++;
             }
             // writes
-            ASSERT_EQ(it.second.dataWrites.size(), expectedWrites[i].size());
+            auto dataWrites = current->getDataWrites();
+            ASSERT_EQ(dataWrites.size(), expectedWrites[i].size());
             j = 0;
-            for (const auto& it_write : it.second.dataWrites) {
+            for (const auto& it_write : dataWrites) {
                 SCOPED_TRACE("write " + std::to_string(j));
                 EXPECT_EQ(it_write.first, expectedWrites[i][j].first);
+                auto* expectedWriteRel =
+                    new iegenlib::Relation(expectedWrites[i][j].second);
                 EXPECT_EQ(it_write.second->prettyPrintString(),
-                          std::make_unique<iegenlib::Relation>(
-                              expectedWrites[i][j].second)
-                              ->prettyPrintString());
+                          expectedWriteRel->prettyPrintString());
+                delete expectedWriteRel;
                 j++;
             }
-            i++;
         }
     }
 };
@@ -139,10 +142,10 @@ TEST_F(SPFComputationTests, matrix_add) {
     }\
 }";
 
-    std::vector<std::unique_ptr<libspf::SPFComputation>> computations =
+    std::vector<std::unique_ptr<iegenlib::Computation>> computations =
         buildSPFComputationsFromCode(code);
     ASSERT_EQ(computations.size(), 1);
-    libspf::SPFComputation* computation = computations.back().get();
+    iegenlib::Computation* computation = computations.back().get();
 
     // expected values for the computation
     unsigned int expectedNumStmts = 3;
@@ -183,10 +186,10 @@ TEST_F(SPFComputationTests, forward_solve) {
     return 0;\
 }";
 
-    std::vector<std::unique_ptr<libspf::SPFComputation>> computations =
+    std::vector<std::unique_ptr<iegenlib::Computation>> computations =
         buildSPFComputationsFromCode(code);
     ASSERT_EQ(computations.size(), 1);
-    libspf::SPFComputation* computation = computations.back().get();
+    iegenlib::Computation* computation = computations.back().get();
 
     unsigned int expectedNumStmts = 6;
     std::unordered_set<std::string> expectedDataSpaces = {"x", "b", "l"};

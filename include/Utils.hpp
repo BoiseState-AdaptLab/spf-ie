@@ -24,13 +24,13 @@ class Utils {
 
     //! Print an error to standard error, including the context of a
     //! statement in the source code, and exit with error status
-    static void printErrorAndExit(std::string message, Stmt* stmt);
+    static void printErrorAndExit(std::string message, clang::Stmt* stmt);
 
     //! Print a line (horizontal separator) to standard output
     static void printSmallLine();
 
     //! Get the source code of a statement as a string
-    static std::string stmtToString(Stmt* stmt);
+    static std::string stmtToString(clang::Stmt* stmt);
 
     //! Get a copy of the given string with all instances of the substring to
     //! find replaced as specified

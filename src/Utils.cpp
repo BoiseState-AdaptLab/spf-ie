@@ -19,7 +19,7 @@ void Utils::printErrorAndExit(std::string message) {
     printErrorAndExit(message, nullptr);
 }
 
-void Utils::printErrorAndExit(std::string message, Stmt* stmt) {
+void Utils::printErrorAndExit(std::string message, clang::Stmt* stmt) {
     llvm::errs() << "ERROR: " << message << "\n";
     if (stmt) {
         llvm::errs() << "At "
@@ -33,7 +33,7 @@ void Utils::printErrorAndExit(std::string message, Stmt* stmt) {
 
 void Utils::printSmallLine() { llvm::outs() << "---------------\n"; }
 
-std::string Utils::stmtToString(Stmt* stmt) {
+std::string Utils::stmtToString(clang::Stmt* stmt) {
     return Lexer::getSourceText(
                CharSourceRange::getTokenRange(stmt->getSourceRange()),
                Context->getSourceManager(), Context->getLangOpts())

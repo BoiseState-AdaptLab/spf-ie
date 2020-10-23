@@ -9,7 +9,6 @@
 #include <utility>
 #include <vector>
 
-#include "SPFComputation.hpp"
 #include "Utils.hpp"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Stmt.h"
@@ -23,7 +22,7 @@ namespace spf_ie {
 
 SPFComputationBuilder::SPFComputationBuilder(){};
 
-std::unique_ptr<libspf::SPFComputation>
+std::unique_ptr<iegenlib::Computation>
 SPFComputationBuilder::buildComputationFromFunction(FunctionDecl* funcDecl) {
     if (CompoundStmt* funcBody = dyn_cast<CompoundStmt>(funcDecl->getBody())) {
         // reset builder components
@@ -31,7 +30,7 @@ SPFComputationBuilder::buildComputationFromFunction(FunctionDecl* funcDecl) {
         largestScheduleDimension = 0;
         currentStmtContext = StmtContext();
         stmtContexts.clear();
-        computation = std::make_unique<libspf::SPFComputation>();
+        computation = std::make_unique<iegenlib::Computation>();
 
         // perform processing
         processBody(funcBody);
@@ -74,15 +73,15 @@ SPFComputationBuilder::buildComputationFromFunction(FunctionDecl* funcDecl) {
 
             // insert Computation data spaces
             auto stmtDataSpaces = stmtContext.dataAccesses.dataSpaces;
-            computation->dataSpaces.insert(stmtDataSpaces.begin(),
-                                           stmtDataSpaces.end());
+            for (const auto& dataSpaceName :
+                 stmtContext.dataAccesses.dataSpaces) {
+                computation->addDataSpace(dataSpaceName);
+            }
 
-            // create and insert IEGenStmtInfo
-            computation->stmtsInfoMap.emplace(
-                "S" + std::to_string(i),
-                libspf::IEGenStmtInfo(Utils::stmtToString(stmtContext.stmt),
-                                      iterationSpace, executionSchedule,
-                                      dataReads, dataWrites));
+            // create and insert iegenlib Stmt
+            computation->addStmt(std::move(iegenlib::Stmt(
+                Utils::stmtToString(stmtContext.stmt), iterationSpace,
+                executionSchedule, dataReads, dataWrites)));
 
             i++;
         }
@@ -92,7 +91,7 @@ SPFComputationBuilder::buildComputationFromFunction(FunctionDecl* funcDecl) {
     }
 }
 
-void SPFComputationBuilder::processBody(Stmt* stmt) {
+void SPFComputationBuilder::processBody(clang::Stmt* stmt) {
     if (CompoundStmt* asCompoundStmt = dyn_cast<CompoundStmt>(stmt)) {
         for (auto it : asCompoundStmt->body()) {
             processSingleStmt(it);
@@ -102,7 +101,7 @@ void SPFComputationBuilder::processBody(Stmt* stmt) {
     }
 }
 
-void SPFComputationBuilder::processSingleStmt(Stmt* stmt) {
+void SPFComputationBuilder::processSingleStmt(clang::Stmt* stmt) {
     // fail on disallowed statement types
     if (isa<WhileStmt>(stmt) || isa<CompoundStmt>(stmt) ||
         isa<SwitchStmt>(stmt) || isa<DoStmt>(stmt) || isa<LabelStmt>(stmt) ||
@@ -141,7 +140,7 @@ void SPFComputationBuilder::processSingleStmt(Stmt* stmt) {
     }
 }
 
-void SPFComputationBuilder::addStmt(Stmt* stmt) {
+void SPFComputationBuilder::addStmt(clang::Stmt* stmt) {
     // capture reads and writes made in statement
     if (DeclStmt* asDeclStmt = dyn_cast<DeclStmt>(stmt)) {
         VarDecl* decl = cast<VarDecl>(asDeclStmt->getSingleDecl());
