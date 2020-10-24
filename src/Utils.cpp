@@ -63,6 +63,10 @@ void Utils::getExprArrayAccesses(
     }
 }
 
+std::string Utils::getVarReplacementName() {
+    return "_rVar" + std::to_string(replacementVarNumber++);
+}
+
 std::string Utils::binaryOperatorKindToString(BinaryOperatorKind bo) {
     if (!operatorStrings.count(bo)) {
         printErrorAndExit("Invalid operator type encountered.");
@@ -74,5 +78,7 @@ const std::map<BinaryOperatorKind, std::string> Utils::operatorStrings = {
     {BinaryOperatorKind::BO_LT, "<"}, {BinaryOperatorKind::BO_LE, "<="},
     {BinaryOperatorKind::BO_GT, ">"}, {BinaryOperatorKind::BO_GE, ">="},
     {BinaryOperatorKind::BO_EQ, "="}, {BinaryOperatorKind::BO_NE, "!="}};
+
+unsigned int Utils::replacementVarNumber = 0;
 
 }  // namespace spf_ie

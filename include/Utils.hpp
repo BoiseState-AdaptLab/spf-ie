@@ -49,12 +49,19 @@ class Utils {
     static void getExprArrayAccesses(
         Expr* expr, std::vector<ArraySubscriptExpr*>& currentList);
 
+    //! Get a unique variable name to use in substitutions
+    static std::string getVarReplacementName();
+
     //! Get a string representation of a binary operator
     static std::string binaryOperatorKindToString(BinaryOperatorKind bo);
 
    private:
     //! String representations of valid operators for use in constraints
     static const std::map<BinaryOperatorKind, std::string> operatorStrings;
+
+    //! Number to be used (and incremented) when creating replacement variable
+    //! names
+    static unsigned int replacementVarNumber;
 
     Utils() = delete;
 };

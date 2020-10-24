@@ -69,14 +69,35 @@ std::string StmtContext::getExecScheduleString() {
 
 std::string StmtContext::getDataAccessString(ArrayAccess* access) {
     std::ostringstream os;
+    std::vector<std::string> constraintsToAdd;
     os << "{" << getItersTupleString() << "->[";
     for (const auto& it : access->indexes) {
         if (it != *access->indexes.begin()) {
             os << ",";
         }
-        os << Utils::stmtToString(it);
+        std::vector<ArraySubscriptExpr*> subAccesses;
+        Utils::getExprArrayAccesses(it, subAccesses);
+        if (!subAccesses.empty()) {
+            std::string replacementName = Utils::getVarReplacementName();
+            os << replacementName;
+            constraintsToAdd.push_back(replacementName + " = " +
+                                       exprToStringWithSafeArrays(it));
+        } else {
+            os << Utils::stmtToString(it);
+        }
     }
-    os << "]}";
+    os << "]";
+    if (!constraintsToAdd.empty()) {
+        os << ": ";
+        for (const auto& constraint : constraintsToAdd) {
+            if (constraint != *constraintsToAdd.begin()) {
+                os << " && ";
+            }
+            os << constraint;
+        }
+    }
+    os << "}";
+    llvm::outs() << "data access string: " << os.str() << "\n";
     return os.str();
 }
 
