@@ -74,13 +74,13 @@ class SPFComputationTests : public ::testing::Test {
         const std::vector<std::vector<std::pair<std::string, std::string>>>&
             expectedWrites) {
         // sanity check that we have the correct number of expected values
-        ASSERT_EQ(expectedIterSpaces.size(), expectedNumStmts);
-        ASSERT_EQ(expectedExecSchedules.size(), expectedNumStmts);
-        ASSERT_EQ(expectedReads.size(), expectedNumStmts);
-        ASSERT_EQ(expectedWrites.size(), expectedNumStmts);
+        ASSERT_EQ(expectedNumStmts, expectedIterSpaces.size());
+        ASSERT_EQ(expectedNumStmts, expectedExecSchedules.size());
+        ASSERT_EQ(expectedNumStmts, expectedReads.size());
+        ASSERT_EQ(expectedNumStmts, expectedWrites.size());
 
-        EXPECT_EQ(computation->getDataSpaces(), expectedDataSpaces);
-        ASSERT_EQ(computation->getNumStmts(), expectedNumStmts);
+        EXPECT_EQ(expectedDataSpaces, computation->getDataSpaces());
+        ASSERT_EQ(expectedNumStmts, computation->getNumStmts());
         for (int i = 0; i < expectedNumStmts; ++i) {
             const iegenlib::Stmt* current = computation->getStmt(i);
             // include statement number/source in trace
@@ -88,40 +88,40 @@ class SPFComputationTests : public ::testing::Test {
                          current->getStmtSourceCode());
             // iteration space
             auto* expectedIterSpace = new iegenlib::Set(expectedIterSpaces[i]);
-            EXPECT_EQ(current->getIterationSpace()->prettyPrintString(),
-                      expectedIterSpace->prettyPrintString());
+            EXPECT_EQ(expectedIterSpace->prettyPrintString(),
+                      current->getIterationSpace()->prettyPrintString());
             delete expectedIterSpace;
             // execution schedule
             auto* expectedExecSchedule =
                 new iegenlib::Relation(expectedExecSchedules[i]);
-            EXPECT_EQ(current->getExecutionSchedule()->prettyPrintString(),
-                      expectedExecSchedule->prettyPrintString());
+            EXPECT_EQ(expectedExecSchedule->prettyPrintString(),
+                      current->getExecutionSchedule()->prettyPrintString());
             delete expectedExecSchedule;
             // reads
             auto dataReads = current->getDataReads();
-            ASSERT_EQ(dataReads.size(), expectedReads[i].size());
+            ASSERT_EQ(expectedReads[i].size(), dataReads.size());
             unsigned int j = 0;
             for (const auto& it_read : dataReads) {
                 SCOPED_TRACE("read " + std::to_string(j));
-                EXPECT_EQ(it_read.first, expectedReads[i][j].first);
+                EXPECT_EQ(expectedReads[i][j].first, it_read.first);
                 auto* expectedReadRel =
                     new iegenlib::Relation(expectedReads[i][j].second);
-                EXPECT_EQ(it_read.second->prettyPrintString(),
-                          expectedReadRel->prettyPrintString());
+                EXPECT_EQ(expectedReadRel->prettyPrintString(),
+                          it_read.second->prettyPrintString());
                 delete expectedReadRel;
                 j++;
             }
             // writes
             auto dataWrites = current->getDataWrites();
-            ASSERT_EQ(dataWrites.size(), expectedWrites[i].size());
+            ASSERT_EQ(expectedWrites[i].size(), dataWrites.size());
             j = 0;
             for (const auto& it_write : dataWrites) {
                 SCOPED_TRACE("write " + std::to_string(j));
-                EXPECT_EQ(it_write.first, expectedWrites[i][j].first);
+                EXPECT_EQ(expectedWrites[i][j].first, it_write.first);
                 auto* expectedWriteRel =
                     new iegenlib::Relation(expectedWrites[i][j].second);
-                EXPECT_EQ(it_write.second->prettyPrintString(),
-                          expectedWriteRel->prettyPrintString());
+                EXPECT_EQ(expectedWriteRel->prettyPrintString(),
+                          it_write.second->prettyPrintString());
                 delete expectedWriteRel;
                 j++;
             }
@@ -144,7 +144,7 @@ TEST_F(SPFComputationTests, matrix_add) {
 
     std::vector<std::unique_ptr<iegenlib::Computation>> computations =
         buildSPFComputationsFromCode(code);
-    ASSERT_EQ(computations.size(), 1);
+    ASSERT_EQ(1, computations.size());
     iegenlib::Computation* computation = computations.back().get();
 
     // expected values for the computation
@@ -188,7 +188,7 @@ TEST_F(SPFComputationTests, forward_solve) {
 
     std::vector<std::unique_ptr<iegenlib::Computation>> computations =
         buildSPFComputationsFromCode(code);
-    ASSERT_EQ(computations.size(), 1);
+    ASSERT_EQ(1, computations.size());
     iegenlib::Computation* computation = computations.back().get();
 
     unsigned int expectedNumStmts = 6;
