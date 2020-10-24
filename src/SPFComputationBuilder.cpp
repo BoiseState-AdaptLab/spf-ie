@@ -85,6 +85,18 @@ SPFComputationBuilder::buildComputationFromFunction(FunctionDecl* funcDecl) {
 
             i++;
         }
+
+        // sanity check Computation completeness
+        if (!computation->isComplete()) {
+            Utils::printErrorAndExit(
+                "Computation is in an inconsistent/incomplete state after "
+                "building from function '" +
+                    funcDecl->getQualifiedNameAsString() +
+                    "'. This "
+                    "should not be possible and most likely indicates a bug.",
+                funcBody);
+        }
+
         return std::move(computation);
     } else {
         Utils::printErrorAndExit("Invalid function body", funcDecl->getBody());
