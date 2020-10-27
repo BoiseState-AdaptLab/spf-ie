@@ -8,6 +8,10 @@
 #include "clang/AST/OperationKinds.h"
 #include "clang/AST/Stmt.h"
 
+//! Base name (will be followed by a unique string) for use in variable
+//! substitutions
+#define REPLACEMENT_VAR_BASE_NAME "_rVar"
+
 using namespace clang;
 
 namespace spf_ie {

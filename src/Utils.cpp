@@ -64,7 +64,7 @@ void Utils::getExprArrayAccesses(
 }
 
 std::string Utils::getVarReplacementName() {
-    return "_rVar" + std::to_string(replacementVarNumber++);
+    return REPLACEMENT_VAR_BASE_NAME + std::to_string(replacementVarNumber++);
 }
 
 std::string Utils::binaryOperatorKindToString(BinaryOperatorKind bo) {
