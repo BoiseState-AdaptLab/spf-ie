@@ -16,6 +16,7 @@
 
 #include "Driver.hpp"
 #include "SPFComputationBuilder.hpp"
+#include "Utils.hpp"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclBase.h"
@@ -42,6 +43,8 @@ class SPFComputationTest : public ::testing::Test {
    protected:
     virtual void SetUp() override {}
     virtual void TearDown() override {}
+
+    std::string replacementVarName = REPLACEMENT_VAR_BASE_NAME;
 
     //! Build SPFComputations from every function in the provided code.
     std::vector<std::unique_ptr<iegenlib::Computation>>
@@ -226,6 +229,56 @@ TEST_F(SPFComputationTest, forward_solve_correct) {
         computation, expectedNumStmts, expectedDataSpaces, expectedIterSpaces,
         expectedExecSchedules, expectedReads, expectedWrites);
 }
+
+TEST_F(SPFComputationTest, csr_spmv_correct) {
+    std::string code =
+        "\
+int CSR_SpMV(int a, int N, int A[a], int index[N + 1], int col[a], int x[N], int product[N]) {\
+    int i;\
+    int k;\
+    for (i = 0; i < N; i++) {\
+        for (k = index[i]; k < index[i + 1]; k++) {\
+            product[i] += A[k] * x[col[k]];\
+        }\
+    }\
+\
+    return 0;\
+}\
+";
+
+    std::vector<std::unique_ptr<iegenlib::Computation>> computations =
+        buildSPFComputationsFromCode(code);
+    ASSERT_EQ(1, computations.size());
+    iegenlib::Computation* computation = computations.back().get();
+
+    unsigned int expectedNumStmts = 4;
+    std::unordered_set<std::string> expectedDataSpaces = {"product", "A", "col",
+                                                          "x"};
+    std::vector<std::string> expectedIterSpaces = {
+        "{[]}", "{[]}",
+        "{[i,k]: 0 <= i && i < N && index(i) <= k && k < index(i + 1)}",
+        "{[]}"};
+    std::vector<std::string> expectedExecSchedules = {
+        "{[]->[0,0,0,0,0]}", "{[]->[1,0,0,0,0]}", "{[i,k]->[2,i,0,k,0]}",
+        "{[]->[3,0,0,0,0]}"};
+    std::vector<std::vector<std::pair<std::string, std::string>>>
+        expectedReads = {{},
+                         {},
+                         {{"product", "{[i,k]->[i]}"},
+                          {"A", "{[i,k]->[k]}"},
+                          {"col", "{[i,k]->[k]}"},
+                          {"x", "{[i,k]->[" + replacementVarName + "0]: " +
+                                    replacementVarName + "0 = col(k)}"}},
+                         {}};
+    std::vector<std::vector<std::pair<std::string, std::string>>>
+        expectedWrites = {{}, {}, {{"product", "{[i,k]->[i]}"}}, {}};
+
+    compareComputationToExpectations(
+        computation, expectedNumStmts, expectedDataSpaces, expectedIterSpaces,
+        expectedExecSchedules, expectedReads, expectedWrites);
+}
+
+/** Death tests, checking failure on invalid input **/
 
 TEST_F(SPFComputationDeathTest, incorrect_increment_fails) {
     std::string code1 =
