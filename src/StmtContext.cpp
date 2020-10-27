@@ -142,8 +142,6 @@ void StmtContext::enterFor(ForStmt* forStmt) {
         for (const auto& accessInfo : accessComponents) {
             newInvariants.push_back(
                 Utils::stmtToString(accessInfo.second.base));
-            llvm::errs() << "adding invariant "
-                         << Utils::stmtToString(accessInfo.second.base) << "\n";
         }
         invariants.push_back(newInvariants);
     } else {
