@@ -97,7 +97,6 @@ std::string StmtContext::getDataAccessString(ArrayAccess* access) {
         }
     }
     os << "}";
-    llvm::outs() << "data access string: " << os.str() << "\n";
     return os.str();
 }
 
