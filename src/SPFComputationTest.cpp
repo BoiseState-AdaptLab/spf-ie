@@ -227,8 +227,8 @@ TEST_F(SPFComputationTest, forward_solve_correct) {
         expectedExecSchedules, expectedReads, expectedWrites);
 }
 
-TEST_F(SPFComputationDeathTest, double_increment_fails) {
-    std::string code =
+TEST_F(SPFComputationDeathTest, incorrect_increment_fails) {
+    std::string code1 =
         "int a() {\
     int x;\
     for (int i = 0; i < 5; i += 2) {\
@@ -237,8 +237,96 @@ TEST_F(SPFComputationDeathTest, double_increment_fails) {
     return x;\
 }";
     ASSERT_DEATH(
-        buildSPFComputationsFromCode(code),
-        "Invalid increment in for loop -- must increment iterator by 1");
+        buildSPFComputationsFromCode(code1),
+        "Invalid increment in for loop -- must increase iterator by 1");
+
+    std::string code2 =
+        "int a() {\
+    int x;\
+    for (int i = 0; i < 5; i--) {\
+        x=i;\
+    }\
+    return x;\
+}";
+    ASSERT_DEATH(
+        buildSPFComputationsFromCode(code2),
+        "Invalid increment in for loop -- must increase iterator by 1");
+
+    std::string code3 =
+        "int a() {\
+    int x = 0;\
+    for (int i = 0; i < 5; i = i - 1) {\
+        x=i;\
+    }\
+    return x;\
+}";
+    ASSERT_DEATH(
+        buildSPFComputationsFromCode(code3),
+        "Invalid increment in for loop -- must increase iterator by 1");
+}
+
+TEST_F(SPFComputationDeathTest, loop_invariant_violation_fails) {
+    std::string code =
+        "int a() {\
+    int x[5] = {1,2,3,4,5};\
+    for (int i = 0; x[i] < 5; i += 1) {\
+        x[2] = 3;\
+    }\
+    return x;\
+}";
+    ASSERT_DEATH(buildSPFComputationsFromCode(code),
+                 "Code may not modify loop-invariant data space 'x'");
+}
+
+TEST_F(SPFComputationDeathTest, unsupported_statement_fails) {
+    std::string code =
+        "int a() {\
+    int x;\
+    asdf:\
+    for (int i = 0; x[i] < 5; i += 1) {\
+        x = 3;\
+    }\
+    goto asdf;\
+    return x;\
+}";
+    ASSERT_DEATH(buildSPFComputationsFromCode(code),
+                 "Unsupported stmt type LabelStmt");
+}
+
+TEST_F(SPFComputationDeathTest, invalid_condition_fails) {
+    std::string code1 =
+        "int a() {\
+    int x = 0;\
+    if (x)\
+        x = 3;\
+    }\
+    return x;\
+}";
+    ASSERT_DEATH(buildSPFComputationsFromCode(code1),
+                 "If statement condition must be a binary operation");
+
+    std::string code2 =
+        "int a() {\
+    int x = 0;\
+    if ((x=0))\
+        x = 3;\
+    }\
+    return x;\
+}";
+    ASSERT_DEATH(buildSPFComputationsFromCode(code2),
+                 "If statement condition must be a binary operation");
+
+    std::string code3 =
+        "int a() {\
+    int x = 0;\
+    if (x !=0)\
+        x = 3;\
+    }\
+    return x;\
+}";
+    ASSERT_DEATH(
+        buildSPFComputationsFromCode(code3),
+        "Not-equal conditions are unsupported by SPF: in condition x != 0");
 }
 
 //! Set up and run tests

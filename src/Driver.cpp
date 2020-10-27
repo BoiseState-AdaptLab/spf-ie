@@ -49,6 +49,7 @@ class SPFConsumer : public ASTConsumer {
         }
         SPFComputationBuilder builder;
         // process each function (with a body) in the file
+        bool builtAComputation = false;
         for (auto it : Context->getTranslationUnitDecl()->decls()) {
             FunctionDecl *func = dyn_cast<FunctionDecl>(it);
             if (func && func->doesThisDeclarationHaveABody()) {
@@ -61,10 +62,15 @@ class SPFConsumer : public ASTConsumer {
                 }
                 std::unique_ptr<iegenlib::Computation> computation =
                     builder.buildComputationFromFunction(func);
+                builtyAComputation = true;
                 if (PrintOutputToConsole) {
                     computation->printInfo();
                 }
             }
+        }
+        if (!builtAComputation) {
+            llvm::errs() << "No valid functions found for processing\n";
+            exit(1);
         }
     }
 

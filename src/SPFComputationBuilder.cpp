@@ -120,7 +120,7 @@ void SPFComputationBuilder::processSingleStmt(clang::Stmt* stmt) {
         isa<AttributedStmt>(stmt) || isa<GotoStmt>(stmt) ||
         isa<ContinueStmt>(stmt) || isa<BreakStmt>(stmt) ||
         isa<CallExpr>(stmt)) {
-        Utils::printErrorAndExit("Unsupported compound stmt type " +
+        Utils::printErrorAndExit("Unsupported stmt type " +
                                      std::string(stmt->getStmtClassName()),
                                  stmt);
     }
