@@ -62,14 +62,14 @@ class SPFConsumer : public ASTConsumer {
                 }
                 std::unique_ptr<iegenlib::Computation> computation =
                     builder.buildComputationFromFunction(func);
-                builtyAComputation = true;
+                builtAComputation = true;
                 if (PrintOutputToConsole) {
                     computation->printInfo();
                 }
             }
         }
         if (!builtAComputation) {
-            llvm::errs() << "No valid functions found for processing\n";
+            llvm::errs() << "No valid functions found for processing!\n";
             exit(1);
         }
     }
