@@ -68,7 +68,7 @@ class SPFComputationTest : public ::testing::Test {
     //! Use assertions/expectations to compare an SPFComputation to
     //! expected values.
     void compareComputationToExpectations(
-        const iegenlib::Computation* computation, int expectedNumStmts,
+        iegenlib::Computation* computation, int expectedNumStmts,
         const std::unordered_set<std::string>& expectedDataSpaces,
         const std::vector<std::string>& expectedIterSpaces,
         const std::vector<std::string>& expectedExecSchedules,
@@ -85,7 +85,7 @@ class SPFComputationTest : public ::testing::Test {
         EXPECT_EQ(expectedDataSpaces, computation->getDataSpaces());
         ASSERT_EQ(expectedNumStmts, computation->getNumStmts());
         for (int i = 0; i < expectedNumStmts; ++i) {
-            const iegenlib::Stmt* current = computation->getStmt(i);
+            iegenlib::Stmt* const current = computation->getStmt(i);
             // include statement number/source in trace
             SCOPED_TRACE("S" + std::to_string(i) + ": " +
                          current->getStmtSourceCode());
