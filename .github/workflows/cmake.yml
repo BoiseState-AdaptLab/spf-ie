@@ -19,12 +19,8 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Install LLVM and Clang
-      uses: KyleMayes/install-llvm-action@v1
-      with:
-        version: "11.0.0"
-        directory: ${{ runner.temp }}/llvm
-        cached: ${{ steps.cache-llvm.outputs.cache-hit }}
+    - name: Download LLVM/Clang compiled deps
+      run: mkdir ${{runner.temp}}/llvm; cd ${{runner.temp}}/llvm; wget https://github.com/riftEmber/spfie-deps/releases/download/11.0.0/clang+llvm-11.0.0-eh.tgz; tar xzvf clang+llvm-11.0.0-eh.tgz
 
     - name: Download LLVM src
       uses: actions/checkout@v2
@@ -43,7 +39,7 @@ jobs:
 
     - name: Configure CMake
       working-directory: ${{runner.workspace}}/build
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DLLVM_SRC=${{ runner.temp }}/llvm
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DLLVM_SRC=${{runner.temp}}/llvm
 
     - name: Build
       working-directory: ${{runner.workspace}}/build
