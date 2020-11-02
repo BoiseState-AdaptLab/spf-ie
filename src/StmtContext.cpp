@@ -69,7 +69,7 @@ std::string StmtContext::getExecScheduleString() {
 
 std::string StmtContext::getDataAccessString(ArrayAccess* access) {
     std::ostringstream os;
-    std::vector<std::string> constraintsToAdd;
+    std::vector<std::pair<std::string, std::string>> constraintsToAdd;
     os << "{" << getItersTupleString() << "->[";
     for (const auto& it : access->indexes) {
         if (it != *access->indexes.begin()) {
@@ -80,10 +80,17 @@ std::string StmtContext::getDataAccessString(ArrayAccess* access) {
         if (!subAccesses.empty()) {
             std::string replacementName = Utils::getVarReplacementName();
             os << replacementName;
-            constraintsToAdd.push_back(replacementName + " = " +
-                                       exprToStringWithSafeArrays(it));
-        } else {
+            constraintsToAdd.push_back(
+                {replacementName, exprToStringWithSafeArrays(it)});
+        } else if (isa<DeclRefExpr>(it->IgnoreParenImpCasts())) {
             os << Utils::stmtToString(it);
+        } else {
+            // if the expression is not a nested access or single variable
+            // simply assign it to a replacement variable and use that
+            std::string replacementName = Utils::getVarReplacementName();
+            os << replacementName;
+            constraintsToAdd.push_back(
+                {replacementName, Utils::stmtToString(it)});
         }
     }
     os << "]";
@@ -93,7 +100,7 @@ std::string StmtContext::getDataAccessString(ArrayAccess* access) {
             if (constraint != *constraintsToAdd.begin()) {
                 os << " && ";
             }
-            os << constraint;
+            os << constraint.first << " = " << constraint.second;
         }
     }
     os << "}";
