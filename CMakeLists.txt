@@ -46,7 +46,7 @@ link_directories("lib/IEGenLib/lib/installed/lib")
 link_directories("lib/IEGenLib/build/lib/gtest")
 link_directories("lib/IEGenLib/iegen/lib")
 
-
+# gather up sources
 set (BASE_SOURCES
     SPFComputationBuilder.cpp
     StmtContext.cpp
@@ -60,6 +60,9 @@ set (PROJECT_SOURCES src/Driver.cpp ${BASE_SOURCES})
 
 set (TEST_SOURCES src/SPFComputationTest.cpp ${BASE_SOURCES})
 
+# make executables
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
 add_clang_executable(${CMAKE_PROJECT_NAME} ${PROJECT_SOURCES})
 add_dependencies(${CMAKE_PROJECT_NAME} iegenlib_in)
 
@@ -68,7 +71,7 @@ add_dependencies("${CMAKE_PROJECT_NAME}_t" iegenlib_in)
 add_test("${CMAKE_PROJECT_NAME}_tests" "${CMAKE_PROJECT_NAME}_t")
 
 add_custom_command(OUTPUT spfie_test
-                COMMAND "./${CMAKE_PROJECT_NAME}_t"
+                COMMAND "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${CMAKE_PROJECT_NAME}_t"
                 DEPENDS "${CMAKE_PROJECT_NAME}_t"
                 COMMENT "Run spf-ie tests"
 )
