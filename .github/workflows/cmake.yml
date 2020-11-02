@@ -27,7 +27,7 @@ jobs:
         path: llvm-project
 
     - name: Build Clang/LLVM
-      run: cd llvm-project; mkdir build; cd build; cmake -DLLVM_ENABLE_PROJECTS=clang -DLLVM_ENABLE_EH=ON -DLLVM_ENABLE_RTTI=ON -G "Unix Makefiles" ../llvm; make -j
+      run: cd llvm-project; mkdir build; cd build; cmake -DLLVM_USE_LINKER=gold -DLLVM_ENABLE_PROJECTS=clang -DLLVM_ENABLE_EH=ON -DLLVM_ENABLE_RTTI=ON -G "Unix Makefiles" ../llvm; make -j
 
     - name: Create Build Environment
       run: cmake -E make_directory ${{runner.workspace}}/build
