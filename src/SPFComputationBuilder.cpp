@@ -36,8 +36,9 @@ SPFComputationBuilder::buildComputationFromFunction(FunctionDecl* funcDecl) {
         processBody(funcBody);
 
         // collect results into Computation
-        unsigned int i = 0;
         for (auto& stmtContext : stmtContexts) {
+            // source code
+            std::string stmtSourceCode = Utils::stmtToString(stmtContext.stmt);
             // iteration space
             std::string iterationSpace = stmtContext.getIterSpaceString();
             // execution schedule
@@ -79,11 +80,9 @@ SPFComputationBuilder::buildComputationFromFunction(FunctionDecl* funcDecl) {
             }
 
             // create and insert iegenlib Stmt
-            computation->addStmt(std::move(iegenlib::Stmt(
-                Utils::stmtToString(stmtContext.stmt), iterationSpace,
-                executionSchedule, dataReads, dataWrites)));
-
-            i++;
+            computation->addStmt(std::move(
+                iegenlib::Stmt(stmtSourceCode, iterationSpace,
+                               executionSchedule, dataReads, dataWrites)));
         }
 
         // sanity check Computation completeness
