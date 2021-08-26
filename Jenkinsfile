@@ -4,13 +4,10 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Building project'
-                cmakeBuild
-                    generator: 'Unix Makefiles',
-                    buildDir: 'build',
-                    sourceDir: '..',
-                    steps: [
-                        [args: '-DLLVM_SRC=/path/to/llvm-project/root']
-                    ]
+                dir('build') {
+                    sh 'cmake -DLLVM_SRC=/home/jenkins-runner/llvm-project ..'
+                    sh 'make'
+                }
             }
         }
         stage('Test') {
