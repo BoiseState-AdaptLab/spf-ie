@@ -4,9 +4,7 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Building project'
-                sh 'mkdir build && cd build'
-                sh 'cmake -DLLVM_SRC=~/llvm-project ..'
-                sh 'cmake --build .'
+                sh 'mkdir build && cd build && cmake -DLLVM_SRC=~/llvm-project .. && cmake --build .'
             }
         }
         stage('Test') {
