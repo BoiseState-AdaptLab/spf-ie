@@ -2,6 +2,9 @@ SPF-IE
 ==================================
 
 
+[![Build Status](http://localhost:8090/buildStatus/icon?job=spf-ie%2Fmain)](http://localhost:8090/job/spf-ie/job/main/)
+
+
 Authors
 -------
 - Anna Rift
