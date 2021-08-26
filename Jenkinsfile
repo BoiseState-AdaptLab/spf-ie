@@ -4,7 +4,13 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Building project'
-                sh 'mkdir build && cd build && cmake -DLLVM_SRC=~/llvm-project .. && cmake --build .'
+                cmakeBuild
+                    generator: 'Unix Makefiles',
+                    buildDir: 'build',
+                    sourceDir: '..',
+                    steps: [
+                        [args: '-DLLVM_SRC=/path/to/llvm-project/root']
+                    ]
             }
         }
         stage('Test') {
