@@ -12,7 +12,7 @@ pipeline {
         }
         stage('Test') {
             steps {
-                echo 'Running tests'
+                echo 'Building and running tests'
                 sh 'cmake --build build --target test'
             }
         }
