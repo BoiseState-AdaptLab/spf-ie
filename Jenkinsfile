@@ -10,10 +10,10 @@ pipeline {
     stages {
         stage('Print build info') {
             steps {
-                echo 'Building on node ${NODE_NAME}, executor ${EXECUTOR_NUMBER}'
-                echo 'Build tag: ${BUILD_TAG}'
-                echo 'Build URL: ${BUILD_URL}'
-                echo 'Workspace: ${WORKSPACE}'
+                echo "Building on node ${NODE_NAME}, executor ${EXECUTOR_NUMBER}"
+                echo "Build tag: ${BUILD_TAG}"
+                echo "Build URL: ${BUILD_URL}"
+                echo "Workspace: ${WORKSPACE}"
             }
         }
 
