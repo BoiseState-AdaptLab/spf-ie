@@ -42,15 +42,18 @@ pipeline {
             steps {
                 sh 'podman tag ${IMAGE_TAG_BASE}:${BUILD_TAG} ${IMAGE_TAG_BASE}:${IMAGE_TAG_LATEST_NAME}'
                 sh 'podman push ${IMAGE_TAG_BASE}:${IMAGE_TAG_LATEST_NAME}'
-
-                sh 'podman rmi ${IMAGE_TAG_BASE}:${IMAGE_TAG_LATEST_NAME}'
+            }
+            post {
+                always {
+                    sh 'podman rmi ${IMAGE_TAG_BASE}:${IMAGE_TAG_LATEST_NAME}'
+                }
             }
         }
+    }
 
-        stage('Delete image') {
-            steps {
-                sh 'podman rmi ${IMAGE_TAG_BASE}:${BUILD_TAG}'
-            }
+    post {
+        always {
+            sh 'podman rmi ${IMAGE_TAG_BASE}:${BUILD_TAG}'
         }
     }
 }
