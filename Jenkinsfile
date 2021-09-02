@@ -1,27 +1,55 @@
 pipeline {
     agent any
+
+    environment {
+        MAIN_BRANCH_NAME = 'main'
+        IMAGE_TAG_BASE = 'registry.hub.docker.com/riftember/spf-ie'
+        IMAGE_TAG_LATEST_NAME = 'latest'
+    }
+
     stages {
-        stage('Clean') {
+        stage('Print build info') {
             steps {
-                echo 'Clearing previous build folder'
-                dir('build') {
-                    deleteDir()
-                }
+                echo 'Building on node ${NODE_NAME}, executor ${EXECUTOR_NUMBER}'
+                echo 'Build tag: ${BUILD_TAG}'
+                echo 'Build URL: ${BUILD_URL}'
+                echo 'Workspace: ${WORKSPACE}'
             }
         }
-        stage('Build') {
+
+        stage('Build Docker image') {
             steps {
-                echo 'Building project'
-                dir('build') {
-                    sh 'cmake -DLLVM_SRC=/home/jenkins-runner/llvm-project ..'
-                    sh 'make'
-                }
+                sh 'podman build -t ${IMAGE_TAG_BASE}:${BUILD_TAG} .'
             }
         }
-        stage('Test') {
+
+        stage('Test image') {
             steps {
-                echo 'Building and running tests'
-                sh 'cmake --build build --target test'
+                sh 'podman run --rm ${IMAGE_TAG_BASE}:${BUILD_TAG} cmake --build build --target test'
+            }
+        }
+
+        stage('Push build-numbered image') {
+            steps {
+                sh 'podman push ${IMAGE_TAG_BASE}:${BUILD_TAG}'
+            }
+        }
+
+        stage('Push image as latest if on main branch') {
+            when {
+                branch '${MAIN_BRANCH_NAME}'
+            }
+            steps {
+                sh 'podman tag ${IMAGE_TAG_BASE}:${BUILD_TAG} ${IMAGE_TAG_BASE}:${IMAGE_TAG_LATEST_NAME}'
+                sh 'podman push ${IMAGE_TAG_BASE}:${IMAGE_TAG_LATEST_NAME}'
+
+                sh 'podman rmi ${IMAGE_TAG_BASE}:${IMAGE_TAG_LATEST_NAME}'
+            }
+        }
+
+        stage('Delete image') {
+            steps {
+                sh 'podman rmi ${IMAGE_TAG_BASE}:${BUILD_TAG}'
             }
         }
     }

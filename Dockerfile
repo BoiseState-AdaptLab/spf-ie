@@ -1,4 +1,4 @@
-FROM riftember/llvm-for-spfie:11.0.0
+FROM registry.hub.docker.com/riftember/llvm-for-spfie:11.0.0
 
 RUN apt-get -y install \
     git \
@@ -10,7 +10,7 @@ ENV TERM=xterm-256color
 
 WORKDIR /
 
-RUN git clone https://github.com/BoiseState-AdaptLab/spf-ie
+COPY . /spf-ie
 
 RUN mkdir /spf-ie/build && \
     cd /spf-ie/build && \
