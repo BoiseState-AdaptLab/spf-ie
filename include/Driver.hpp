@@ -7,7 +7,7 @@ namespace spf_ie {
 
 //! Globally-accessible pointer to the ASTContext, initialized before the
 //! tool runs.
-extern const clang::ASTContext* Context;
+extern const clang::ASTContext *Context;
 
 }  // namespace spf_ie
 

@@ -15,29 +15,29 @@ struct ScheduleVal;
  * \brief An execution schedule tuple, plus a few utilities for it
  */
 struct ExecSchedule {
-    ExecSchedule() {}
+  ExecSchedule() {}
 
-    //! Copy constructor
-    ExecSchedule(const ExecSchedule &other);
+  //! Copy constructor
+  ExecSchedule(const ExecSchedule &other);
 
-    //! Add a value to the end of the schedule tuple
-    void pushValue(ScheduleVal value);
+  //! Add a value to the end of the schedule tuple
+  void pushValue(ScheduleVal value);
 
-    //! Remove the value at the end of the schedule tuple
-    //! \return the removed value
-    ScheduleVal popValue();
+  //! Remove the value at the end of the schedule tuple
+  //! \return the removed value
+  ScheduleVal popValue();
 
-    //! Move statement number forward in the execution schedule
-    void advanceSchedule();
+  //! Move statement number forward in the execution schedule
+  void advanceSchedule();
 
-    //! Get the dimension of the execution schedule
-    int getDimension() { return scheduleTuple.size(); }
+  //! Get the dimension of the execution schedule
+  int getDimension() { return scheduleTuple.size(); }
 
-    //! Zero-pad this execution schedule up to a certain dimension
-    void zeroPadDimension(int dim);
+  //! Zero-pad this execution schedule up to a certain dimension
+  void zeroPadDimension(int dim);
 
-    //! Actual execution schedule ordering tuple
-    std::vector<std::shared_ptr<ScheduleVal>> scheduleTuple;
+  //! Actual execution schedule ordering tuple
+  std::vector<std::shared_ptr<ScheduleVal>> scheduleTuple;
 };
 
 /*!
@@ -47,13 +47,13 @@ struct ExecSchedule {
  * simply a number.
  */
 struct ScheduleVal {
-    ScheduleVal(std::string var);
-    ScheduleVal(int num);
+  ScheduleVal(std::string var);
+  ScheduleVal(int num);
 
-    std::string var;
-    int num;
-    //! Whether this ScheduleVal contains a variable
-    bool valueIsVar;
+  std::string var;
+  int num;
+  //! Whether this ScheduleVal contains a variable
+  bool valueIsVar;
 };
 
 }  // namespace spf_ie

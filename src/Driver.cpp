@@ -30,60 +30,60 @@ using namespace clang;
 using namespace clang::tooling;
 
 static llvm::cl::opt<bool> PrintOutputToConsole(
-    "print-info", llvm::cl::desc("Output info to console"));
+	"print-info", llvm::cl::desc("Output info to console"));
 
 namespace spf_ie {
 
 const ASTContext *Context;
 
 class SPFConsumer : public ASTConsumer {
-   public:
-    explicit SPFConsumer(llvm::StringRef fileName) : fileName(fileName.str()) {}
-    virtual void HandleTranslationUnit(ASTContext &Ctx) {
-        // initializing globally-accessible ASTContext
-        Context = &Ctx;
-        llvm::errs() << "\nProcessing: " << fileName << "\n";
-        if (PrintOutputToConsole) {
-            llvm::errs()
-                << "=================================================\n\n";
-        }
-        SPFComputationBuilder builder;
-        // process each function (with a body) in the file
-        bool builtAComputation = false;
-        for (auto it : Context->getTranslationUnitDecl()->decls()) {
-            FunctionDecl *func = dyn_cast<FunctionDecl>(it);
-            if (func && func->doesThisDeclarationHaveABody()) {
-                if (PrintOutputToConsole) {
-                    llvm::outs()
-                        << "FUNCTION: " << func->getQualifiedNameAsString()
-                        << "\n";
-                    Utils::printSmallLine();
-                    llvm::outs() << "\n";
-                }
-                std::unique_ptr<iegenlib::Computation> computation =
-                    builder.buildComputationFromFunction(func);
-                builtAComputation = true;
-                if (PrintOutputToConsole) {
-                    computation->printInfo();
-                }
-            }
-        }
-        if (!builtAComputation) {
-            llvm::errs() << "No valid functions found for processing!\n";
-            exit(1);
-        }
-    }
+public:
+  explicit SPFConsumer(llvm::StringRef fileName) : fileName(fileName.str()) {}
+  virtual void HandleTranslationUnit(ASTContext &Ctx) {
+	// initializing globally-accessible ASTContext
+	Context = &Ctx;
+	llvm::errs() << "\nProcessing: " << fileName << "\n";
+	if (PrintOutputToConsole) {
+	  llvm::errs()
+		  << "=================================================\n\n";
+	}
+	SPFComputationBuilder builder;
+	// process each function (with a body) in the file
+	bool builtAComputation = false;
+	for (auto it: Context->getTranslationUnitDecl()->decls()) {
+	  FunctionDecl *func = dyn_cast<FunctionDecl>(it);
+	  if (func && func->doesThisDeclarationHaveABody()) {
+		if (PrintOutputToConsole) {
+		  llvm::outs()
+			  << "FUNCTION: " << func->getQualifiedNameAsString()
+			  << "\n";
+		  Utils::printSmallLine();
+		  llvm::outs() << "\n";
+		}
+		std::unique_ptr<iegenlib::Computation> computation =
+			builder.buildComputationFromFunction(func);
+		builtAComputation = true;
+		if (PrintOutputToConsole) {
+		  computation->printInfo();
+		}
+	  }
+	}
+	if (!builtAComputation) {
+	  llvm::errs() << "No valid functions found for processing!\n";
+	  exit(1);
+	}
+  }
 
-   private:
-    std::string fileName;
+private:
+  std::string fileName;
 };
 
 class SPFFrontendAction : public ASTFrontendAction {
-   public:
-    virtual std::unique_ptr<ASTConsumer> CreateASTConsumer(
-        CompilerInstance &Compiler, llvm::StringRef InFile) {
-        return std::unique_ptr<ASTConsumer>(new SPFConsumer(InFile));
-    }
+public:
+  virtual std::unique_ptr<ASTConsumer> CreateASTConsumer(
+	  CompilerInstance &Compiler, llvm::StringRef InFile) {
+	return std::unique_ptr<ASTConsumer>(new SPFConsumer(InFile));
+  }
 };
 
 }  // namespace spf_ie
@@ -94,10 +94,10 @@ static llvm::cl::OptionCategory SPFToolCategory("spf-ie options");
 
 //! Instantiate and run the Clang tool
 int main(int argc, const char **argv) {
-    PrintOutputToConsole.addCategory(SPFToolCategory);
-    CommonOptionsParser OptionsParser(argc, argv, SPFToolCategory);
-    ClangTool Tool(OptionsParser.getCompilations(),
-                   OptionsParser.getSourcePathList());
+  PrintOutputToConsole.addCategory(SPFToolCategory);
+  CommonOptionsParser OptionsParser(argc, argv, SPFToolCategory);
+  ClangTool Tool(OptionsParser.getCompilations(),
+				 OptionsParser.getSourcePathList());
 
-    return Tool.run(newFrontendActionFactory<SPFFrontendAction>().get());
+  return Tool.run(newFrontendActionFactory<SPFFrontendAction>().get());
 }

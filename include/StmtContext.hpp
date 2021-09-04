@@ -34,75 +34,75 @@ namespace spf_ie {
  * space and execution schedule.
  */
 struct StmtContext {
-    StmtContext();
+  StmtContext();
 
-    //! Copy the information from an existing StmtContext.
-    //! Preserves only information that builds up in nested contexts,
-    //! excluding information that is only applicable per-statement.
-    //! \param[in] other Existing StmtContext to copy
-    StmtContext(StmtContext* other);
+  //! Copy the information from an existing StmtContext.
+  //! Preserves only information that builds up in nested contexts,
+  //! excluding information that is only applicable per-statement.
+  //! \param[in] other Existing StmtContext to copy
+  StmtContext(StmtContext *other);
 
-    //! Actual AST Stmt
-    Stmt* stmt;
+  //! Actual AST Stmt
+  Stmt *stmt;
 
-    //! Variables being iterated over
-    std::vector<std::string> iterators;
-    //! Constraints on iteration -- inequalities and equalities
-    std::vector<std::shared_ptr<
-        std::tuple<std::string, std::string, BinaryOperatorKind>>>
-        constraints;
-    //! Execution schedule
-    ExecSchedule schedule;
-    //! Data accesses (both reads and writes)
-    DataAccessHandler dataAccesses;
+  //! Variables being iterated over
+  std::vector<std::string> iterators;
+  //! Constraints on iteration -- inequalities and equalities
+  std::vector<std::shared_ptr<
+	  std::tuple<std::string, std::string, BinaryOperatorKind>>>
+	  constraints;
+  //! Execution schedule
+  ExecSchedule schedule;
+  //! Data accesses (both reads and writes)
+  DataAccessHandler dataAccesses;
 
-    //! Data spaces which are held invariant in the current context, grouped
-    //! by the loop that they are invariant in
-    std::vector<std::vector<std::string>> invariants;
+  //! Data spaces which are held invariant in the current context, grouped
+  //! by the loop that they are invariant in
+  std::vector<std::vector<std::string>> invariants;
 
-    //! Get a string representing the iteration space
-    std::string getIterSpaceString();
+  //! Get a string representing the iteration space
+  std::string getIterSpaceString();
 
-    //! Get a string representing the execution schedule
-    std::string getExecScheduleString();
+  //! Get a string representing the execution schedule
+  std::string getExecScheduleString();
 
-    //! Get a string representing the given data access
-    std::string getDataAccessString(ArrayAccess*);
+  //! Get a string representing the given data access
+  std::string getDataAccessString(ArrayAccess *);
 
-    // enter* and exit* methods add iterators and constraints when entering a
-    // new scope, remove when leaving the scope
+  // enter* and exit* methods add iterators and constraints when entering a
+  // new scope, remove when leaving the scope
 
-    //! Add context information from a for loop
-    void enterFor(ForStmt* forStmt);
+  //! Add context information from a for loop
+  void enterFor(ForStmt *forStmt);
 
-    //! Remove context information from a for loop
-    void exitFor();
+  //! Remove context information from a for loop
+  void exitFor();
 
-    //! Add context information from an if statement
-    //! \param[in] ifStmt If statement to use
-    //! \param[in] invert Whether to invert the if condition (for use in
-    //! else clauses)
-    void enterIf(IfStmt* ifStmt, bool invert = false);
+  //! Add context information from an if statement
+  //! \param[in] ifStmt If statement to use
+  //! \param[in] invert Whether to invert the if condition (for use in
+  //! else clauses)
+  void enterIf(IfStmt *ifStmt, bool invert = false);
 
-    //! Remove context information from an if statement
-    void exitIf();
+  //! Remove context information from an if statement
+  void exitIf();
 
-   private:
-    //! Convenience function to add a new constraint from the given parameters
-    void makeAndInsertConstraint(Expr* lower, Expr* upper,
-                                 BinaryOperatorKind oper);
+private:
+  //! Convenience function to add a new constraint from the given parameters
+  void makeAndInsertConstraint(Expr *lower, Expr *upper,
+							   BinaryOperatorKind oper);
 
-    //! Convenience function to add a new constraint from the given parameters
-    void makeAndInsertConstraint(std::string lower, Expr* upper,
-                                 BinaryOperatorKind oper);
+  //! Convenience function to add a new constraint from the given parameters
+  void makeAndInsertConstraint(std::string lower, Expr *upper,
+							   BinaryOperatorKind oper);
 
-    //! Get the source code of an expression, with array accesses changed to
-    //! function calls (for example, "i < A[i]" becomes "i < A(i)")
-    static std::string exprToStringWithSafeArrays(Expr* expr);
+  //! Get the source code of an expression, with array accesses changed to
+  //! function calls (for example, "i < A[i]" becomes "i < A(i)")
+  static std::string exprToStringWithSafeArrays(Expr *expr);
 
-    //! Get the tuple of iterators as a string, for use in other to-string
-    //! methods. Output like "[i,j,k]"
-    std::string getItersTupleString();
+  //! Get the tuple of iterators as a string, for use in other to-string
+  //! methods. Output like "[i,j,k]"
+  std::string getItersTupleString();
 };
 
 }  // namespace spf_ie
