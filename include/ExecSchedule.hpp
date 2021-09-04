@@ -15,13 +15,13 @@ struct ScheduleVal;
  * \brief An execution schedule tuple, plus a few utilities for it
  */
 struct ExecSchedule {
-  ExecSchedule() {}
+  ExecSchedule() = default;
 
   //! Copy constructor
   ExecSchedule(const ExecSchedule &other);
 
   //! Add a value to the end of the schedule tuple
-  void pushValue(ScheduleVal value);
+  void pushValue(const ScheduleVal &value);
 
   //! Remove the value at the end of the schedule tuple
   //! \return the removed value
@@ -31,7 +31,7 @@ struct ExecSchedule {
   void advanceSchedule();
 
   //! Get the dimension of the execution schedule
-  int getDimension() { return scheduleTuple.size(); }
+  int getDimension() const { return scheduleTuple.size(); }
 
   //! Zero-pad this execution schedule up to a certain dimension
   void zeroPadDimension(int dim);
@@ -47,11 +47,11 @@ struct ExecSchedule {
  * simply a number.
  */
 struct ScheduleVal {
-  ScheduleVal(std::string var);
-  ScheduleVal(int num);
+  explicit ScheduleVal(std::string var);
+  explicit ScheduleVal(int num);
 
   std::string var;
-  int num;
+  int num{};
   //! Whether this ScheduleVal contains a variable
   bool valueIsVar;
 };

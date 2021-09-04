@@ -40,10 +40,10 @@ struct StmtContext {
   //! Preserves only information that builds up in nested contexts,
   //! excluding information that is only applicable per-statement.
   //! \param[in] other Existing StmtContext to copy
-  StmtContext(StmtContext *other);
+  explicit StmtContext(StmtContext *other);
 
   //! Actual AST Stmt
-  Stmt *stmt;
+  Stmt *stmt{};
 
   //! Variables being iterated over
   std::vector<std::string> iterators;

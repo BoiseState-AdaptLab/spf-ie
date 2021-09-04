@@ -40,8 +40,8 @@ std::string Utils::stmtToString(clang::Stmt *stmt) {
 	  .str();
 }
 
-std::string Utils::replaceInString(std::string input, std::string toFind,
-								   std::string replaceWith) {
+std::string Utils::replaceInString(std::string input, const std::string &toFind,
+								   const std::string &replaceWith) {
   size_t pos = input.find(toFind);
   if (pos == std::string::npos) {
 	return input;
@@ -54,10 +54,10 @@ std::string Utils::replaceInString(std::string input, std::string toFind,
 void Utils::getExprArrayAccesses(
 	Expr *expr, std::vector<ArraySubscriptExpr *> &currentList) {
   Expr *usableExpr = expr->IgnoreParenImpCasts();
-  if (BinaryOperator *binOper = dyn_cast<BinaryOperator>(usableExpr)) {
+  if (auto *binOper = dyn_cast<BinaryOperator>(usableExpr)) {
 	getExprArrayAccesses(binOper->getLHS(), currentList);
 	getExprArrayAccesses(binOper->getRHS(), currentList);
-  } else if (ArraySubscriptExpr *asArrayAccessExpr =
+  } else if (auto *asArrayAccessExpr =
 	  dyn_cast<ArraySubscriptExpr>(usableExpr)) {
 	currentList.push_back(asArrayAccessExpr);
   }

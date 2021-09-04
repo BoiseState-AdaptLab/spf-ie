@@ -23,6 +23,8 @@ namespace spf_ie {
  */
 class Utils {
 public:
+  Utils() = delete;
+
   //! Print an error to standard error and exit with error status
   static void printErrorAndExit(std::string message);
 
@@ -42,8 +44,8 @@ public:
   //! modified)
   //! \param[in] toFind String to find (and replace) within input
   //! \param[in] replaceWith String to use as replacement
-  static std::string replaceInString(std::string input, std::string toFind,
-									 std::string replaceWith);
+  static std::string replaceInString(std::string input, const std::string &toFind,
+									 const std::string &replaceWith);
 
   //! Retrieve "all" array accesses, from left to right, contained in an
   //! expression.
@@ -66,8 +68,6 @@ private:
   //! Number to be used (and incremented) when creating replacement variable
   //! names
   static unsigned int replacementVarNumber;
-
-  Utils() = delete;
 };
 
 }  // namespace spf_ie

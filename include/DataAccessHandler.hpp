@@ -25,7 +25,7 @@ namespace spf_ie {
  * is difficult to work with for our purposes.
  */
 struct ArrayAccess {
-  ArrayAccess(int64_t id, Expr *base, std::vector<Expr *> indexes, bool isRead)
+  ArrayAccess(int64_t id, Expr *base, std::vector<Expr *> &indexes, bool isRead)
 	  : id(id), base(base), indexes(indexes), isRead(isRead) {}
 
   //! ID of original AST array access expression

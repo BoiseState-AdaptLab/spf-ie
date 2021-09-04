@@ -20,11 +20,11 @@ namespace spf_ie {
 
 /* SPFComputationBuilder */
 
-SPFComputationBuilder::SPFComputationBuilder() {};
+SPFComputationBuilder::SPFComputationBuilder() = default;
 
 std::unique_ptr<iegenlib::Computation>
 SPFComputationBuilder::buildComputationFromFunction(FunctionDecl *funcDecl) {
-  if (CompoundStmt *funcBody = dyn_cast<CompoundStmt>(funcDecl->getBody())) {
+  if (auto *funcBody = dyn_cast<CompoundStmt>(funcDecl->getBody())) {
 	// reset builder components
 	stmtNumber = 0;
 	largestScheduleDimension = 0;
@@ -67,9 +67,9 @@ SPFComputationBuilder::buildComputationFromFunction(FunctionDecl *funcDecl) {
 		}
 		// insert data access
 		(it_accesses.second.isRead ? dataReads : dataWrites)
-			.push_back(std::make_pair(
+			.emplace_back(
 				dataSpaceAccessed,
-				stmtContext.getDataAccessString(&it_accesses.second)));
+				stmtContext.getDataAccessString(&it_accesses.second));
 	  }
 
 	  // insert Computation data spaces
@@ -80,9 +80,8 @@ SPFComputationBuilder::buildComputationFromFunction(FunctionDecl *funcDecl) {
 	  }
 
 	  // create and insert iegenlib Stmt
-	  computation->addStmt(std::move(
-		  iegenlib::Stmt(stmtSourceCode, iterationSpace,
-						 executionSchedule, dataReads, dataWrites)));
+	  computation->addStmt(iegenlib::Stmt(stmtSourceCode, iterationSpace,
+										  executionSchedule, dataReads, dataWrites));
 	}
 
 	// sanity check Computation completeness
@@ -103,7 +102,7 @@ SPFComputationBuilder::buildComputationFromFunction(FunctionDecl *funcDecl) {
 }
 
 void SPFComputationBuilder::processBody(clang::Stmt *stmt) {
-  if (CompoundStmt *asCompoundStmt = dyn_cast<CompoundStmt>(stmt)) {
+  if (auto *asCompoundStmt = dyn_cast<CompoundStmt>(stmt)) {
 	for (auto it: asCompoundStmt->body()) {
 	  processSingleStmt(it);
 	}
@@ -124,12 +123,12 @@ void SPFComputationBuilder::processSingleStmt(clang::Stmt *stmt) {
 							 stmt);
   }
 
-  if (ForStmt *asForStmt = dyn_cast<ForStmt>(stmt)) {
+  if (auto *asForStmt = dyn_cast<ForStmt>(stmt)) {
 	currentStmtContext.schedule.advanceSchedule();
 	currentStmtContext.enterFor(asForStmt);
 	processBody(asForStmt->getBody());
 	currentStmtContext.exitFor();
-  } else if (IfStmt *asIfStmt = dyn_cast<IfStmt>(stmt)) {
+  } else if (auto *asIfStmt = dyn_cast<IfStmt>(stmt)) {
 	if (asIfStmt->getConditionVariable()) {
 	  Utils::printErrorAndExit(
 		  "If statement condition variable declarations are unsupported",
@@ -153,13 +152,13 @@ void SPFComputationBuilder::processSingleStmt(clang::Stmt *stmt) {
 
 void SPFComputationBuilder::addStmt(clang::Stmt *stmt) {
   // capture reads and writes made in statement
-  if (DeclStmt *asDeclStmt = dyn_cast<DeclStmt>(stmt)) {
-	VarDecl *decl = cast<VarDecl>(asDeclStmt->getSingleDecl());
+  if (auto *asDeclStmt = dyn_cast<DeclStmt>(stmt)) {
+	auto *decl = cast<VarDecl>(asDeclStmt->getSingleDecl());
 	if (decl->hasInit()) {
 	  currentStmtContext.dataAccesses.processAsReads(decl->getInit());
 	}
-  } else if (BinaryOperator *asBinOper = dyn_cast<BinaryOperator>(stmt)) {
-	if (ArraySubscriptExpr *lhsAsArrayAccess =
+  } else if (auto *asBinOper = dyn_cast<BinaryOperator>(stmt)) {
+	if (auto *lhsAsArrayAccess =
 		dyn_cast<ArraySubscriptExpr>(asBinOper->getLHS())) {
 	  currentStmtContext.dataAccesses.processAsWrite(lhsAsArrayAccess);
 	}

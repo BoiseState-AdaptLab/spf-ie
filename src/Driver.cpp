@@ -39,7 +39,7 @@ const ASTContext *Context;
 class SPFConsumer : public ASTConsumer {
 public:
   explicit SPFConsumer(llvm::StringRef fileName) : fileName(fileName.str()) {}
-  virtual void HandleTranslationUnit(ASTContext &Ctx) {
+  void HandleTranslationUnit(ASTContext &Ctx) override {
 	// initializing globally-accessible ASTContext
 	Context = &Ctx;
 	llvm::errs() << "\nProcessing: " << fileName << "\n";
@@ -51,7 +51,7 @@ public:
 	// process each function (with a body) in the file
 	bool builtAComputation = false;
 	for (auto it: Context->getTranslationUnitDecl()->decls()) {
-	  FunctionDecl *func = dyn_cast<FunctionDecl>(it);
+	  auto *func = dyn_cast<FunctionDecl>(it);
 	  if (func && func->doesThisDeclarationHaveABody()) {
 		if (PrintOutputToConsole) {
 		  llvm::outs()
@@ -80,8 +80,8 @@ private:
 
 class SPFFrontendAction : public ASTFrontendAction {
 public:
-  virtual std::unique_ptr<ASTConsumer> CreateASTConsumer(
-	  CompilerInstance &Compiler, llvm::StringRef InFile) {
+  std::unique_ptr<ASTConsumer> CreateASTConsumer(
+	  CompilerInstance &Compiler, llvm::StringRef InFile) override {
 	return std::unique_ptr<ASTConsumer>(new SPFConsumer(InFile));
   }
 };

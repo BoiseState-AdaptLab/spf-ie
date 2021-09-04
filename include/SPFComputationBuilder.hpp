@@ -34,9 +34,9 @@ public:
 
 private:
   //! Number of the statement currently being processed
-  unsigned int stmtNumber;
+  unsigned int stmtNumber{};
   //! The length of the longest schedule tuple
-  int largestScheduleDimension;
+  int largestScheduleDimension{};
   //! The information about the context we are currently in, which is
   //! copied for completed statements
   StmtContext currentStmtContext;

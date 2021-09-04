@@ -41,13 +41,13 @@ const ASTContext *spf_ie::Context;
  */
 class SPFComputationTest : public ::testing::Test {
 protected:
-  virtual void SetUp() override {}
-  virtual void TearDown() override {}
+  void SetUp() override {}
+  void TearDown() override {}
 
   std::string replacementVarName = REPLACEMENT_VAR_BASE_NAME;
 
   //! Build SPFComputations from every function in the provided code.
-  std::vector<std::unique_ptr<iegenlib::Computation>>
+  static std::vector<std::unique_ptr<iegenlib::Computation>>
   buildSPFComputationsFromCode(std::string code) {
 	std::unique_ptr<ASTUnit> AST = tooling::buildASTFromCode(
 		code, "test_input.cpp", std::make_shared<PCHContainerOperations>());
@@ -56,7 +56,7 @@ protected:
 	std::vector<std::unique_ptr<iegenlib::Computation>> computations;
 	SPFComputationBuilder builder;
 	for (auto it: Context->getTranslationUnitDecl()->decls()) {
-	  FunctionDecl *func = dyn_cast<FunctionDecl>(it);
+	  auto *func = dyn_cast<FunctionDecl>(it);
 	  if (func && func->doesThisDeclarationHaveABody()) {
 		computations.push_back(
 			builder.buildComputationFromFunction(func));
@@ -67,7 +67,7 @@ protected:
 
   //! Use assertions/expectations to compare an SPFComputation to
   //! expected values.
-  void compareComputationToExpectations(
+  static void compareComputationToExpectations(
 	  iegenlib::Computation *computation, int expectedNumStmts,
 	  const std::unordered_set<std::string> &expectedDataSpaces,
 	  const std::vector<std::string> &expectedIterSpaces,

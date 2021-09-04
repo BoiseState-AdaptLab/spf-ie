@@ -22,7 +22,7 @@ namespace spf_ie {
 
 /* StmtContext */
 
-StmtContext::StmtContext() {}
+StmtContext::StmtContext() = default;
 
 StmtContext::StmtContext(StmtContext *other) {
   iterators = other->iterators;
@@ -80,8 +80,7 @@ std::string StmtContext::getDataAccessString(ArrayAccess *access) {
 	if (!subAccesses.empty()) {
 	  std::string replacementName = Utils::getVarReplacementName();
 	  os << replacementName;
-	  constraintsToAdd.push_back(
-		  {replacementName, exprToStringWithSafeArrays(it)});
+	  constraintsToAdd.emplace_back(replacementName, exprToStringWithSafeArrays(it));
 	} else if (isa<DeclRefExpr>(it->IgnoreParenImpCasts())) {
 	  os << Utils::stmtToString(it);
 	} else {
@@ -89,8 +88,7 @@ std::string StmtContext::getDataAccessString(ArrayAccess *access) {
 	  // simply assign it to a replacement variable and use that
 	  std::string replacementName = Utils::getVarReplacementName();
 	  os << replacementName;
-	  constraintsToAdd.push_back(
-		  {replacementName, Utils::stmtToString(it)});
+	  constraintsToAdd.emplace_back(replacementName, Utils::stmtToString(it));
 	}
   }
   os << "]";
@@ -113,12 +111,12 @@ void StmtContext::enterFor(ForStmt *forStmt) {
 
   // initializer
   std::string initVar;
-  if (BinaryOperator *init = dyn_cast<BinaryOperator>(forStmt->getInit())) {
+  if (auto *init = dyn_cast<BinaryOperator>(forStmt->getInit())) {
 	makeAndInsertConstraint(init->getRHS(), init->getLHS(),
 							BinaryOperatorKind::BO_LE);
 	initVar = Utils::stmtToString(init->getLHS());
-  } else if (DeclStmt *init = dyn_cast<DeclStmt>(forStmt->getInit())) {
-	if (VarDecl *initDecl = dyn_cast<VarDecl>(init->getSingleDecl())) {
+  } else if (auto *init = dyn_cast<DeclStmt>(forStmt->getInit())) {
+	if (auto *initDecl = dyn_cast<VarDecl>(init->getSingleDecl())) {
 	  makeAndInsertConstraint(initDecl->getNameAsString(),
 							  initDecl->getInit(),
 							  BinaryOperatorKind::BO_LE);
@@ -133,7 +131,7 @@ void StmtContext::enterFor(ForStmt *forStmt) {
   }
 
   // condition
-  if (BinaryOperator *cond = dyn_cast<BinaryOperator>(forStmt->getCond())) {
+  if (auto *cond = dyn_cast<BinaryOperator>(forStmt->getCond())) {
 	makeAndInsertConstraint(cond->getLHS(), cond->getRHS(),
 							cond->getOpcode());
 	// add any data spaces accessed in the condition to loop invariants
@@ -159,11 +157,11 @@ void StmtContext::enterFor(ForStmt *forStmt) {
   // increment
   bool validIncrement = false;
   Expr *inc = forStmt->getInc();
-  UnaryOperator *unaryIncOper = dyn_cast<UnaryOperator>(inc);
+  auto *unaryIncOper = dyn_cast<UnaryOperator>(inc);
   if (unaryIncOper && unaryIncOper->isIncrementOp()) {
 	// simple increment, ++i or i++
 	validIncrement = true;
-  } else if (BinaryOperator *incOper = dyn_cast<BinaryOperator>(inc)) {
+  } else if (auto *incOper = dyn_cast<BinaryOperator>(inc)) {
 	BinaryOperatorKind oper = incOper->getOpcode();
 	if (oper == BO_AddAssign || oper == BO_SubAssign) {
 	  // operator is += or -=
@@ -178,7 +176,7 @@ void StmtContext::enterFor(ForStmt *forStmt) {
 	  // Operator is '='
 	  // This is the rhs of the increment statement
 	  // (e.g. with i = i + 1, this is i + 1)
-	  BinaryOperator *secondOp = cast<BinaryOperator>(incOper->getRHS());
+	  auto *secondOp = cast<BinaryOperator>(incOper->getRHS());
 	  // Get variable being incremented
 	  std::string iterStr = Utils::stmtToString(incOper->getLHS());
 	  if (secondOp->getOpcode() == BO_Add) {
@@ -189,10 +187,10 @@ void StmtContext::enterFor(ForStmt *forStmt) {
 		std::string rhsStr = Utils::stmtToString(rhs);
 		Expr::EvalResult result;
 		// one side must be iter var, other must be 1
-		validIncrement = (lhsStr.compare(iterStr) == 0 &&
+		validIncrement = (lhsStr == iterStr &&
 			rhs->EvaluateAsInt(result, *Context) &&
 			result.Val.getInt() == 1) ||
-			(rhsStr.compare(iterStr) == 0 &&
+			(rhsStr == iterStr &&
 				lhs->EvaluateAsInt(result, *Context) &&
 				result.Val.getInt() == 1);
 	  }
@@ -208,7 +206,7 @@ void StmtContext::enterFor(ForStmt *forStmt) {
 		"Invalid " + error + " in for loop -- " + errorReason, forStmt);
   } else {
 	iterators.push_back(initVar);
-	schedule.pushValue(initVar);
+	schedule.pushValue(ScheduleVal(initVar));
   }
 }
 
@@ -222,7 +220,7 @@ void StmtContext::exitFor() {
 }
 
 void StmtContext::enterIf(IfStmt *ifStmt, bool invert) {
-  if (BinaryOperator *cond = dyn_cast<BinaryOperator>(ifStmt->getCond())) {
+  if (auto *cond = dyn_cast<BinaryOperator>(ifStmt->getCond())) {
 	makeAndInsertConstraint(
 		cond->getLHS(), cond->getRHS(),
 		(invert ? BinaryOperator::negateComparisonOp(cond->getOpcode())

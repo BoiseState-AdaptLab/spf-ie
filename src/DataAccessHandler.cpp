@@ -57,7 +57,7 @@ void DataAccessHandler::buildDataAccess(
   while (!info.empty()) {
 	// recurse when an index is itself another array access; such
 	// sub-accesses are always reads
-	if (ArraySubscriptExpr *indexAsArrayAccess =
+	if (auto *indexAsArrayAccess =
 		dyn_cast<ArraySubscriptExpr>(info.top())) {
 	  buildDataAccess(indexAsArrayAccess, true, accessComponents);
 	}
@@ -66,8 +66,7 @@ void DataAccessHandler::buildDataAccess(
   }
   ArrayAccess access =
 	  ArrayAccess(fullExpr->getID(*Context), base, indexes, isRead);
-  accessComponents.push_back(
-	  {makeStringForArrayAccess(&access, accessComponents), access});
+  accessComponents.emplace_back(makeStringForArrayAccess(&access, accessComponents), access);
 }
 
 std::string DataAccessHandler::makeStringForArrayAccess(
@@ -84,11 +83,11 @@ std::string DataAccessHandler::makeStringForArrayAccess(
 	  first = false;
 	}
 	std::string indexString;
-	if (ArraySubscriptExpr *asArrayAccess =
+	if (auto *asArrayAccess =
 		dyn_cast<ArraySubscriptExpr>(it->IgnoreParenImpCasts())) {
-	  // there is another array acccess used as an index for this one;
+	  // there is another array access used as an index for this one;
 	  // it should have already been processed (depth-first), so we look
-	  // for its string equivalent in thealready-processed accesses
+	  // for its string equivalent in the already-processed accesses
 	  bool foundSubaccess = false;
 	  for (const auto &it: components) {
 		if (it.second.id == asArrayAccess->getID(*Context)) {
@@ -120,7 +119,7 @@ int DataAccessHandler::getArrayExprInfo(ArraySubscriptExpr *fullExpr,
   }
   currentInfo->push(fullExpr->getIdx()->IgnoreParenImpCasts());
   Expr *baseExpr = fullExpr->getBase()->IgnoreParenImpCasts();
-  if (ArraySubscriptExpr *baseArrayAccess =
+  if (auto *baseArrayAccess =
 	  dyn_cast<ArraySubscriptExpr>(baseExpr)) {
 	return getArrayExprInfo(baseArrayAccess, currentInfo);
   } else {

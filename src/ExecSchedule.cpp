@@ -10,7 +10,7 @@ ExecSchedule::ExecSchedule(const ExecSchedule &other) {
   scheduleTuple = other.scheduleTuple;
 }
 
-void ExecSchedule::pushValue(ScheduleVal value) {
+void ExecSchedule::pushValue(const ScheduleVal &value) {
   scheduleTuple.push_back(std::make_shared<ScheduleVal>(value));
 }
 
