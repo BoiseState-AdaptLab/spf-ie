@@ -1,8 +1,9 @@
 SPF-IE
 ==================================
 
-
 [![Build Status](http://riftember.ddns.net:8090/buildStatus/icon?job=spf-ie%2Fmain)](http://riftember.ddns.net:8090/job/spf-ie/job/main/)
+
+Docker image: [riftember/spf-ie](https://hub.docker.com/r/riftember/spf-ie)
 
 
 Authors
