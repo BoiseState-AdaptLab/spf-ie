@@ -6,8 +6,6 @@ RUN apt-get -y install \
     texinfo \
     libtool
 
-ENV TERM=xterm-256color
-
 WORKDIR /
 
 COPY . /spf-ie
