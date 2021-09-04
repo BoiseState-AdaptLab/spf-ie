@@ -37,7 +37,7 @@ pipeline {
 
         stage('Push image as latest if on main branch') {
             when {
-                branch '${MAIN_BRANCH_NAME}'
+                branch "${MAIN_BRANCH_NAME}"
             }
             steps {
                 sh 'podman tag ${IMAGE_TAG_BASE}:${BUILD_TAG} ${IMAGE_TAG_BASE}:${IMAGE_TAG_LATEST_NAME}'
