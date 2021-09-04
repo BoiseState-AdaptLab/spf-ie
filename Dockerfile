@@ -5,7 +5,8 @@ RUN apt-get -y install \
     texinfo \
     libtool \
     libfl-dev \
-    byacc
+    byacc \
+    bison
 
 WORKDIR /
 
