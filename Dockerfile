@@ -2,9 +2,10 @@ FROM registry.hub.docker.com/riftember/llvm-for-spfie:11.0.0
 
 RUN apt-get -y install \
     git \
-    libfl-dev \
     texinfo \
-    libtool
+    libtool \
+    libfl-dev \
+    byacc
 
 WORKDIR /
 
