@@ -40,11 +40,10 @@ set(LLVM_ENABLE_RTTI ON)
 # get IEGenLib
 ExternalProject_Add(iegenlib_in
         GIT_REPOSITORY "https://github.com/BoiseState-AdaptLab/IEGenLib.git"
-        GIT_TAG "8c90ef935bdf0403126804d39e36eae372d5e76f"
+        GIT_TAG "6e0a043b270e7699cdf073c6dd3a36e898ee176d"
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/IEGenLib
-        BUILD_IN_SOURCE TRUE
-        CONFIGURE_COMMAND ""
-        )
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_SOURCE_DIR}/lib/installed
+        BUILD_COMMAND ${MAKE})
 # add link dirs for IEGenLib and its dependencies
 link_directories("lib/IEGenLib/lib/installed/lib")
 link_directories("lib/IEGenLib/build/lib/gtest")
@@ -87,7 +86,7 @@ include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "${LLVM_INCLUDE_DIRS}")
 include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "${LLVM_SRC}/llvm/include")
 include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "${CLANG_INCLUDE_DIRS}")
 # IEGenLib and deps
-include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "lib/IEGenLib/iegen/include/iegenlib")
+include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "lib/installed/include/iegenlib")
 include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "lib/IEGenLib/lib/installed/include")
 include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "lib/IEGenLib/lib/gtest/include")
 
