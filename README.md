@@ -31,9 +31,13 @@ Dependencies
 - **CMake:** Download and install CMake from [here](https://cmake.org/download/),
 or however else you prefer.
 - **LLVM and Clang:** Follow [these instructions](https://github.com/BoiseState-AdaptLab/learningClangLLVM)
-explaining how to install and use LLVM and Clang. In addition, LLVM must be
-built with the options `LLVM_ENABLE_EH` and `LLVM_ENABLE_RTTI` set to `ON`.
-Developed with LLVM 11 -- using other versions may not work properly.
+explaining how to install and use LLVM and Clang, with a few exceptions:
+    - Checkout tag llvmorg-11.0.0 before building.
+    - Modify the file `llvm/utils/benchmark/src/benchmark_register.h`
+    and add the line `#include <limits>` to the top.
+    - Use the following CMake build line:
+    `cmake -DLLVM_ENABLE_PROJECTS=clang -DBUILD_SHARED_LIBS=ON -DLLVM_ENABLE_EH=ON -DLLVM_ENABLE_RTTI=ON -G "Unix Makefiles" ../llvm`
+    - When you run make, pass the `-j` flag followed by the number of concurrent build threads you want (don't put more than the number of cores your computer has). This build takes a very very long time without parallel building.
 - **IEGenLib:** Automatically cloned and built from
 [here](https://github.com/CompOpt4Apps/IEGenLib) -- you don't have to do
 anything for this dependency.
