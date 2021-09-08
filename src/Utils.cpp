@@ -40,17 +40,6 @@ std::string Utils::stmtToString(clang::Stmt *stmt) {
 	  .str();
 }
 
-std::string Utils::replaceInString(std::string input, const std::string &toFind,
-								   const std::string &replaceWith) {
-  size_t pos = input.find(toFind);
-  if (pos == std::string::npos) {
-	return input;
-  } else {
-	return replaceInString(input.replace(pos, toFind.length(), replaceWith),
-						   toFind, replaceWith);
-  }
-}
-
 void Utils::getExprArrayAccesses(
 	Expr *expr, std::vector<ArraySubscriptExpr *> &currentList) {
   Expr *usableExpr = expr->IgnoreParenImpCasts();

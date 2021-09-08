@@ -11,6 +11,7 @@
 #include "Driver.hpp"
 #include "ExecSchedule.hpp"
 #include "Utils.hpp"
+#include "iegenlib.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/OperationKinds.h"
@@ -261,7 +262,7 @@ std::string StmtContext::exprToStringWithSafeArrays(Expr *expr) {
 	DataAccessHandler::buildDataAccess(access, true, accessComponents);
 	std::string accessStr = DataAccessHandler::makeStringForArrayAccess(
 		&accessComponents.back().second, accessComponents);
-	initialStr = Utils::replaceInString(
+	initialStr = iegenlib::replaceInString(
 		initialStr, Utils::stmtToString(access), accessStr);
   }
   return initialStr;
