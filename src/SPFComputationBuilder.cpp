@@ -37,14 +37,19 @@ SPFComputationBuilder::buildComputationFromFunction(FunctionDecl *funcDecl) {
 
 	// collect results into Computation
 	for (auto &stmtContext: stmtContexts) {
+	  auto *stmt = new iegenlib::Stmt();
+
 	  // source code
 	  std::string stmtSourceCode = Utils::stmtToString(stmtContext.stmt);
+	  stmt->setStmtSourceCode(stmtSourceCode);
 	  // iteration space
 	  std::string iterationSpace = stmtContext.getIterSpaceString();
+	  stmt->setIterationSpace(iterationSpace);
 	  // execution schedule
 	  // zero-pad schedule to maximum dimension encountered
 	  stmtContext.schedule.zeroPadDimension(largestScheduleDimension);
 	  std::string executionSchedule = stmtContext.getExecScheduleString();
+	  stmt->setExecutionSchedule(executionSchedule);
 	  // data accesses
 	  std::vector<std::pair<std::string, std::string>> dataReads;
 	  std::vector<std::pair<std::string, std::string>> dataWrites;
@@ -66,22 +71,23 @@ SPFComputationBuilder::buildComputationFromFunction(FunctionDecl *funcDecl) {
 		  }
 		}
 		// insert data access
-		(it_accesses.second.isRead ? dataReads : dataWrites)
-			.emplace_back(
-				dataSpaceAccessed,
-				stmtContext.getDataAccessString(&it_accesses.second));
+		if (it_accesses.second.isRead) {
+		  stmt->addRead(dataSpaceAccessed,
+						stmtContext.getDataAccessString(&it_accesses.second));
+		} else {
+		  stmt->addWrite(dataSpaceAccessed,
+						 stmtContext.getDataAccessString(&it_accesses.second));
+		}
 	  }
 
 	  // insert Computation data spaces
 	  auto stmtDataSpaces = stmtContext.dataAccesses.dataSpaces;
 	  for (const auto &dataSpaceName:
 		  stmtContext.dataAccesses.dataSpaces) {
-		computation->addDataSpace(dataSpaceName);
+		computation->addDataSpace(dataSpaceName, "placeholderType");
 	  }
 
-	  // create and insert iegenlib Stmt
-	  computation->addStmt(iegenlib::Stmt(stmtSourceCode, iterationSpace,
-										  executionSchedule, dataReads, dataWrites));
+	  computation->addStmt(stmt);
 	}
 
 	// sanity check Computation completeness
