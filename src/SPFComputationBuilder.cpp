@@ -32,10 +32,13 @@ SPFComputationBuilder::buildComputationFromFunction(FunctionDecl *funcDecl) {
 	stmtContexts.clear();
 	computation = std::make_unique<iegenlib::Computation>();
 
-	// perform processing
-	processBody(funcBody);
+	// add function parameters to the Computation
+	for (const auto *param: funcDecl->parameters()) {
+	  computation->addParameter(param->getNameAsString(), param->getOriginalType().getAsString());
+	}
 
-	// collect results into Computation
+	// collect function body info and add it to the Computation
+	processBody(funcBody);
 	for (auto &stmtContext: stmtContexts) {
 	  auto *stmt = new iegenlib::Stmt();
 
@@ -80,7 +83,7 @@ SPFComputationBuilder::buildComputationFromFunction(FunctionDecl *funcDecl) {
 		}
 	  }
 
-	  // insert Computation data spaces
+	  // add Computation data spaces
 	  auto stmtDataSpaces = stmtContext.dataAccesses.dataSpaces;
 	  for (const auto &dataSpaceName:
 		  stmtContext.dataAccesses.dataSpaces) {
