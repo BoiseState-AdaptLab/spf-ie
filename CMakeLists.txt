@@ -45,6 +45,7 @@ ExternalProject_Add(iegenlib_in
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_SOURCE_DIR}/lib/installed
         BUILD_COMMAND ${MAKE})
 # add link dirs for IEGenLib and its dependencies
+link_directories("lib/installed/lib")
 link_directories("lib/IEGenLib/lib/installed/lib")
 link_directories("lib/IEGenLib/build/lib/gtest")
 link_directories("lib/IEGenLib/iegen/lib")
@@ -107,6 +108,8 @@ set(BASE_LIBS
         iegenlib
         gmp
         isl
+        codegen
+        omega
         )
 
 target_link_libraries(${CMAKE_PROJECT_NAME}
