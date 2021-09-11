@@ -47,8 +47,10 @@ ExternalProject_Add(iegenlib_in
 # add link dirs for IEGenLib and its dependencies
 link_directories("lib/installed/lib")
 link_directories("lib/IEGenLib/lib/installed/lib")
-link_directories("lib/IEGenLib/build/lib/gtest")
 link_directories("lib/IEGenLib/iegen/lib")
+# gtest
+ExternalProject_Get_property(iegenlib_in BINARY_DIR)
+link_directories("${BINARY_DIR}/lib/gtest")
 
 
 # gather up project sources
@@ -96,7 +98,7 @@ include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "lib/IEGenLib/lib/gtest/
 # Find libraries corresponding to LLVM components we need
 llvm_map_components_to_libnames(LLVM_LIBS support)
 
-set(BASE_LIBS
+set(${CMAKE_PROJECT_NAME}_LIBS
         ${CMAKE_PROJECT_NAME}_lib
         ${LLVM_LIBS}
         clangAST
@@ -106,6 +108,7 @@ set(BASE_LIBS
         clangTooling
         clangLex
         iegenlib
+        gtest
         gmp
         isl
         codegen
@@ -114,12 +117,11 @@ set(BASE_LIBS
 
 target_link_libraries(${CMAKE_PROJECT_NAME}
         PRIVATE
-        ${BASE_LIBS}
+        ${${CMAKE_PROJECT_NAME}_LIBS}
         )
 
 target_link_libraries("${CMAKE_PROJECT_NAME}_t"
         PRIVATE
-        ${BASE_LIBS}
-        gtest
+        ${${CMAKE_PROJECT_NAME}_LIBS}
         )
 
