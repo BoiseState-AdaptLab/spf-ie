@@ -40,14 +40,17 @@ set(LLVM_ENABLE_RTTI ON)
 # get IEGenLib
 ExternalProject_Add(iegenlib_in
         GIT_REPOSITORY "https://github.com/BoiseState-AdaptLab/IEGenLib.git"
-        GIT_TAG "6e0a043b270e7699cdf073c6dd3a36e898ee176d"
+        GIT_TAG "82b99b16de83865eafadc51e12843649c889537d"
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/IEGenLib
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_SOURCE_DIR}/lib/installed
         BUILD_COMMAND ${MAKE})
 # add link dirs for IEGenLib and its dependencies
+link_directories("lib/installed/lib")
 link_directories("lib/IEGenLib/lib/installed/lib")
-link_directories("lib/IEGenLib/build/lib/gtest")
 link_directories("lib/IEGenLib/iegen/lib")
+# gtest
+ExternalProject_Get_property(iegenlib_in BINARY_DIR)
+link_directories("${BINARY_DIR}/lib/gtest")
 
 
 # gather up project sources
@@ -95,7 +98,7 @@ include_directories(${CMAKE_PROJECT_NAME} BEFORE PUBLIC "lib/IEGenLib/lib/gtest/
 # Find libraries corresponding to LLVM components we need
 llvm_map_components_to_libnames(LLVM_LIBS support)
 
-set(BASE_LIBS
+set(${CMAKE_PROJECT_NAME}_LIBS
         ${CMAKE_PROJECT_NAME}_lib
         ${LLVM_LIBS}
         clangAST
@@ -105,18 +108,20 @@ set(BASE_LIBS
         clangTooling
         clangLex
         iegenlib
+        gtest
         gmp
         isl
+        codegen
+        omega
         )
 
 target_link_libraries(${CMAKE_PROJECT_NAME}
         PRIVATE
-        ${BASE_LIBS}
+        ${${CMAKE_PROJECT_NAME}_LIBS}
         )
 
 target_link_libraries("${CMAKE_PROJECT_NAME}_t"
         PRIVATE
-        ${BASE_LIBS}
-        gtest
+        ${${CMAKE_PROJECT_NAME}_LIBS}
         )
 

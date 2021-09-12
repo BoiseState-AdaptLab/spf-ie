@@ -65,71 +65,6 @@ protected:
 	return computations;
   }
 
-  //! Use assertions/expectations to compare an SPFComputation to
-  //! expected values.
-  static void compareComputationToExpectations(
-	  iegenlib::Computation *computation, int expectedNumStmts,
-	  const std::unordered_set<std::string> &expectedDataSpaces,
-	  const std::vector<std::string> &expectedIterSpaces,
-	  const std::vector<std::string> &expectedExecSchedules,
-	  const std::vector<std::vector<std::pair<std::string, std::string>>> &
-	  expectedReads,
-	  const std::vector<std::vector<std::pair<std::string, std::string>>> &
-	  expectedWrites) {
-	// sanity check that we have the correct number of expected values
-	ASSERT_EQ(expectedNumStmts, expectedIterSpaces.size());
-	ASSERT_EQ(expectedNumStmts, expectedExecSchedules.size());
-	ASSERT_EQ(expectedNumStmts, expectedReads.size());
-	ASSERT_EQ(expectedNumStmts, expectedWrites.size());
-
-	EXPECT_EQ(expectedDataSpaces, computation->getDataSpaces());
-	ASSERT_EQ(expectedNumStmts, computation->getNumStmts());
-	for (int i = 0; i < expectedNumStmts; ++i) {
-	  iegenlib::Stmt *const current = computation->getStmt(i);
-	  // include statement number/source in trace
-	  SCOPED_TRACE("S" + std::to_string(i) + ": " +
-		  current->getStmtSourceCode());
-	  // iteration space
-	  auto *expectedIterSpace = new iegenlib::Set(expectedIterSpaces[i]);
-	  EXPECT_EQ(expectedIterSpace->prettyPrintString(),
-				current->getIterationSpace()->prettyPrintString());
-	  delete expectedIterSpace;
-	  // execution schedule
-	  auto *expectedExecSchedule =
-		  new iegenlib::Relation(expectedExecSchedules[i]);
-	  EXPECT_EQ(expectedExecSchedule->prettyPrintString(),
-				current->getExecutionSchedule()->prettyPrintString());
-	  delete expectedExecSchedule;
-	  // reads
-	  auto dataReads = current->getDataReads();
-	  ASSERT_EQ(expectedReads[i].size(), dataReads.size());
-	  unsigned int j = 0;
-	  for (const auto &it_read: dataReads) {
-		SCOPED_TRACE("read " + std::to_string(j));
-		EXPECT_EQ(expectedReads[i][j].first, it_read.first);
-		auto *expectedReadRel =
-			new iegenlib::Relation(expectedReads[i][j].second);
-		EXPECT_EQ(expectedReadRel->prettyPrintString(),
-				  it_read.second->prettyPrintString());
-		delete expectedReadRel;
-		j++;
-	  }
-	  // writes
-	  auto dataWrites = current->getDataWrites();
-	  ASSERT_EQ(expectedWrites[i].size(), dataWrites.size());
-	  j = 0;
-	  for (const auto &it_write: dataWrites) {
-		SCOPED_TRACE("write " + std::to_string(j));
-		EXPECT_EQ(expectedWrites[i][j].first, it_write.first);
-		auto *expectedWriteRel =
-			new iegenlib::Relation(expectedWrites[i][j].second);
-		EXPECT_EQ(expectedWriteRel->prettyPrintString(),
-				  it_write.second->prettyPrintString());
-		delete expectedWriteRel;
-		j++;
-	  }
-	}
-  }
 };
 
 using SPFComputationDeathTest = SPFComputationTest;
@@ -152,22 +87,17 @@ TEST_F(SPFComputationTest, matrix_add_correct) {
   ASSERT_EQ(1, computations.size());
   iegenlib::Computation *computation = computations.back().get();
 
-  // expected values for the computation
-  unsigned int expectedNumStmts = 3;
-  std::unordered_set<std::string> expectedDataSpaces = {"sum", "x", "y"};
-  std::vector<std::string> expectedIterSpaces = {
-	  "{[]}", "{[]}", "{[i,j]: 0 <= i && i < a && 0 <= j && j < b}"};
-  std::vector<std::string> expectedExecSchedules = {
-	  "{[]->[0,0,0,0,0]}", "{[]->[1,0,0,0,0]}", "{[i,j]->[2,i,0,j,0]}"};
-  std::vector<std::vector<std::pair<std::string, std::string>>>
-	  expectedReads = {
-	  {}, {}, {{"x", "{[i,j]->[i,j]}"}, {"y", "{[i,j]->[i,j]}"}}};
-  std::vector<std::vector<std::pair<std::string, std::string>>>
-	  expectedWrites = {{}, {}, {{"sum", "{[i,j]->[i,j]}"}}};
+  Computation *expectedComputation = new Computation();
+  expectedComputation->addStmt(new iegenlib::Stmt("int i;", "{[]}", "{[]->[0,0,0,0,0]}", {}, {}));
+  expectedComputation->addStmt(new iegenlib::Stmt("int j;", "{[]}", "{[]->[1,0,0,0,0]}", {}, {}));
+  expectedComputation
+	  ->addStmt(new iegenlib::Stmt("sum[i][j] = x[i][j] + y[i][j];",
+								   "{[i,j]: 0 <= i && i < a && 0 <= j && j < b}",
+								   "{[i,j]->[2,i,0,j,0]}",
+								   {{"x", "{[i,j]->[i,j]}"}, {"y", "{[i,j]->[i,j]}"}},
+								   {{"sum", "{[i,j]->[i,j]}"}}));
 
-  compareComputationToExpectations(
-	  computation, expectedNumStmts, expectedDataSpaces, expectedIterSpaces,
-	  expectedExecSchedules, expectedReads, expectedWrites);
+  computation->expectEqualTo(expectedComputation);
 }
 
 TEST_F(SPFComputationTest, forward_solve_correct) {
@@ -196,38 +126,31 @@ TEST_F(SPFComputationTest, forward_solve_correct) {
   ASSERT_EQ(1, computations.size());
   iegenlib::Computation *computation = computations.back().get();
 
-  unsigned int expectedNumStmts = 6;
-  std::unordered_set<std::string> expectedDataSpaces = {"x", "b", "l"};
-  std::vector<std::string> expectedIterSpaces = {
-	  "{[]}",
-	  "{[i]: 0 <= i && i < n}",
-	  "{[]}",
-	  "{[j]: 0 <= j && j < n}",
-	  "{[j,i]: 0 <= j && j < n && j + 1 <= i && i < n && l(i,j) > 0}",
-	  "{[]}"};
-  std::vector<std::string> expectedExecSchedules = {
-	  "{[]->[0,0,0,0,0]}", "{[i]->[1,i,0,0,0]}", "{[]->[2,0,0,0,0]}",
-	  "{[j]->[3,j,0,0,0]}", "{[j,i]->[3,j,1,i,0]}", "{[]->[4,0,0,0,0]}"};
-  std::vector<std::vector<std::pair<std::string, std::string>>>
-	  expectedReads = {{},
-					   {{"b", "{[i]->[i]}"}},
-					   {},
-					   {{"x", "{[j]->[j]}"}, {"l", "{[j]->[j,j]}"}},
-					   {{"x", "{[j,i]->[i]}"},
-						{"l", "{[j,i]->[i,j]}"},
-						{"x", "{[j,i]->[j]}"}},
-					   {}};
-  std::vector<std::vector<std::pair<std::string, std::string>>>
-	  expectedWrites = {{},
-						{{"x", "{[i]->[i]}"}},
-						{},
-						{{"x", "{[j]->[j]}"}},
-						{{"x", "{[j,i]->[i]}"}},
-						{}};
+  Computation *expectedComputation = new Computation();
+  expectedComputation->addStmt(new iegenlib::Stmt("int i;", "{[]}", "{[]->[0,0,0,0,0]}", {}, {}));
+  expectedComputation
+	  ->addStmt(new iegenlib::Stmt("x[i] = b[i];",
+								   "{[i]: 0 <= i && i < n}",
+								   "{[i]->[1,i,0,0,0]}",
+								   {{"b", "{[i]->[i]}"}},
+								   {{"x", "{[i]->[i]}"}}));
+  expectedComputation->addStmt(new iegenlib::Stmt("int j;", "{[]}", "{[]->[2,0,0,0,0]}", {}, {}));
+  expectedComputation
+	  ->addStmt(new iegenlib::Stmt("x[j] /= l[j][j];",
+								   "{[j]: 0 <= j && j < n}",
+								   "{[j]->[3,j,0,0,0]}",
+								   {{"x", "{[j]->[j]}"}, {"l", "{[j]->[j,j]}"}},
+								   {{"x", "{[j]->[j]}"}}));
+  expectedComputation->addStmt(new iegenlib::Stmt("x[i] -= l[i][j] * x[j];",
+												  "{[j,i]: 0 <= j && j < n && j + 1 <= i && i < n && l(i,j) > 0}",
+												  "{[j,i]->[3,j,1,i,0]}",
+												  {{"x", "{[j,i]->[i]}"},
+												   {"l", "{[j,i]->[i,j]}"},
+												   {"x", "{[j,i]->[j]}"}},
+												  {{"x", "{[j,i]->[i]}"}}));
+  expectedComputation->addStmt(new iegenlib::Stmt("return 0;", "{[]}", "{[]->[4,0,0,0,0]}", {}, {}));
 
-  compareComputationToExpectations(
-	  computation, expectedNumStmts, expectedDataSpaces, expectedIterSpaces,
-	  expectedExecSchedules, expectedReads, expectedWrites);
+  computation->expectEqualTo(expectedComputation);
 }
 
 TEST_F(SPFComputationTest, csr_spmv_correct) {
@@ -251,31 +174,21 @@ int CSR_SpMV(int a, int N, int A[a], int index[N + 1], int col[a], int x[N], int
   ASSERT_EQ(1, computations.size());
   iegenlib::Computation *computation = computations.back().get();
 
-  unsigned int expectedNumStmts = 4;
-  std::unordered_set<std::string> expectedDataSpaces = {"product", "A", "col",
-														"x"};
-  std::vector<std::string> expectedIterSpaces = {
-	  "{[]}", "{[]}",
-	  "{[i,k]: 0 <= i && i < N && index(i) <= k && k < index(i + 1)}",
-	  "{[]}"};
-  std::vector<std::string> expectedExecSchedules = {
-	  "{[]->[0,0,0,0,0]}", "{[]->[1,0,0,0,0]}", "{[i,k]->[2,i,0,k,0]}",
-	  "{[]->[3,0,0,0,0]}"};
-  std::vector<std::vector<std::pair<std::string, std::string>>>
-	  expectedReads = {{},
-					   {},
-					   {{"product", "{[i,k]->[i]}"},
-						{"A", "{[i,k]->[k]}"},
-						{"col", "{[i,k]->[k]}"},
-						{"x", "{[i,k]->[" + replacementVarName + "0]: " +
-							replacementVarName + "0 = col(k)}"}},
-					   {}};
-  std::vector<std::vector<std::pair<std::string, std::string>>>
-	  expectedWrites = {{}, {}, {{"product", "{[i,k]->[i]}"}}, {}};
+  Computation *expectedComputation = new Computation();
+  expectedComputation->addStmt(new iegenlib::Stmt("int i;", "{[]}", "{[]->[0,0,0,0,0]}", {}, {}));
+  expectedComputation->addStmt(new iegenlib::Stmt("int k;", "{[]}", "{[]->[1,0,0,0,0]}", {}, {}));
+  expectedComputation->addStmt(new iegenlib::Stmt("product[i] += A[k] * x[col[k]];",
+												  "{[i,k]: 0 <= i && i < N && index(i) <= k && k < index(i + 1)}",
+												  "{[i,k]->[2,i,0,k,0]}",
+												  {{"product", "{[i,k]->[i]}"},
+												   {"A", "{[i,k]->[k]}"},
+												   {"col", "{[i,k]->[k]}"},
+												   {"x", "{[i,k]->[" + replacementVarName + "0]: " +
+													   replacementVarName + "0 = col(k)}"}},
+												  {{"product", "{[i,k]->[i]}"}}));
+  expectedComputation->addStmt(new iegenlib::Stmt("return 0;", "{[]}", "{[]->[3,0,0,0,0]}", {}, {}));
 
-  compareComputationToExpectations(
-	  computation, expectedNumStmts, expectedDataSpaces, expectedIterSpaces,
-	  expectedExecSchedules, expectedReads, expectedWrites);
+  computation->expectEqualTo(expectedComputation);
 }
 
 /** Death tests, checking failure on invalid input **/

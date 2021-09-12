@@ -73,7 +73,7 @@ std::string DataAccessHandler::makeStringForArrayAccess(
 	ArrayAccess *access,
 	const std::vector<std::pair<std::string, ArrayAccess>> &components) {
   std::ostringstream os;
-  os << Utils::stmtToString(access->base);
+  os << DATA_SPACE_DELIMITER << Utils::stmtToString(access->base) << DATA_SPACE_DELIMITER;
   os << "(";
   bool first = true;
   for (const auto &it: access->indexes) {

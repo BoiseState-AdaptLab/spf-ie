@@ -12,6 +12,9 @@
 //! Maximum allowed array dimension (a safe estimate to avoid stack overflow)
 #define MAX_ARRAY_DIM 50
 
+//! Delimiter used to wrap data space names for easier renaming later
+#define DATA_SPACE_DELIMITER "$"
+
 using namespace clang;
 
 namespace spf_ie {

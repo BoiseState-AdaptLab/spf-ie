@@ -271,11 +271,15 @@ std::string StmtContext::exprToStringWithSafeArrays(Expr *expr) {
 std::string StmtContext::getItersTupleString() {
   std::ostringstream os;
   os << "[";
-  for (const auto &it: iterators) {
-	if (it != *iterators.begin()) {
-	  os << ",";
+  if (iterators.empty()) {
+	os << "0";
+  } else {
+	for (const auto &it: iterators) {
+	  if (it != *iterators.begin()) {
+		os << ",";
+	  }
+	  os << it;
 	}
-	os << it;
   }
   os << "]";
   return os.str();
