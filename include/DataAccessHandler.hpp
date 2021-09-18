@@ -28,17 +28,17 @@ namespace spf_ie {
  * is difficult to work with for our purposes.
  */
 struct ArrayAccess {
-  ArrayAccess(int64_t id, Expr *base, std::vector<Expr *> &indexes, bool isRead)
-      : id(id), base(base), indexes(indexes), isRead(isRead) {}
+  ArrayAccess(std::string arrayName, int64_t sourceId, std::vector<Expr *> &indexes, bool isRead)
+      : arrayName(arrayName), sourceId(sourceId), indexes(indexes), isRead(isRead) {}
 
   //! Get a string representation of the array access, like A(i,j).
-  //! \param[in] potentialSubaccesses Other array accesses which may be used as indexes in this one
+  //! \param[in] potentialSubaccesses Other array accesses here, which may be used as indexes in this one
   std::string toString(const std::vector<ArrayAccess> &potentialSubaccesses) const;
 
-  //! ID of original AST array access expression
-  int64_t id;
-  //! Base array being accessed
-  Expr *base;
+  //! ID of original ArraySubscriptExpr node
+  int64_t sourceId;
+  //! Name of base (outermost) array being accessed
+  std::string arrayName;
   //! Indexes accessed in the array
   std::vector<Expr *> indexes;
   //! Whether this access is a read or not (a write)

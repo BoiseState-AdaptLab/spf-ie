@@ -57,8 +57,7 @@ SPFComputationBuilder::buildComputationFromFunction(FunctionDecl *funcDecl) {
       std::vector<std::pair<std::string, std::string>> dataReads;
       std::vector<std::pair<std::string, std::string>> dataWrites;
       for (auto &it_accesses: stmtContext.dataAccesses.arrayAccesses) {
-        std::string dataSpaceAccessed =
-            Utils::stmtToString(it_accesses.base);
+        std::string dataSpaceAccessed = it_accesses.arrayName;
         // enforce loop invariance
         if (!it_accesses.isRead) {
           for (const auto &invariantGroup: stmtContext.invariants) {

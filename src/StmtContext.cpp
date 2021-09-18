@@ -147,7 +147,7 @@ void StmtContext::enterFor(ForStmt *forStmt) {
     }
     for (const auto &access: accesses) {
       newInvariants.push_back(
-          Utils::stmtToString(access.base));
+          access.arrayName);
     }
     invariants.push_back(newInvariants);
   } else {

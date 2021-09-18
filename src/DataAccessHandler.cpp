@@ -18,7 +18,7 @@ namespace spf_ie {
 
 std::string ArrayAccess::toString(const std::vector<ArrayAccess> &potentialSubaccesses) const {
   std::ostringstream os;
-  os << DATA_SPACE_DELIMITER << Utils::stmtToString(this->base) << DATA_SPACE_DELIMITER;
+  os << DATA_SPACE_DELIMITER << this->arrayName << DATA_SPACE_DELIMITER;
   os << "(";
   bool first = true;
   for (const auto &it: this->indexes) {
@@ -32,7 +32,7 @@ std::string ArrayAccess::toString(const std::vector<ArrayAccess> &potentialSubac
       // there is another array access used as an index for this one
       bool foundSubaccess = false;
       for (const auto &it: potentialSubaccesses) {
-        if (it.id == asArrayAccess->
+        if (it.sourceId == asArrayAccess->
             getID(*Context)
             ) {
           foundSubaccess = true;
@@ -78,7 +78,7 @@ void DataAccessHandler::addDataAccess(ArraySubscriptExpr *fullExpr,
   buildDataAccess(fullExpr, isRead, accesses);
 
   for (const auto &access: accesses) {
-    dataSpaces.emplace(Utils::stmtToString(access.base));
+    dataSpaces.emplace(access.arrayName);
     arrayAccesses.push_back(access);
   }
 }
@@ -95,7 +95,7 @@ void DataAccessHandler::buildDataAccess(
   }
 
   // construct ArrayAccess object
-  Expr *base = info.top();
+  Expr *baseAccess = info.top();
   info.pop();
   std::vector<Expr *> indexes;
   while (!info.empty()) {
@@ -109,7 +109,8 @@ void DataAccessHandler::buildDataAccess(
     info.pop();
   }
 
-  existingAccesses.emplace_back(ArrayAccess(fullExpr->getID(*Context), base, indexes, isRead));
+  existingAccesses
+      .emplace_back(ArrayAccess(Utils::stmtToString(baseAccess), fullExpr->getID(*Context), indexes, isRead));
 }
 
 int DataAccessHandler::getArrayExprInfo(ArraySubscriptExpr *fullExpr,
