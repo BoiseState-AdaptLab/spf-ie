@@ -14,13 +14,57 @@ using namespace clang;
 
 namespace spf_ie {
 
+/* ArrayAccess */
+
+std::string ArrayAccess::toString(const std::vector<ArrayAccess> &potentialSubaccesses) const {
+  std::ostringstream os;
+  os << DATA_SPACE_DELIMITER << Utils::stmtToString(this->base) << DATA_SPACE_DELIMITER;
+  os << "(";
+  bool first = true;
+  for (const auto &it: this->indexes) {
+    if (!first) {
+      os << ",";
+    } else {
+      first = false;
+    }
+    std::string indexString;
+    if (auto *asArrayAccess = dyn_cast<ArraySubscriptExpr>(it->IgnoreParenImpCasts())) {
+      // there is another array access used as an index for this one
+      bool foundSubaccess = false;
+      for (const auto &it: potentialSubaccesses) {
+        if (it.id == asArrayAccess->
+            getID(*Context)
+            ) {
+          foundSubaccess = true;
+          indexString = it.toString(potentialSubaccesses);
+          break;
+        }
+      }
+      if (!foundSubaccess) {
+        Utils::printErrorAndExit(
+            "Could not stringify array access because its sub-access "
+            "had (printed below) not already been processed.\nThis "
+            "point should be unreachable -- this is a bug.",
+            asArrayAccess);
+      }
+    } else {
+      indexString = Utils::stmtToString(it);
+    }
+    os <<
+       indexString;
+  }
+  os << ")";
+  return os.
+      str();
+}
+
 /* DataAccessHandler */
 
 void DataAccessHandler::processAsReads(Expr *expr) {
   std::vector<ArraySubscriptExpr *> reads;
   Utils::getExprArrayAccesses(expr, reads);
   for (const auto &read: reads) {
-	addDataAccess(read, true);
+    addDataAccess(read, true);
   }
 }
 
@@ -29,25 +73,25 @@ void DataAccessHandler::processAsWrite(ArraySubscriptExpr *expr) {
 }
 
 void DataAccessHandler::addDataAccess(ArraySubscriptExpr *fullExpr,
-									  bool isRead) {
-  std::vector<std::pair<std::string, ArrayAccess>> accesses;
+                                      bool isRead) {
+  std::vector<ArrayAccess> accesses;
   buildDataAccess(fullExpr, isRead, accesses);
 
-  for (const auto &accessInfo: accesses) {
-	dataSpaces.emplace(Utils::stmtToString(accessInfo.second.base));
-	arrayAccesses.push_back(accessInfo);
+  for (const auto &access: accesses) {
+    dataSpaces.emplace(Utils::stmtToString(access.base));
+    arrayAccesses.push_back(access);
   }
 }
 
 void DataAccessHandler::buildDataAccess(
-	ArraySubscriptExpr *fullExpr, bool isRead,
-	std::vector<std::pair<std::string, ArrayAccess>> &accessComponents) {
+    ArraySubscriptExpr *fullExpr, bool isRead,
+    std::vector<ArrayAccess> &existingAccesses) {
   // extract information from subscript expression
   std::stack<Expr *> info;
   if (getArrayExprInfo(fullExpr, &info)) {
-	Utils::printErrorAndExit("Array dimension exceeds maximum of " +
-								 std::to_string(MAX_ARRAY_DIM),
-							 fullExpr);
+    Utils::printErrorAndExit("Array dimension exceeds maximum of " +
+                                 std::to_string(MAX_ARRAY_DIM),
+                             fullExpr);
   }
 
   // construct ArrayAccess object
@@ -55,76 +99,32 @@ void DataAccessHandler::buildDataAccess(
   info.pop();
   std::vector<Expr *> indexes;
   while (!info.empty()) {
-	// recurse when an index is itself another array access; such
-	// sub-accesses are always reads
-	if (auto *indexAsArrayAccess =
-		dyn_cast<ArraySubscriptExpr>(info.top())) {
-	  buildDataAccess(indexAsArrayAccess, true, accessComponents);
-	}
-	indexes.push_back(info.top());
-	info.pop();
+    // recurse when an index is itself another array access; such
+    // sub-accesses are always reads
+    if (auto *indexAsArrayAccess =
+        dyn_cast<ArraySubscriptExpr>(info.top())) {
+      buildDataAccess(indexAsArrayAccess, true, existingAccesses);
+    }
+    indexes.push_back(info.top());
+    info.pop();
   }
-  ArrayAccess access =
-	  ArrayAccess(fullExpr->getID(*Context), base, indexes, isRead);
-  accessComponents.emplace_back(makeStringForArrayAccess(&access, accessComponents), access);
-}
 
-std::string DataAccessHandler::makeStringForArrayAccess(
-	ArrayAccess *access,
-	const std::vector<std::pair<std::string, ArrayAccess>> &components) {
-  std::ostringstream os;
-  os << DATA_SPACE_DELIMITER << Utils::stmtToString(access->base) << DATA_SPACE_DELIMITER;
-  os << "(";
-  bool first = true;
-  for (const auto &it: access->indexes) {
-	if (!first) {
-	  os << ",";
-	} else {
-	  first = false;
-	}
-	std::string indexString;
-	if (auto *asArrayAccess =
-		dyn_cast<ArraySubscriptExpr>(it->IgnoreParenImpCasts())) {
-	  // there is another array access used as an index for this one;
-	  // it should have already been processed (depth-first), so we look
-	  // for its string equivalent in the already-processed accesses
-	  bool foundSubaccess = false;
-	  for (const auto &it: components) {
-		if (it.second.id == asArrayAccess->getID(*Context)) {
-		  foundSubaccess = true;
-		  indexString = it.first;
-		  break;
-		}
-	  }
-	  if (!foundSubaccess) {
-		Utils::printErrorAndExit(
-			"Could not stringify array access because its sub-access "
-			"had (printed below) not already been processed.\nThis "
-			"point should be unreachable -- this is a bug.",
-			asArrayAccess);
-	  }
-	} else {
-	  indexString = Utils::stmtToString(it);
-	}
-	os << indexString;
-  }
-  os << ")";
-  return os.str();
+  existingAccesses.emplace_back(ArrayAccess(fullExpr->getID(*Context), base, indexes, isRead));
 }
 
 int DataAccessHandler::getArrayExprInfo(ArraySubscriptExpr *fullExpr,
-										std::stack<Expr *> *currentInfo) {
+                                        std::stack<Expr *> *currentInfo) {
   if (currentInfo->size() >= MAX_ARRAY_DIM) {
-	return 1;
+    return 1;
   }
   currentInfo->push(fullExpr->getIdx()->IgnoreParenImpCasts());
   Expr *baseExpr = fullExpr->getBase()->IgnoreParenImpCasts();
   if (auto *baseArrayAccess =
-	  dyn_cast<ArraySubscriptExpr>(baseExpr)) {
-	return getArrayExprInfo(baseArrayAccess, currentInfo);
+      dyn_cast<ArraySubscriptExpr>(baseExpr)) {
+    return getArrayExprInfo(baseArrayAccess, currentInfo);
   } else {
-	currentInfo->push(baseExpr);
-	return 0;
+    currentInfo->push(baseExpr);
+    return 0;
   }
 }
 

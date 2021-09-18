@@ -29,7 +29,11 @@ namespace spf_ie {
  */
 struct ArrayAccess {
   ArrayAccess(int64_t id, Expr *base, std::vector<Expr *> &indexes, bool isRead)
-	  : id(id), base(base), indexes(indexes), isRead(isRead) {}
+      : id(id), base(base), indexes(indexes), isRead(isRead) {}
+
+  //! Get a string representation of the array access, like A(i,j).
+  //! \param[in] potentialSubaccesses Other array accesses which may be used as indexes in this one
+  std::string toString(const std::vector<ArrayAccess> &potentialSubaccesses) const;
 
   //! ID of original AST array access expression
   int64_t id;
@@ -58,25 +62,16 @@ public:
   //! expression
   //! \param[in] expr Expression to process
   //! \param[in] isRead Whether this access is a read
-  //! \param[in,out] accessComponents Current list of sub-accesses; after
+  //! \param[in,out] existingAccesses Current list of sub-accesses; after
   //! processing completes, the last element will be the outermost access.
   static void buildDataAccess(
-	  ArraySubscriptExpr *expr, bool isRead,
-	  std::vector<std::pair<std::string, ArrayAccess>> &accessComponents);
-
-  //! Get a string representation of the array access, like A(i,j).
-  //! This method isn't on ArrayAccess itself in case we run into something
-  //! like A[B[i]]; in this case, the B[j] component will already have a
-  //! string representation saved, and we use that instead of building a new
-  //! one.
-  static std::string makeStringForArrayAccess(
-	  ArrayAccess *access,
-	  const std::vector<std::pair<std::string, ArrayAccess>> &components);
+      ArraySubscriptExpr *expr, bool isRead,
+      std::vector<ArrayAccess> &existingAccesses);
 
   //! Data spaces accessed
   std::unordered_set<std::string> dataSpaces;
   //! Array accesses
-  std::vector<std::pair<std::string, ArrayAccess>> arrayAccesses;
+  std::vector<ArrayAccess> arrayAccesses;
 
 private:
   //! Make an ArrayAccess from an ArraySubscriptExpr and add it to the
@@ -89,7 +84,7 @@ private:
   //! the method exits
   //! \return 0 if success, 1 if array dimension too large
   static int getArrayExprInfo(ArraySubscriptExpr *fullExpr,
-							  std::stack<Expr *> *currentInfo);
+                              std::stack<Expr *> *currentInfo);
 };
 
 }  // namespace spf_ie
