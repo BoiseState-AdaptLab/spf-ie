@@ -32,9 +32,7 @@ std::string ArrayAccess::toString(const std::vector<ArrayAccess> &potentialSubac
       // there is another array access used as an index for this one
       bool foundSubaccess = false;
       for (const auto &it: potentialSubaccesses) {
-        if (it.sourceId == asArrayAccess->
-            getID(*Context)
-            ) {
+        if (it.sourceId == asArrayAccess->getID(*Context)) {
           foundSubaccess = true;
           indexString = it.toString(potentialSubaccesses);
           break;
@@ -64,18 +62,17 @@ void DataAccessHandler::processAsReads(Expr *expr) {
   std::vector<ArraySubscriptExpr *> reads;
   Utils::getExprArrayAccesses(expr, reads);
   for (const auto &read: reads) {
-    addDataAccess(read, true);
+    processAsDataAccess(read, true);
   }
 }
 
 void DataAccessHandler::processAsWrite(ArraySubscriptExpr *expr) {
-  addDataAccess(expr, false);
+  processAsDataAccess(expr, false);
 }
 
-void DataAccessHandler::addDataAccess(ArraySubscriptExpr *fullExpr,
-                                      bool isRead) {
-  std::vector<ArrayAccess> accesses;
-  buildDataAccess(fullExpr, isRead, accesses);
+void DataAccessHandler::processAsDataAccess(ArraySubscriptExpr *fullExpr,
+                                            bool isRead) {
+  auto accesses = buildDataAccesses(fullExpr, isRead);
 
   for (const auto &access: accesses) {
     dataSpaces.emplace(access.arrayName);
@@ -83,12 +80,34 @@ void DataAccessHandler::addDataAccess(ArraySubscriptExpr *fullExpr,
   }
 }
 
-void DataAccessHandler::buildDataAccess(
-    ArraySubscriptExpr *fullExpr, bool isRead,
-    std::vector<ArrayAccess> &existingAccesses) {
+std::vector<ArrayAccess> DataAccessHandler::buildDataAccesses(
+    ArraySubscriptExpr *fullExpr, bool isRead) {
+  std::vector<ArrayAccess> accesses;
+  doBuildDataAccessesWork(fullExpr, isRead, accesses);
+  return accesses;
+}
+
+int DataAccessHandler::getArrayExprInfo(ArraySubscriptExpr *fullExpr,
+                                        std::stack<Expr *> *currentInfo) {
+  if (currentInfo->size() >= MAX_ARRAY_DIM) {
+    return false;
+  }
+  currentInfo->push(fullExpr->getIdx()->IgnoreParenImpCasts());
+  Expr *baseExpr = fullExpr->getBase()->IgnoreParenImpCasts();
+  if (auto *baseArrayAccess =
+      dyn_cast<ArraySubscriptExpr>(baseExpr)) {
+    return getArrayExprInfo(baseArrayAccess, currentInfo);
+  } else {
+    currentInfo->push(baseExpr);
+    return true;
+  }
+}
+void DataAccessHandler::doBuildDataAccessesWork(ArraySubscriptExpr *fullExpr,
+                                                bool isRead,
+                                                std::vector<ArrayAccess> &existingAccesses) {
   // extract information from subscript expression
   std::stack<Expr *> info;
-  if (getArrayExprInfo(fullExpr, &info)) {
+  if (!getArrayExprInfo(fullExpr, &info)) {
     Utils::printErrorAndExit("Array dimension exceeds maximum of " +
                                  std::to_string(MAX_ARRAY_DIM),
                              fullExpr);
@@ -103,7 +122,7 @@ void DataAccessHandler::buildDataAccess(
     // sub-accesses are always reads
     if (auto *indexAsArrayAccess =
         dyn_cast<ArraySubscriptExpr>(info.top())) {
-      buildDataAccess(indexAsArrayAccess, true, existingAccesses);
+      doBuildDataAccessesWork(indexAsArrayAccess, true, existingAccesses);
     }
     indexes.push_back(info.top());
     info.pop();
@@ -111,22 +130,6 @@ void DataAccessHandler::buildDataAccess(
 
   existingAccesses
       .emplace_back(ArrayAccess(Utils::stmtToString(baseAccess), fullExpr->getID(*Context), indexes, isRead));
-}
-
-int DataAccessHandler::getArrayExprInfo(ArraySubscriptExpr *fullExpr,
-                                        std::stack<Expr *> *currentInfo) {
-  if (currentInfo->size() >= MAX_ARRAY_DIM) {
-    return 1;
-  }
-  currentInfo->push(fullExpr->getIdx()->IgnoreParenImpCasts());
-  Expr *baseExpr = fullExpr->getBase()->IgnoreParenImpCasts();
-  if (auto *baseArrayAccess =
-      dyn_cast<ArraySubscriptExpr>(baseExpr)) {
-    return getArrayExprInfo(baseArrayAccess, currentInfo);
-  } else {
-    currentInfo->push(baseExpr);
-    return 0;
-  }
 }
 
 }  // namespace spf_ie

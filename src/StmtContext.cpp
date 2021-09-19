@@ -142,8 +142,8 @@ void StmtContext::enterFor(ForStmt *forStmt) {
     Utils::getExprArrayAccesses(cond->getRHS(), accessExprs);
     std::vector<ArrayAccess> accesses;
     for (const auto &accessExpr: accessExprs) {
-      DataAccessHandler::buildDataAccess(accessExpr, true,
-                                         accesses);
+      auto additionalAccesses = DataAccessHandler::buildDataAccesses(accessExpr, true);
+      accesses.insert(accesses.end(), additionalAccesses.begin(), additionalAccesses.end());
     }
     for (const auto &access: accesses) {
       newInvariants.push_back(
@@ -258,8 +258,7 @@ std::string StmtContext::exprToStringWithSafeArrays(Expr *expr) {
   std::vector<ArraySubscriptExpr *> rawAccesses;
   Utils::getExprArrayAccesses(expr, rawAccesses);
   for (const auto &access: rawAccesses) {
-    std::vector<ArrayAccess> accesses;
-    DataAccessHandler::buildDataAccess(access, true, accesses);
+    auto accesses = DataAccessHandler::buildDataAccesses(access, true);
     std::string accessStr = accesses.back().toString(accesses);
     initialStr = iegenlib::replaceInString(
         initialStr, Utils::stmtToString(access), accessStr);
