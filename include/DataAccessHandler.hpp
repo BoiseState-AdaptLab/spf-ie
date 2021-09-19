@@ -58,15 +58,11 @@ public:
   //! Add the array accessed as a write, and any accessed within it as reads
   void processAsWrite(ArraySubscriptExpr *expr);
 
-  //! Make ArrayAccess and sub-accesses (recursively) from the given
-  //! expression
-  //! \param[in] expr Expression to process
+  //! Make all ArrayAccesses, including subaccesses, from the given expression
+  //! \param[in] fullExpr Expression to process
   //! \param[in] isRead Whether this access is a read
-  //! \param[in,out] existingAccesses Current list of sub-accesses; after
-  //! processing completes, the last element will be the outermost access.
-  static void buildDataAccess(
-      ArraySubscriptExpr *expr, bool isRead,
-      std::vector<ArrayAccess> &existingAccesses);
+  static std::vector<ArrayAccess> buildDataAccesses(
+      ArraySubscriptExpr *fullExpr, bool isRead);
 
   //! Data spaces accessed
   std::unordered_set<std::string> dataSpaces;
@@ -74,15 +70,23 @@ public:
   std::vector<ArrayAccess> arrayAccesses;
 
 private:
-  //! Make an ArrayAccess from an ArraySubscriptExpr and add it to the
-  //! appropriate map appropriate map
-  void addDataAccess(ArraySubscriptExpr *expr, bool isRead);
+  //! Make and store an ArrayAccess from an ArraySubscriptExpr, as the given access type
+  void processAsDataAccess(ArraySubscriptExpr *fullExpr, bool isRead);
+
+  //! Do recursive work of building ArrayAccesses
+  //! \param[in] fullExpr Expression to process
+  //! \param[in] isRead Whether this access is a read
+  //! \param[out] existingAccesses Current list of sub-accesses; after
+  //! processing completes, the last element will be the outermost access.
+  static void doBuildDataAccessesWork(ArraySubscriptExpr *fullExpr,
+                                      bool isRead,
+                                      std::vector<ArrayAccess> &existingAccesses);
 
   //! Do the recursive work of getting array access info
   //! \param[in] fullExpr array access to process
   //! \param[out] currentInfo currently collected info, which is complete when
   //! the method exits
-  //! \return 0 if success, 1 if array dimension too large
+  //! \return false if an error occurred, true otherwise
   static int getArrayExprInfo(ArraySubscriptExpr *fullExpr,
                               std::stack<Expr *> *currentInfo);
 };
