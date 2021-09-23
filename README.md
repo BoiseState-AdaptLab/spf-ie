@@ -84,6 +84,6 @@ $ cmake --build build --target docs
 
 Developing inside the container
 -------------------------------
-One can volume mount the local folder their pc to any path in the container and run the container.
+One can volume mount the local folder in their pc to any path in the container and run the container.
 
 `$ docker run -t -i -v '/path/to/spf-ie:/spf-ie' riftember/spf-ie /bin/bash`
