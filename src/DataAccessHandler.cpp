@@ -18,7 +18,7 @@ namespace spf_ie {
 
 std::string ArrayAccess::toString(const std::vector<ArrayAccess> &potentialSubaccesses) const {
   std::ostringstream os;
-  os << DATA_SPACE_DELIMITER << this->arrayName << DATA_SPACE_DELIMITER;
+  os << this->arrayName;
   os << "(";
   bool first = true;
   for (const auto &it: this->indexes) {

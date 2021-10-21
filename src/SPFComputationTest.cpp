@@ -65,6 +65,71 @@ protected:
 	return computations;
   }
 
+  //! EXPECT with gTest that two Computations are equal, component by component.
+  void expectComputationsEqual(const Computation* actual, const Computation* expected) {
+    ASSERT_EQ(expected->getName(), actual->getName());
+    SCOPED_TRACE("Computation '" + actual->getName() + "'");
+
+    ASSERT_EQ(expected->isComplete(), actual->isComplete());
+
+    EXPECT_EQ(expected->getTransformations(), actual->getTransformations());
+
+    ASSERT_EQ(expected->getNumStmts(), actual->getNumStmts());
+    for (unsigned int i = 0; i < actual->getNumStmts(); ++i) {
+      SCOPED_TRACE("Statement " + std::to_string(i));
+      expectStmtsEqual(actual->getStmt(i), expected->getStmt(i));
+    }
+
+    EXPECT_EQ(expected->getDataSpaces(), actual->getDataSpaces());
+
+    ASSERT_EQ(expected->getNumParams(), actual->getNumParams());
+    for (unsigned int i = 0; i < actual->getNumParams(); ++i) {
+      SCOPED_TRACE("Parameter " + std::to_string(i));
+      EXPECT_EQ(expected->getParameterName(i), actual->getParameterName(i));
+      EXPECT_EQ(expected->getParameterType(i), actual->getParameterType(i));
+    }
+
+    EXPECT_EQ(expected->getReturnValues(), actual->getReturnValues());
+    EXPECT_EQ(expected->getActiveOutValues(), actual->getActiveOutValues());
+
+    EXPECT_TRUE(*actual == *expected);
+  }
+
+  //! EXPECT with gTest that two Stmts are equal, component by component.
+  void expectStmtsEqual(const iegenlib::Stmt* actual, const iegenlib::Stmt* expected) {
+    ASSERT_EQ(expected->isComplete(), actual->isComplete());
+    ASSERT_EQ(expected->isDelimited(), actual->isDelimited());
+
+    EXPECT_EQ(expected->getStmtSourceCode(), actual->getStmtSourceCode());
+
+    EXPECT_EQ(expected->getIterationSpace()->prettyPrintString(),
+              actual->getIterationSpace()->prettyPrintString());
+
+    EXPECT_EQ(expected->getExecutionSchedule()->prettyPrintString(),
+              actual->getExecutionSchedule()->prettyPrintString());
+
+    ASSERT_EQ(expected->getNumReads(), actual->getNumReads());
+    for (unsigned int j = 0; j < actual->getNumReads(); ++j) {
+      EXPECT_EQ(expected->getReadDataSpace(j),
+                actual->getReadDataSpace(j));
+      EXPECT_EQ(expected->getReadRelation(j)->prettyPrintString(),
+                actual->getReadRelation(j)->prettyPrintString());
+    }
+
+    ASSERT_EQ(expected->getNumWrites(), actual->getNumWrites());
+    for (unsigned int j = 0; j < actual->getNumWrites(); ++j) {
+      EXPECT_EQ(expected->getWriteDataSpace(j),
+                actual->getWriteDataSpace(j));
+      EXPECT_EQ(expected->getWriteRelation(j)->prettyPrintString(),
+                actual->getWriteRelation(j)->prettyPrintString());
+    }
+
+    EXPECT_EQ(expected->getAllDebugStr(), actual->getAllDebugStr());
+    EXPECT_EQ(expected->isPhiNode(), actual->isPhiNode());
+    EXPECT_EQ(expected->isArrayAccess(), actual->isArrayAccess());
+
+    EXPECT_TRUE(*actual == *expected);
+  }
 };
 
 using SPFComputationDeathTest = SPFComputationTest;
@@ -97,7 +162,7 @@ TEST_F(SPFComputationTest, matrix_add_correct) {
 								   {{"x", "{[i,j]->[i,j]}"}, {"y", "{[i,j]->[i,j]}"}},
 								   {{"sum", "{[i,j]->[i,j]}"}}));
 
-  computation->expectEqualTo(expectedComputation);
+  expectComputationsEqual(computation, expectedComputation);
 }
 
 TEST_F(SPFComputationTest, forward_solve_correct) {
@@ -150,7 +215,7 @@ TEST_F(SPFComputationTest, forward_solve_correct) {
 												  {{"x", "{[j,i]->[i]}"}}));
   expectedComputation->addStmt(new iegenlib::Stmt("return 0;", "{[]}", "{[]->[4,0,0,0,0]}", {}, {}));
 
-  computation->expectEqualTo(expectedComputation);
+  expectComputationsEqual(computation, expectedComputation);
 }
 
 TEST_F(SPFComputationTest, csr_spmv_correct) {
@@ -188,7 +253,7 @@ int CSR_SpMV(int a, int N, int A[a], int index[N + 1], int col[a], int x[N], int
 												  {{"product", "{[i,k]->[i]}"}}));
   expectedComputation->addStmt(new iegenlib::Stmt("return 0;", "{[]}", "{[]->[3,0,0,0,0]}", {}, {}));
 
-  computation->expectEqualTo(expectedComputation);
+  expectComputationsEqual(computation, expectedComputation);
 }
 
 /** Death tests, checking failure on invalid input **/
