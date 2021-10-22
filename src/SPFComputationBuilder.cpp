@@ -22,7 +22,7 @@ namespace spf_ie {
 
 SPFComputationBuilder::SPFComputationBuilder() = default;
 
-std::unique_ptr<iegenlib::Computation>
+iegenlib::Computation *
 SPFComputationBuilder::buildComputationFromFunction(FunctionDecl *funcDecl) {
   if (auto *funcBody = dyn_cast<CompoundStmt>(funcDecl->getBody())) {
     // reset builder components
@@ -30,7 +30,7 @@ SPFComputationBuilder::buildComputationFromFunction(FunctionDecl *funcDecl) {
     largestScheduleDimension = 0;
     currentStmtContext = StmtContext();
     stmtContexts.clear();
-    computation = std::make_unique<iegenlib::Computation>();
+    computation = new iegenlib::Computation();
 
     // add function parameters to the Computation
     for (const auto *param: funcDecl->parameters()) {
@@ -103,7 +103,7 @@ SPFComputationBuilder::buildComputationFromFunction(FunctionDecl *funcDecl) {
           funcBody);
     }
 
-    return std::move(computation);
+    return computation;
   } else {
     Utils::printErrorAndExit("Invalid function body", funcDecl->getBody());
   }

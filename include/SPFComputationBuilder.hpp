@@ -29,8 +29,8 @@ public:
   //! Entry point for each function; gather information about its
   //! statements and data accesses into an Computation
   //! \param[in] funcDecl Function declaration to process
-  std::unique_ptr<iegenlib::Computation> buildComputationFromFunction(
-	  FunctionDecl *funcDecl);
+  Computation *buildComputationFromFunction(
+      FunctionDecl *funcDecl);
 
 private:
   //! Number of the statement currently being processed
@@ -43,7 +43,7 @@ private:
   //! Context information attached to each completed statement
   std::vector<StmtContext> stmtContexts;
   //! Computation being built up
-  std::unique_ptr<iegenlib::Computation> computation;
+  iegenlib::Computation *computation;
 
   //! Process the body of a control structure, such as a for loop
   //! \param[in] stmt Body statement (which may be compound) to process
