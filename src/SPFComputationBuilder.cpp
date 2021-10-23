@@ -44,6 +44,10 @@ SPFComputationBuilder::buildComputationFromFunction(FunctionDecl *funcDecl) {
 
       // source code
       std::string stmtSourceCode = Utils::stmtToString(stmtContext.stmt);
+      // append semicolon if absent
+      if (stmtSourceCode.back() != ';') {
+        stmtSourceCode += ';';
+      }
       stmt->setStmtSourceCode(stmtSourceCode);
       // iteration space
       std::string iterationSpace = stmtContext.getIterSpaceString();
