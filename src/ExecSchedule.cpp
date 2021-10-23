@@ -22,17 +22,17 @@ ScheduleVal ExecSchedule::popValue() {
 
 void ExecSchedule::advanceSchedule() {
   if (scheduleTuple.empty() || scheduleTuple.back()->valueIsVar) {
-	scheduleTuple.push_back(std::make_shared<ScheduleVal>(0));
+    scheduleTuple.push_back(std::make_shared<ScheduleVal>(0));
   } else {
-	std::shared_ptr<ScheduleVal> top = scheduleTuple.back();
-	scheduleTuple.pop_back();
-	scheduleTuple.push_back(std::make_shared<ScheduleVal>(top->num + 1));
+    std::shared_ptr<ScheduleVal> top = scheduleTuple.back();
+    scheduleTuple.pop_back();
+    scheduleTuple.push_back(std::make_shared<ScheduleVal>(top->num + 1));
   }
 }
 
 void ExecSchedule::zeroPadDimension(int dim) {
   for (int i = getDimension(); i < dim; ++i) {
-	scheduleTuple.push_back(std::make_shared<ScheduleVal>(0));
+    scheduleTuple.push_back(std::make_shared<ScheduleVal>(0));
   }
 }
 

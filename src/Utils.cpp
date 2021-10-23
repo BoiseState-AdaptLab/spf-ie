@@ -22,11 +22,11 @@ void Utils::printErrorAndExit(std::string message) {
 void Utils::printErrorAndExit(std::string message, clang::Stmt *stmt) {
   llvm::errs() << "ERROR: " << message << "\n";
   if (stmt) {
-	llvm::errs() << "At "
-				 << stmt->getBeginLoc().printToString(
-					 Context->getSourceManager())
-				 << ":\n"
-				 << stmtToString(stmt) << "\n";
+    llvm::errs() << "At "
+                 << stmt->getBeginLoc().printToString(
+                     Context->getSourceManager())
+                 << ":\n"
+                 << stmtToString(stmt) << "\n";
   }
   exit(1);
 }
@@ -35,20 +35,20 @@ void Utils::printSmallLine() { llvm::outs() << "---------------\n"; }
 
 std::string Utils::stmtToString(clang::Stmt *stmt) {
   return Lexer::getSourceText(
-	  CharSourceRange::getTokenRange(stmt->getSourceRange()),
-	  Context->getSourceManager(), Context->getLangOpts())
-	  .str();
+      CharSourceRange::getTokenRange(stmt->getSourceRange()),
+      Context->getSourceManager(), Context->getLangOpts())
+      .str();
 }
 
 void Utils::getExprArrayAccesses(
-	Expr *expr, std::vector<ArraySubscriptExpr *> &currentList) {
+    Expr *expr, std::vector<ArraySubscriptExpr *> &currentList) {
   Expr *usableExpr = expr->IgnoreParenImpCasts();
   if (auto *binOper = dyn_cast<BinaryOperator>(usableExpr)) {
-	getExprArrayAccesses(binOper->getLHS(), currentList);
-	getExprArrayAccesses(binOper->getRHS(), currentList);
+    getExprArrayAccesses(binOper->getLHS(), currentList);
+    getExprArrayAccesses(binOper->getRHS(), currentList);
   } else if (auto *asArrayAccessExpr =
-	  dyn_cast<ArraySubscriptExpr>(usableExpr)) {
-	currentList.push_back(asArrayAccessExpr);
+      dyn_cast<ArraySubscriptExpr>(usableExpr)) {
+    currentList.push_back(asArrayAccessExpr);
   }
 }
 
@@ -58,15 +58,15 @@ std::string Utils::getVarReplacementName() {
 
 std::string Utils::binaryOperatorKindToString(BinaryOperatorKind bo) {
   if (!operatorStrings.count(bo)) {
-	printErrorAndExit("Invalid operator type encountered.");
+    printErrorAndExit("Invalid operator type encountered.");
   }
   return operatorStrings.at(bo);
 }
 
 const std::map<BinaryOperatorKind, std::string> Utils::operatorStrings = {
-	{BinaryOperatorKind::BO_LT, "<"}, {BinaryOperatorKind::BO_LE, "<="},
-	{BinaryOperatorKind::BO_GT, ">"}, {BinaryOperatorKind::BO_GE, ">="},
-	{BinaryOperatorKind::BO_EQ, "="}, {BinaryOperatorKind::BO_NE, "!="}};
+    {BinaryOperatorKind::BO_LT, "<"}, {BinaryOperatorKind::BO_LE, "<="},
+    {BinaryOperatorKind::BO_GT, ">"}, {BinaryOperatorKind::BO_GE, ">="},
+    {BinaryOperatorKind::BO_EQ, "="}, {BinaryOperatorKind::BO_NE, "!="}};
 
 unsigned int Utils::replacementVarNumber = 0;
 
