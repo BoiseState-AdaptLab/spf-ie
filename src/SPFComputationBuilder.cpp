@@ -30,7 +30,7 @@ SPFComputationBuilder::buildComputationFromFunction(FunctionDecl *funcDecl) {
     largestScheduleDimension = 0;
     currentStmtContext = StmtContext();
     stmtContexts.clear();
-    computation = new iegenlib::Computation();
+    computation = new iegenlib::Computation(funcDecl->getNameAsString());
 
     // add function parameters to the Computation
     for (const auto *param: funcDecl->parameters()) {
