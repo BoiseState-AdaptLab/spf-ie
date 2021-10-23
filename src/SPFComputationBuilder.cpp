@@ -20,97 +20,39 @@ namespace spf_ie {
 
 /* SPFComputationBuilder */
 
+std::map<std::string, Computation *> SPFComputationBuilder::subComputations;
+
 SPFComputationBuilder::SPFComputationBuilder() = default;
 
 iegenlib::Computation *
 SPFComputationBuilder::buildComputationFromFunction(FunctionDecl *funcDecl) {
-  if (auto *funcBody = dyn_cast<CompoundStmt>(funcDecl->getBody())) {
-    // reset builder components
-    stmtNumber = 0;
-    largestScheduleDimension = 0;
-    currentStmtContext = StmtContext();
-    stmtContexts.clear();
-    computation = new iegenlib::Computation(funcDecl->getNameAsString());
-
-    // add function parameters to the Computation
-    for (const auto *param: funcDecl->parameters()) {
-      computation->addParameter(param->getNameAsString(), param->getOriginalType().getAsString());
-    }
-
-    // collect function body info and add it to the Computation
-    processBody(funcBody);
-    for (auto &stmtContext: stmtContexts) {
-      auto *stmt = new iegenlib::Stmt();
-
-      // source code
-      std::string stmtSourceCode = Utils::stmtToString(stmtContext.stmt);
-      // append semicolon if absent
-      if (stmtSourceCode.back() != ';') {
-        stmtSourceCode += ';';
-      }
-      stmt->setStmtSourceCode(stmtSourceCode);
-      // iteration space
-      std::string iterationSpace = stmtContext.getIterSpaceString();
-      stmt->setIterationSpace(iterationSpace);
-      // execution schedule
-      // zero-pad schedule to maximum dimension encountered
-      stmtContext.schedule.zeroPadDimension(largestScheduleDimension);
-      std::string executionSchedule = stmtContext.getExecScheduleString();
-      stmt->setExecutionSchedule(executionSchedule);
-      // data accesses
-      std::vector<std::pair<std::string, std::string>> dataReads;
-      std::vector<std::pair<std::string, std::string>> dataWrites;
-      for (auto &it_accesses: stmtContext.dataAccesses.arrayAccesses) {
-        std::string dataSpaceAccessed = it_accesses.arrayName;
-        // enforce loop invariance
-        if (!it_accesses.isRead) {
-          for (const auto &invariantGroup: stmtContext.invariants) {
-            if (std::find(
-                invariantGroup.begin(), invariantGroup.end(),
-                dataSpaceAccessed) != invariantGroup.end()) {
-              Utils::printErrorAndExit(
-                  "Code may not modify loop-invariant data "
-                  "space '" +
-                      dataSpaceAccessed + "'",
-                  stmtContext.stmt);
-            }
-          }
-        }
-        // insert data access
-        if (it_accesses.isRead) {
-          stmt->addRead(dataSpaceAccessed,
-                        stmtContext.getDataAccessString(&it_accesses));
-        } else {
-          stmt->addWrite(dataSpaceAccessed,
-                         stmtContext.getDataAccessString(&it_accesses));
-        }
-      }
-
-      // add Computation data spaces
-      auto stmtDataSpaces = stmtContext.dataAccesses.dataSpaces;
-      for (const auto &dataSpaceName:
-          stmtContext.dataAccesses.dataSpaces) {
-        computation->addDataSpace(dataSpaceName, "placeholderType");
-      }
-
-      computation->addStmt(stmt);
-    }
-
-    // sanity check Computation completeness
-    if (!computation->isComplete()) {
-      Utils::printErrorAndExit(
-          "Computation is in an inconsistent/incomplete state after "
-          "building from function '" +
-              funcDecl->getQualifiedNameAsString() +
-              "'. This "
-              "should not be possible and most likely indicates a bug.",
-          funcBody);
-    }
-
-    return computation;
-  } else {
+  auto *funcBody = dyn_cast<CompoundStmt>(funcDecl->getBody());
+  if (!funcBody) {
     Utils::printErrorAndExit("Invalid function body", funcDecl->getBody());
   }
+
+  currentStmtContext = StmtContext();
+  computation = new iegenlib::Computation(funcDecl->getNameAsString());
+
+  // add function parameters to the Computation
+  for (const auto *param: funcDecl->parameters()) {
+    computation->addParameter(param->getNameAsString(), param->getOriginalType().getAsString());
+  }
+
+  // collect function body info and add it to the Computation
+  processBody(funcBody);
+
+  // sanity check Computation completeness
+  if (!computation->isComplete()) {
+    Utils::printErrorAndExit(
+        "Computation is in an inconsistent/incomplete state after "
+        "building from function '" +
+            funcDecl->getQualifiedNameAsString() +
+            "'. This should not be possible and most likely indicates a bug.",
+        funcBody);
+  }
+
+  return computation;
 }
 
 void SPFComputationBuilder::processBody(clang::Stmt *stmt) {
@@ -128,8 +70,7 @@ void SPFComputationBuilder::processSingleStmt(clang::Stmt *stmt) {
   if (isa<WhileStmt>(stmt) || isa<CompoundStmt>(stmt) ||
       isa<SwitchStmt>(stmt) || isa<DoStmt>(stmt) || isa<LabelStmt>(stmt) ||
       isa<AttributedStmt>(stmt) || isa<GotoStmt>(stmt) ||
-      isa<ContinueStmt>(stmt) || isa<BreakStmt>(stmt) ||
-      isa<CallExpr>(stmt)) {
+      isa<ContinueStmt>(stmt) || isa<BreakStmt>(stmt)) {
     Utils::printErrorAndExit("Unsupported stmt type " +
                                  std::string(stmt->getStmtClassName()),
                              stmt);
@@ -156,39 +97,116 @@ void SPFComputationBuilder::processSingleStmt(clang::Stmt *stmt) {
       processBody(asIfStmt->getElse());
       currentStmtContext.exitIf();
     }
+  } else if (auto *asCallExpr = dyn_cast<CallExpr>(stmt)) {
+    // TODO: detect function calls that are not the only thing in the statement
+    auto *callee = asCallExpr->getDirectCallee();
+    if (!callee) {
+      Utils::printErrorAndExit("Cannot processes this kind of call expression", asCallExpr);
+    }
+    currentStmtContext.schedule.advanceSchedule();
+    std::string calleeName = callee->getNameAsString();
+    if (!subComputations.count(calleeName)) {
+      // build Computation from callee, if we haven't done so already
+      auto builder = new SPFComputationBuilder();
+      subComputations[calleeName] = builder->buildComputationFromFunction(callee);
+    }
+    std::vector<std::string> callArgStrings;
+    for (unsigned int i = 0; i < asCallExpr->getNumArgs(); ++i) {
+      auto *arg = asCallExpr->getArg(i)->IgnoreParenImpCasts();
+      if (!(isa<DeclRefExpr>(arg) || isa<IntegerLiteral>(arg) || isa<FixedPointLiteral>(arg)
+          || isa<FloatingLiteral>(arg))) {
+        Utils::printErrorAndExit(
+            "Argument passed to function is too complex (must be a data space or a numeric literal)",
+            arg);
+      }
+      callArgStrings.emplace_back(Utils::stmtToString(arg));
+    }
+    auto appendResult = computation->appendComputation(subComputations[calleeName],
+                                                       currentStmtContext.getIterSpaceString(),
+                                                       currentStmtContext.getExecScheduleString(),
+                                                       callArgStrings);
+
+    currentStmtContext.schedule.skipToPosition(appendResult.tuplePosition);
+
+    // TODO: handle return value
   } else {
     currentStmtContext.schedule.advanceSchedule();
     addStmt(stmt);
   }
 }
 
-void SPFComputationBuilder::addStmt(clang::Stmt *stmt) {
+void SPFComputationBuilder::addStmt(clang::Stmt *clangStmt) {
   // capture reads and writes made in statement
-  if (auto *asDeclStmt = dyn_cast<DeclStmt>(stmt)) {
+  DataAccessHandler dataAccesses;
+  if (auto *asDeclStmt = dyn_cast<DeclStmt>(clangStmt)) {
     auto *decl = cast<VarDecl>(asDeclStmt->getSingleDecl());
     if (decl->hasInit()) {
-      currentStmtContext.dataAccesses.processAsReads(decl->getInit());
+      dataAccesses.processAsReads(decl->getInit());
     }
-  } else if (auto *asBinOper = dyn_cast<BinaryOperator>(stmt)) {
+  } else if (auto *asBinOper = dyn_cast<BinaryOperator>(clangStmt)) {
     if (auto *lhsAsArrayAccess =
         dyn_cast<ArraySubscriptExpr>(asBinOper->getLHS())) {
-      currentStmtContext.dataAccesses.processAsWrite(lhsAsArrayAccess);
+      dataAccesses.processAsWrite(lhsAsArrayAccess);
     }
     if (asBinOper->isCompoundAssignmentOp()) {
-      currentStmtContext.dataAccesses.processAsReads(asBinOper->getLHS());
+      dataAccesses.processAsReads(asBinOper->getLHS());
     }
-    currentStmtContext.dataAccesses.processAsReads(asBinOper->getRHS());
+    dataAccesses.processAsReads(asBinOper->getRHS());
   }
 
-  // increase largest schedule dimension, if necessary
-  largestScheduleDimension = std::max(
-      largestScheduleDimension, currentStmtContext.schedule.getDimension());
+  // build IEGenLib Stmt and add it to the Computation
+  auto *newStmt = new iegenlib::Stmt();
 
-  // store processed statement
-  currentStmtContext.stmt = stmt;
-  stmtContexts.push_back(currentStmtContext);
-  currentStmtContext = StmtContext(&currentStmtContext);
-  stmtNumber++;
+  // source code
+  std::string stmtSourceCode = Utils::stmtToString(clangStmt);
+  // append semicolon if absent
+  if (stmtSourceCode.back() != ';') {
+    stmtSourceCode += ';';
+  }
+  newStmt->setStmtSourceCode(stmtSourceCode);
+  // iteration space
+  std::string iterationSpace = currentStmtContext.getIterSpaceString();
+  newStmt->setIterationSpace(iterationSpace);
+  // execution schedule
+  std::string executionSchedule = currentStmtContext.getExecScheduleString();
+  newStmt->setExecutionSchedule(executionSchedule);
+  // data accesses
+  std::vector<std::pair<std::string, std::string>> dataReads;
+  std::vector<std::pair<std::string, std::string>> dataWrites;
+  for (auto &it_accesses: dataAccesses.arrayAccesses) {
+    std::string dataSpaceAccessed = it_accesses.arrayName;
+    // enforce loop invariance
+    if (!it_accesses.isRead) {
+      for (const auto &invariantGroup: currentStmtContext.invariants) {
+        if (std::find(
+            invariantGroup.begin(), invariantGroup.end(),
+            dataSpaceAccessed) != invariantGroup.end()) {
+          Utils::printErrorAndExit(
+              "Code may not modify loop-invariant data "
+              "space '" +
+                  dataSpaceAccessed + "'",
+              clangStmt);
+        }
+      }
+    }
+    // insert data access
+    if (it_accesses.isRead) {
+      newStmt->addRead(dataSpaceAccessed,
+                       currentStmtContext.getDataAccessString(&it_accesses));
+    } else {
+      newStmt->addWrite(dataSpaceAccessed,
+                        currentStmtContext.getDataAccessString(&it_accesses));
+    }
+  }
+
+  // add Computation data spaces
+  auto stmtDataSpaces = dataAccesses.dataSpaces;
+  for (const auto &dataSpaceName:
+      dataAccesses.dataSpaces) {
+    computation->addDataSpace(dataSpaceName, "placeholderType");
+  }
+
+  computation->addStmt(newStmt);
 }
 
 }  // namespace spf_ie

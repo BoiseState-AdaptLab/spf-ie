@@ -30,31 +30,20 @@ namespace spf_ie {
 /*!
  * \struct StmtContext
  *
- * \brief Contains associated information for a statement, such as iteration
- * space and execution schedule.
+ * \brief Contains information associated with a statement position, such as iteration
+ * domain and execution schedule.
  */
 struct StmtContext {
   StmtContext();
-
-  //! Copy the information from an existing StmtContext.
-  //! Preserves only information that builds up in nested contexts,
-  //! excluding information that is only applicable per-statement.
-  //! \param[in] other Existing StmtContext to copy
-  explicit StmtContext(StmtContext *other);
-
-  //! Actual AST Stmt
-  Stmt *stmt{};
 
   //! Variables being iterated over
   std::vector<std::string> iterators;
   //! Constraints on iteration -- inequalities and equalities
   std::vector<std::shared_ptr<
-	  std::tuple<std::string, std::string, BinaryOperatorKind>>>
-	  constraints;
+      std::tuple<std::string, std::string, BinaryOperatorKind>>>
+      constraints;
   //! Execution schedule
   ExecSchedule schedule;
-  //! Data accesses (both reads and writes)
-  DataAccessHandler dataAccesses;
 
   //! Data spaces which are held invariant in the current context, grouped
   //! by the loop that they are invariant in
@@ -90,11 +79,11 @@ struct StmtContext {
 private:
   //! Convenience function to add a new constraint from the given parameters
   void makeAndInsertConstraint(Expr *lower, Expr *upper,
-							   BinaryOperatorKind oper);
+                               BinaryOperatorKind oper);
 
   //! Convenience function to add a new constraint from the given parameters
   void makeAndInsertConstraint(std::string lower, Expr *upper,
-							   BinaryOperatorKind oper);
+                               BinaryOperatorKind oper);
 
   //! Get the source code of an expression, with array accesses changed to
   //! function calls (for example, "i < A[i]" becomes "i < A(i)")

@@ -1,6 +1,7 @@
 #include "ExecSchedule.hpp"
 
 #include <string>
+#include "Utils.hpp"
 
 namespace spf_ie {
 
@@ -30,10 +31,14 @@ void ExecSchedule::advanceSchedule() {
   }
 }
 
-void ExecSchedule::zeroPadDimension(int dim) {
-  for (int i = getDimension(); i < dim; ++i) {
-    scheduleTuple.push_back(std::make_shared<ScheduleVal>(0));
+void ExecSchedule::skipToPosition(unsigned int newPosition) {
+  std::shared_ptr<ScheduleVal> top = scheduleTuple.back();
+  if (top->valueIsVar) {
+    Utils::printErrorAndExit("Cannot skip to position " + std::to_string(newPosition) +
+        ", because top of stack is not a number.");
   }
+  scheduleTuple.pop_back();
+  scheduleTuple.push_back(std::make_shared<ScheduleVal>(newPosition));
 }
 
 /* ScheduleVal */

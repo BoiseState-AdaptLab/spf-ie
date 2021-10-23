@@ -30,11 +30,11 @@ struct ExecSchedule {
   //! Move statement number forward in the execution schedule
   void advanceSchedule();
 
+  //! Jump the top of the schedule to the given position
+  void skipToPosition(unsigned int newPosition);
+
   //! Get the dimension of the execution schedule
   int getDimension() const { return scheduleTuple.size(); }
-
-  //! Zero-pad this execution schedule up to a certain dimension
-  void zeroPadDimension(int dim);
 
   //! Actual execution schedule ordering tuple
   std::vector<std::shared_ptr<ScheduleVal>> scheduleTuple;

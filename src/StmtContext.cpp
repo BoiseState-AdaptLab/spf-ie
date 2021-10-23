@@ -25,13 +25,6 @@ namespace spf_ie {
 
 StmtContext::StmtContext() = default;
 
-StmtContext::StmtContext(StmtContext *other) {
-  iterators = other->iterators;
-  constraints = other->constraints;
-  schedule = other->schedule;
-  invariants = other->invariants;
-}
-
 std::string StmtContext::getIterSpaceString() {
   std::ostringstream os;
   os << "{" << getItersTupleString();

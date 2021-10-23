@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <map>
 
 #include "StmtContext.hpp"
 #include "clang/AST/Decl.h"
@@ -26,24 +27,22 @@ namespace spf_ie {
 class SPFComputationBuilder {
 public:
   SPFComputationBuilder();
-  //! Entry point for each function; gather information about its
-  //! statements and data accesses into an Computation
+
+  //! Entry point for building top-level Computation.
+  //! Gathers information about the function's
+  //! statements and data accesses into a Computation.
   //! \param[in] funcDecl Function declaration to process
   Computation *buildComputationFromFunction(
       FunctionDecl *funcDecl);
 
+  //! Computations referenced from any others, stored for potential re-use
+  static std::map<std::string, Computation *> subComputations;
+
 private:
-  //! Number of the statement currently being processed
-  unsigned int stmtNumber{};
-  //! The length of the longest schedule tuple
-  int largestScheduleDimension{};
-  //! The information about the context we are currently in, which is
-  //! copied for completed statements
+  //! The information about the context we are currently in
   StmtContext currentStmtContext;
-  //! Context information attached to each completed statement
-  std::vector<StmtContext> stmtContexts;
-  //! Computation being built up
-  iegenlib::Computation *computation;
+  //! Top-level Computation being built up
+  Computation *computation;
 
   //! Process the body of a control structure, such as a for loop
   //! \param[in] stmt Body statement (which may be compound) to process

@@ -14,13 +14,14 @@ int main(void) {
     int i;
     int j;
     int x;
-    int M = 5;
+    int M;
     for (i = 0; i < 3; i++) {
         x = i;
         if (i > 1) {
             x = x + 5;
         }
         asdf(x);
+        M = asdf(3);
         for (j = 1; j < M; j++) {
             if (i == 0) {
                 x *= j;

@@ -164,7 +164,7 @@ TEST_F(SPFComputationTest, matrix_add_correct) {
 
   iegenlib::Computation *computation = buildComputationFromCode(code);
 
-  Computation *expectedComputation = new Computation();
+  Computation *expectedComputation = new Computation("matrix_add");
   expectedComputation->addParameter("a", "int");
   expectedComputation->addParameter("b", "int");
   expectedComputation->addParameter("x", "int[][]");
@@ -206,7 +206,7 @@ TEST_F(SPFComputationTest, forward_solve_correct) {
 
   iegenlib::Computation *computation = buildComputationFromCode(code);
 
-  Computation *expectedComputation = new Computation();
+  Computation *expectedComputation = new Computation("forward_solve");
   expectedComputation->addParameter("n", "int");
   expectedComputation->addParameter("l", "int[][]");
   expectedComputation->addParameter("b", "double[]");
@@ -256,7 +256,7 @@ int CSR_SpMV(int a, int N, int A[a], int index[N + 1], int col[a], int x[N], int
 
   iegenlib::Computation *computation = buildComputationFromCode(code);
 
-  Computation *expectedComputation = new Computation();
+  Computation *expectedComputation = new Computation("CSR_SpMV");
   expectedComputation->addParameter("a", "int");
   expectedComputation->addParameter("N", "int");
   expectedComputation->addParameter("A", "int[]");
