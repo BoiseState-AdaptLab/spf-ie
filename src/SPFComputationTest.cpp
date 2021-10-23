@@ -41,8 +41,10 @@ const ASTContext *spf_ie::Context;
  */
 class SPFComputationTest : public ::testing::Test {
 protected:
-  void SetUp() override {}
-  void TearDown() override {}
+  virtual void SetUp() override {
+    iegenlib::Computation::resetNumRenamesCounters();
+  }
+  virtual void TearDown() override {}
 
   std::string replacementVarName = REPLACEMENT_VAR_BASE_NAME;
 
