@@ -16,7 +16,7 @@ Authors
 Description
 -----------
 This tool generates the [Sparse Polyhedral Framework](https://doi.org/10.1016/j.parco.2016.02.004)
-representation of C/C++ source code (gathering information from Clang's AST),
+representation of C source code (gathering information from Clang's AST),
 using IEGenLib to handle the mathematical objects involved. The eventual goal
 is to use this representation for optimizing transformations, the results of
 which can be used to generate more efficient inspector/executor code. SPF-IE
@@ -39,7 +39,7 @@ explaining how to install and use LLVM and Clang, with a few exceptions:
     `cmake -DLLVM_ENABLE_PROJECTS=clang -DBUILD_SHARED_LIBS=ON -DLLVM_ENABLE_EH=ON -DLLVM_ENABLE_RTTI=ON -G "Unix Makefiles" ../llvm`
     - When you run make, pass the `-j` flag followed by the number of concurrent build threads you want (don't put more than the number of cores your computer has). This build takes a very very long time without parallel building.
 - **IEGenLib:** Automatically cloned and built from
-[here](https://github.com/CompOpt4Apps/IEGenLib) -- you don't have to do
+[here](https://github.com/BoiseState-AdaptLab/IEGenLib) -- you don't have to do
 anything for this dependency.
 - **Google Test:** Automatically built as a dependency of IEGenLib.
 
