@@ -6,7 +6,7 @@
 #include <vector>
 #include <map>
 
-#include "StmtContext.hpp"
+#include "PositionContext.hpp"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/Stmt.h"
@@ -17,16 +17,16 @@ using namespace clang;
 namespace spf_ie {
 
 /*!
- * \class SPFComputationBuilder
+ * \class ComputationBuilder
  *
  * \brief Class handling building up the sparse polyhedral model for a function
  *
  * Contains the entry point for function processing. Recursively visits each
  * statement in the source.
  */
-class SPFComputationBuilder {
+class ComputationBuilder {
 public:
-  SPFComputationBuilder();
+  ComputationBuilder();
 
   //! Entry point for building top-level Computation.
   //! Gathers information about the function's
@@ -39,8 +39,8 @@ public:
   static std::map<std::string, Computation *> subComputations;
 
 private:
-  //! The information about the context we are currently in
-  StmtContext currentStmtContext;
+  //! Context information about the position we're currently at
+  PositionContext context;
   //! Top-level Computation being built up
   Computation *computation;
 

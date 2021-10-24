@@ -13,7 +13,7 @@
 
 #include <memory>
 
-#include "SPFComputationBuilder.hpp"
+#include "ComputationBuilder.hpp"
 #include "Utils.hpp"
 #include "clang/AST/ASTConsumer.h"
 #include "clang/AST/ASTContext.h"
@@ -47,7 +47,7 @@ public:
       llvm::errs()
           << "=================================================\n\n";
     }
-    SPFComputationBuilder builder;
+    ComputationBuilder builder;
     // process each function (with a body) in the file
     bool builtAComputation = false;
     for (auto it: Context->getTranslationUnitDecl()->decls()) {

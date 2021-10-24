@@ -1,4 +1,4 @@
-#include "StmtContext.hpp"
+#include "PositionContext.hpp"
 
 #include <memory>
 #include <sstream>
@@ -21,11 +21,11 @@ using namespace clang;
 
 namespace spf_ie {
 
-/* StmtContext */
+/* PositionContext */
 
-StmtContext::StmtContext() = default;
+PositionContext::PositionContext() = default;
 
-std::string StmtContext::getIterSpaceString() {
+std::string PositionContext::getIterSpaceString() {
   std::ostringstream os;
   os << "{" << getItersTupleString();
   if (!constraints.empty()) {
@@ -43,7 +43,7 @@ std::string StmtContext::getIterSpaceString() {
   return os.str();
 }
 
-std::string StmtContext::getExecScheduleString() {
+std::string PositionContext::getExecScheduleString() {
   std::ostringstream os;
   os << "{" << getItersTupleString() << "->[";
   if (schedule.scheduleTuple.empty()) {
@@ -64,7 +64,7 @@ std::string StmtContext::getExecScheduleString() {
   return os.str();
 }
 
-std::string StmtContext::getDataAccessString(ArrayAccess *access) {
+std::string PositionContext::getDataAccessString(ArrayAccess *access) {
   std::ostringstream os;
   std::vector<std::pair<std::string, std::string>> constraintsToAdd;
   os << "{" << getItersTupleString() << "->[";
@@ -106,7 +106,7 @@ std::string StmtContext::getDataAccessString(ArrayAccess *access) {
   return os.str();
 }
 
-void StmtContext::enterFor(ForStmt *forStmt) {
+void PositionContext::enterFor(ForStmt *forStmt) {
   std::string error;
   std::string errorReason;
 
@@ -211,7 +211,7 @@ void StmtContext::enterFor(ForStmt *forStmt) {
   }
 }
 
-void StmtContext::exitFor() {
+void PositionContext::exitFor() {
   constraints.pop_back();
   constraints.pop_back();
   iterators.pop_back();
@@ -220,7 +220,7 @@ void StmtContext::exitFor() {
   invariants.pop_back();
 }
 
-void StmtContext::enterIf(IfStmt *ifStmt, bool invert) {
+void PositionContext::enterIf(IfStmt *ifStmt, bool invert) {
   if (auto *cond = dyn_cast<BinaryOperator>(ifStmt->getCond())) {
     makeAndInsertConstraint(
         cond->getLHS(), cond->getRHS(),
@@ -232,15 +232,15 @@ void StmtContext::enterIf(IfStmt *ifStmt, bool invert) {
   }
 }
 
-void StmtContext::exitIf() { constraints.pop_back(); }
+void PositionContext::exitIf() { constraints.pop_back(); }
 
-void StmtContext::makeAndInsertConstraint(Expr *lower, Expr *upper,
-                                          BinaryOperatorKind oper) {
+void PositionContext::makeAndInsertConstraint(Expr *lower, Expr *upper,
+                                              BinaryOperatorKind oper) {
   makeAndInsertConstraint(exprToStringWithSafeArrays(lower), upper, oper);
 }
 
-void StmtContext::makeAndInsertConstraint(std::string lower, Expr *upper,
-                                          BinaryOperatorKind oper) {
+void PositionContext::makeAndInsertConstraint(std::string lower, Expr *upper,
+                                              BinaryOperatorKind oper) {
   if (oper == BinaryOperatorKind::BO_NE) {
     Utils::printErrorAndExit(
         "Not-equal conditions are unsupported by SPF: in condition " +
@@ -253,7 +253,7 @@ void StmtContext::makeAndInsertConstraint(std::string lower, Expr *upper,
           lower, exprToStringWithSafeArrays(upper), oper));
 }
 
-std::string StmtContext::exprToStringWithSafeArrays(Expr *expr) {
+std::string PositionContext::exprToStringWithSafeArrays(Expr *expr) {
   std::string initialStr = Utils::stmtToString(expr);
   std::vector<ArraySubscriptExpr *> rawAccesses;
   Utils::getExprArrayAccesses(expr, rawAccesses);
@@ -266,7 +266,7 @@ std::string StmtContext::exprToStringWithSafeArrays(Expr *expr) {
   return initialStr;
 }
 
-std::string StmtContext::getItersTupleString() {
+std::string PositionContext::getItersTupleString() {
   std::ostringstream os;
   os << "[";
   if (iterators.empty()) {

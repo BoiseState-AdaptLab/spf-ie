@@ -1,9 +1,8 @@
-#include "SPFComputationBuilder.hpp"
+#include "ComputationBuilder.hpp"
 
 #include <algorithm>
 #include <map>
 #include <memory>
-#include <sstream>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -18,20 +17,20 @@ using namespace clang;
 
 namespace spf_ie {
 
-/* SPFComputationBuilder */
+/* ComputationBuilder */
 
-std::map<std::string, Computation *> SPFComputationBuilder::subComputations;
+std::map<std::string, Computation *> ComputationBuilder::subComputations;
 
-SPFComputationBuilder::SPFComputationBuilder() = default;
+ComputationBuilder::ComputationBuilder() = default;
 
 iegenlib::Computation *
-SPFComputationBuilder::buildComputationFromFunction(FunctionDecl *funcDecl) {
+ComputationBuilder::buildComputationFromFunction(FunctionDecl *funcDecl) {
   auto *funcBody = dyn_cast<CompoundStmt>(funcDecl->getBody());
   if (!funcBody) {
     Utils::printErrorAndExit("Invalid function body", funcDecl->getBody());
   }
 
-  currentStmtContext = StmtContext();
+  context = PositionContext();
   computation = new iegenlib::Computation(funcDecl->getNameAsString());
 
   // add function parameters to the Computation
@@ -55,7 +54,7 @@ SPFComputationBuilder::buildComputationFromFunction(FunctionDecl *funcDecl) {
   return computation;
 }
 
-void SPFComputationBuilder::processBody(clang::Stmt *stmt) {
+void ComputationBuilder::processBody(clang::Stmt *stmt) {
   if (auto *asCompoundStmt = dyn_cast<CompoundStmt>(stmt)) {
     for (auto it: asCompoundStmt->body()) {
       processSingleStmt(it);
@@ -65,7 +64,7 @@ void SPFComputationBuilder::processBody(clang::Stmt *stmt) {
   }
 }
 
-void SPFComputationBuilder::processSingleStmt(clang::Stmt *stmt) {
+void ComputationBuilder::processSingleStmt(clang::Stmt *stmt) {
   // fail on disallowed statement types
   if (isa<WhileStmt>(stmt) || isa<CompoundStmt>(stmt) ||
       isa<SwitchStmt>(stmt) || isa<DoStmt>(stmt) || isa<LabelStmt>(stmt) ||
@@ -77,25 +76,25 @@ void SPFComputationBuilder::processSingleStmt(clang::Stmt *stmt) {
   }
 
   if (auto *asForStmt = dyn_cast<ForStmt>(stmt)) {
-    currentStmtContext.schedule.advanceSchedule();
-    currentStmtContext.enterFor(asForStmt);
+    context.schedule.advanceSchedule();
+    context.enterFor(asForStmt);
     processBody(asForStmt->getBody());
-    currentStmtContext.exitFor();
+    context.exitFor();
   } else if (auto *asIfStmt = dyn_cast<IfStmt>(stmt)) {
     if (asIfStmt->getConditionVariable()) {
       Utils::printErrorAndExit(
           "If statement condition variable declarations are unsupported",
           asIfStmt);
     }
-    currentStmtContext.enterIf(asIfStmt);
+    context.enterIf(asIfStmt);
     processBody(asIfStmt->getThen());
-    currentStmtContext.exitIf();
+    context.exitIf();
     // treat else clause (if present) as another if statement, but with
     // condition inverted
     if (asIfStmt->hasElseStorage()) {
-      currentStmtContext.enterIf(asIfStmt, true);
+      context.enterIf(asIfStmt, true);
       processBody(asIfStmt->getElse());
-      currentStmtContext.exitIf();
+      context.exitIf();
     }
   } else if (auto *asCallExpr = dyn_cast<CallExpr>(stmt)) {
     // TODO: detect function calls that are not the only thing in the statement
@@ -103,11 +102,11 @@ void SPFComputationBuilder::processSingleStmt(clang::Stmt *stmt) {
     if (!callee) {
       Utils::printErrorAndExit("Cannot processes this kind of call expression", asCallExpr);
     }
-    currentStmtContext.schedule.advanceSchedule();
+    context.schedule.advanceSchedule();
     std::string calleeName = callee->getNameAsString();
     if (!subComputations.count(calleeName)) {
       // build Computation from callee, if we haven't done so already
-      auto builder = new SPFComputationBuilder();
+      auto builder = new ComputationBuilder();
       subComputations[calleeName] = builder->buildComputationFromFunction(callee);
     }
     std::vector<std::string> callArgStrings;
@@ -122,20 +121,20 @@ void SPFComputationBuilder::processSingleStmt(clang::Stmt *stmt) {
       callArgStrings.emplace_back(Utils::stmtToString(arg));
     }
     auto appendResult = computation->appendComputation(subComputations[calleeName],
-                                                       currentStmtContext.getIterSpaceString(),
-                                                       currentStmtContext.getExecScheduleString(),
+                                                       context.getIterSpaceString(),
+                                                       context.getExecScheduleString(),
                                                        callArgStrings);
 
-    currentStmtContext.schedule.skipToPosition(appendResult.tuplePosition);
+    context.schedule.skipToPosition(appendResult.tuplePosition);
 
     // TODO: handle return value
   } else {
-    currentStmtContext.schedule.advanceSchedule();
+    context.schedule.advanceSchedule();
     addStmt(stmt);
   }
 }
 
-void SPFComputationBuilder::addStmt(clang::Stmt *clangStmt) {
+void ComputationBuilder::addStmt(clang::Stmt *clangStmt) {
   // capture reads and writes made in statement
   DataAccessHandler dataAccesses;
   if (auto *asDeclStmt = dyn_cast<DeclStmt>(clangStmt)) {
@@ -165,10 +164,10 @@ void SPFComputationBuilder::addStmt(clang::Stmt *clangStmt) {
   }
   newStmt->setStmtSourceCode(stmtSourceCode);
   // iteration space
-  std::string iterationSpace = currentStmtContext.getIterSpaceString();
+  std::string iterationSpace = context.getIterSpaceString();
   newStmt->setIterationSpace(iterationSpace);
   // execution schedule
-  std::string executionSchedule = currentStmtContext.getExecScheduleString();
+  std::string executionSchedule = context.getExecScheduleString();
   newStmt->setExecutionSchedule(executionSchedule);
   // data accesses
   std::vector<std::pair<std::string, std::string>> dataReads;
@@ -177,7 +176,7 @@ void SPFComputationBuilder::addStmt(clang::Stmt *clangStmt) {
     std::string dataSpaceAccessed = it_accesses.arrayName;
     // enforce loop invariance
     if (!it_accesses.isRead) {
-      for (const auto &invariantGroup: currentStmtContext.invariants) {
+      for (const auto &invariantGroup: context.invariants) {
         if (std::find(
             invariantGroup.begin(), invariantGroup.end(),
             dataSpaceAccessed) != invariantGroup.end()) {
@@ -192,10 +191,10 @@ void SPFComputationBuilder::addStmt(clang::Stmt *clangStmt) {
     // insert data access
     if (it_accesses.isRead) {
       newStmt->addRead(dataSpaceAccessed,
-                       currentStmtContext.getDataAccessString(&it_accesses));
+                       context.getDataAccessString(&it_accesses));
     } else {
       newStmt->addWrite(dataSpaceAccessed,
-                        currentStmtContext.getDataAccessString(&it_accesses));
+                        context.getDataAccessString(&it_accesses));
     }
   }
 

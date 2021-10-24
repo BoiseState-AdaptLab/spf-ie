@@ -1,5 +1,5 @@
 /*!
- * \file StmtContext.hpp
+ * \file PositionContext.hpp
  *
  * \brief Structs representing the information associated with a statement
  * based on its position in the code and surrounding control structures
@@ -28,13 +28,13 @@ using namespace clang;
 namespace spf_ie {
 
 /*!
- * \struct StmtContext
+ * \struct PositionContext
  *
  * \brief Contains information associated with a statement position, such as iteration
  * domain and execution schedule.
  */
-struct StmtContext {
-  StmtContext();
+struct PositionContext {
+  PositionContext();
 
   //! Variables being iterated over
   std::vector<std::string> iterators;

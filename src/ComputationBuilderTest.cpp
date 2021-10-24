@@ -1,5 +1,5 @@
 /*!
- * \file SPFComputationTest.cpp
+ * \file ComputationBuilderTest.cpp
  *
  * \brief Regression tests which compare built SPFComputations to
  * expected values.
@@ -15,7 +15,7 @@
 #include <vector>
 
 #include "Driver.hpp"
-#include "SPFComputationBuilder.hpp"
+#include "ComputationBuilder.hpp"
 #include "Utils.hpp"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
@@ -32,14 +32,14 @@ using namespace spf_ie;
 const ASTContext *spf_ie::Context;
 
 /*!
- * \class SPFComputationTest
+ * \class ComputationBuilderTest
  *
- * \brief Google Test fixture for SPFComputationBuilder.
+ * \brief Google Test fixture for ComputationBuilder.
  *
  * Contains tools for efficiently regression testing the output of the
- * SPFComputationBuilder against expected values for a given piece of code.
+ * ComputationBuilder against expected values for a given piece of code.
  */
-class SPFComputationTest : public ::testing::Test {
+class ComputationBuilderTest : public ::testing::Test {
 protected:
   virtual void SetUp() override {
     iegenlib::Computation::resetNumRenamesCounters();
@@ -55,7 +55,7 @@ protected:
         code, "test_input.cpp", std::make_shared<PCHContainerOperations>());
     Context = &AST->getASTContext();
 
-    SPFComputationBuilder builder;
+    ComputationBuilder builder;
     Computation *comp;
     bool builtComputation = false;
     for (auto it: Context->getTranslationUnitDecl()->decls()) {
@@ -147,10 +147,10 @@ protected:
   }
 };
 
-using SPFComputationDeathTest = SPFComputationTest;
+using ComputationBuilderDeathTest = ComputationBuilderTest;
 
 //! Test that the matrix add Computation is built up as expected
-TEST_F(SPFComputationTest, matrix_add_correct) {
+TEST_F(ComputationBuilderTest, matrix_add_correct) {
   std::string code =
       "void matrix_add(int a, int b, int x[a][b], int y[a][b], int sum[a][b]) {\
     int i;\
@@ -183,7 +183,7 @@ TEST_F(SPFComputationTest, matrix_add_correct) {
   expectComputationsEqual(computation, expectedComputation);
 }
 
-TEST_F(SPFComputationTest, forward_solve_correct) {
+TEST_F(ComputationBuilderTest, forward_solve_correct) {
   std::string code =
       "int forward_solve(int n, int l[n][n], double b[n], double x[n]) {\
     int i;\
@@ -238,7 +238,7 @@ TEST_F(SPFComputationTest, forward_solve_correct) {
   expectComputationsEqual(computation, expectedComputation);
 }
 
-TEST_F(SPFComputationTest, csr_spmv_correct) {
+TEST_F(ComputationBuilderTest, csr_spmv_correct) {
   std::string code =
       "\
 int CSR_SpMV(int a, int N, int A[a], int index[N + 1], int col[a], int x[N], int product[N]) {\
@@ -283,7 +283,7 @@ int CSR_SpMV(int a, int N, int A[a], int index[N + 1], int col[a], int x[N], int
 
 /** Death tests, checking failure on invalid input **/
 
-TEST_F(SPFComputationDeathTest, incorrect_increment_fails) {
+TEST_F(ComputationBuilderDeathTest, incorrect_increment_fails) {
   std::string code1 =
       "int a() {\
     int x;\
@@ -321,7 +321,7 @@ TEST_F(SPFComputationDeathTest, incorrect_increment_fails) {
       "Invalid increment in for loop -- must increase iterator by 1");
 }
 
-TEST_F(SPFComputationDeathTest, loop_invariant_violation_fails) {
+TEST_F(ComputationBuilderDeathTest, loop_invariant_violation_fails) {
   std::string code =
       "int a() {\
     int x[5] = {1,2,3,4,5};\
@@ -334,7 +334,7 @@ TEST_F(SPFComputationDeathTest, loop_invariant_violation_fails) {
                "Code may not modify loop-invariant data space 'x'");
 }
 
-TEST_F(SPFComputationDeathTest, unsupported_statement_fails) {
+TEST_F(ComputationBuilderDeathTest, unsupported_statement_fails) {
   std::string code =
       "int a() {\
     int x;\
@@ -349,7 +349,7 @@ TEST_F(SPFComputationDeathTest, unsupported_statement_fails) {
                "Unsupported stmt type LabelStmt");
 }
 
-TEST_F(SPFComputationDeathTest, invalid_condition_fails) {
+TEST_F(ComputationBuilderDeathTest, invalid_condition_fails) {
   std::string code1 =
       "int a() {\
     int x = 0;\

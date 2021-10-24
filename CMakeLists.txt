@@ -55,8 +55,8 @@ link_directories("${BINARY_DIR}/lib/gtest")
 
 # gather up project sources
 set(PROJECT_SOURCES
-        SPFComputationBuilder.cpp
-        StmtContext.cpp
+        ComputationBuilder.cpp
+        PositionContext.cpp
         ExecSchedule.cpp
         DataAccessHandler.cpp
         Utils.cpp
@@ -71,7 +71,7 @@ add_clang_library(${CMAKE_PROJECT_NAME}_lib ${PROJECT_SOURCES})
 add_clang_executable(${CMAKE_PROJECT_NAME} src/Driver.cpp)
 add_dependencies(${CMAKE_PROJECT_NAME} iegenlib_in ${CMAKE_PROJECT_NAME}_lib)
 
-add_clang_executable("${CMAKE_PROJECT_NAME}_t" EXCLUDE_FROM_ALL src/SPFComputationTest.cpp)
+add_clang_executable("${CMAKE_PROJECT_NAME}_t" EXCLUDE_FROM_ALL src/ComputationBuilderTest.cpp)
 add_dependencies("${CMAKE_PROJECT_NAME}_t" iegenlib_in ${CMAKE_PROJECT_NAME}_lib)
 add_test("${CMAKE_PROJECT_NAME}_tests" "${CMAKE_PROJECT_NAME}_t")
 
