@@ -61,18 +61,10 @@ protected:
     for (auto it: Context->getTranslationUnitDecl()->decls()) {
       auto *func = dyn_cast<FunctionDecl>(it);
       if (func && func->doesThisDeclarationHaveABody()) {
-        if (builtComputation) {
-          Utils::printErrorAndExit("Multiple computations found in provided code snippet:\n" + code);
-        }
-        comp = builder.buildComputationFromFunction(func);
-        builtComputation = true;
+        return builder.buildComputationFromFunction(func);
       }
     }
-
-    if (!builtComputation) {
-      Utils::printErrorAndExit("No Computation could be generated from the following provided code:\n" + code);
-    }
-    return comp;
+    Utils::printErrorAndExit("No Computation could be generated from the following provided code:\n" + code);
   }
 
   //! EXPECT with gTest that two Computations are equal, component by component.
@@ -82,17 +74,17 @@ protected:
 
     ASSERT_EQ(expected->isComplete(), actual->isComplete());
 
+    ASSERT_EQ(expected->getNumStmts(), actual->getNumStmts());
+    for (unsigned int i = 0; i < actual->getNumStmts(); ++i) {
+      SCOPED_TRACE("Statement " + std::to_string(i));
+      expectStmtsEqual(actual->getStmt(i), expected->getStmt(i));
+    }
+
     const auto expectedTransformations = expected->getTransformations();
     const auto actualTransformations = actual->getTransformations();
     ASSERT_EQ(expectedTransformations.size(), actualTransformations.size());
     for (unsigned int i = 0; i < expectedTransformations.size(); ++i) {
       EXPECT_EQ(*expectedTransformations[i], *actualTransformations[i]);
-    }
-
-    ASSERT_EQ(expected->getNumStmts(), actual->getNumStmts());
-    for (unsigned int i = 0; i < actual->getNumStmts(); ++i) {
-      SCOPED_TRACE("Statement " + std::to_string(i));
-      expectStmtsEqual(actual->getStmt(i), expected->getStmt(i));
     }
 
     EXPECT_EQ(expected->getDataSpaces(), actual->getDataSpaces());
@@ -171,8 +163,8 @@ TEST_F(ComputationBuilderTest, matrix_add_correct) {
   expectedComputation->addParameter("y", "int[][]");
   expectedComputation->addParameter("sum", "int[][]");
 
-  expectedComputation->addStmt(new iegenlib::Stmt("int i;", "{[0]}", "{[0]->[0,0,0,0,0]}", {}, {}));
-  expectedComputation->addStmt(new iegenlib::Stmt("int j;", "{[0]}", "{[0]->[1,0,0,0,0]}", {}, {}));
+  expectedComputation->addStmt(new iegenlib::Stmt("int i;", "{[0]}", "{[0]->[0]}", {}, {}));
+  expectedComputation->addStmt(new iegenlib::Stmt("int j;", "{[0]}", "{[0]->[1]}", {}, {}));
   expectedComputation
       ->addStmt(new iegenlib::Stmt("sum[i][j] = x[i][j] + y[i][j];",
                                    "{[i,j]: 0 <= i && i < a && 0 <= j && j < b}",
@@ -212,18 +204,18 @@ TEST_F(ComputationBuilderTest, forward_solve_correct) {
   expectedComputation->addParameter("b", "double[]");
   expectedComputation->addParameter("x", "double[]");
 
-  expectedComputation->addStmt(new iegenlib::Stmt("int i;", "{[0]}", "{[0]->[0,0,0,0,0]}", {}, {}));
+  expectedComputation->addStmt(new iegenlib::Stmt("int i;", "{[0]}", "{[0]->[0]}", {}, {}));
   expectedComputation
       ->addStmt(new iegenlib::Stmt("x[i] = b[i];",
                                    "{[i]: 0 <= i && i < n}",
-                                   "{[i]->[1,i,0,0,0]}",
+                                   "{[i]->[1,i,0]}",
                                    {{"b", "{[i]->[i]}"}},
                                    {{"x", "{[i]->[i]}"}}));
-  expectedComputation->addStmt(new iegenlib::Stmt("int j;", "{[0]}", "{[0]->[2,0,0,0,0]}", {}, {}));
+  expectedComputation->addStmt(new iegenlib::Stmt("int j;", "{[0]}", "{[0]->[2]}", {}, {}));
   expectedComputation
       ->addStmt(new iegenlib::Stmt("x[j] /= l[j][j];",
                                    "{[j]: 0 <= j && j < n}",
-                                   "{[j]->[3,j,0,0,0]}",
+                                   "{[j]->[3,j,0]}",
                                    {{"x", "{[j]->[j]}"}, {"l", "{[j]->[j,j]}"}},
                                    {{"x", "{[j]->[j]}"}}));
   expectedComputation->addStmt(new iegenlib::Stmt("x[i] -= l[i][j] * x[j];",
@@ -233,7 +225,7 @@ TEST_F(ComputationBuilderTest, forward_solve_correct) {
                                                    {"l", "{[j,i]->[i,j]}"},
                                                    {"x", "{[j,i]->[j]}"}},
                                                   {{"x", "{[j,i]->[i]}"}}));
-  expectedComputation->addStmt(new iegenlib::Stmt("return 0;", "{[0]}", "{[0]->[4,0,0,0,0]}", {}, {}));
+  expectedComputation->addStmt(new iegenlib::Stmt("return 0;", "{[0]}", "{[0]->[4]}", {}, {}));
 
   expectComputationsEqual(computation, expectedComputation);
 }
@@ -265,8 +257,8 @@ int CSR_SpMV(int a, int N, int A[a], int index[N + 1], int col[a], int x[N], int
   expectedComputation->addParameter("x", "int[]");
   expectedComputation->addParameter("product", "int[]");
 
-  expectedComputation->addStmt(new iegenlib::Stmt("int i;", "{[0]}", "{[0]->[0,0,0,0,0]}", {}, {}));
-  expectedComputation->addStmt(new iegenlib::Stmt("int k;", "{[0]}", "{[0]->[1,0,0,0,0]}", {}, {}));
+  expectedComputation->addStmt(new iegenlib::Stmt("int i;", "{[0]}", "{[0]->[0]}", {}, {}));
+  expectedComputation->addStmt(new iegenlib::Stmt("int k;", "{[0]}", "{[0]->[1]}", {}, {}));
   expectedComputation->addStmt(new iegenlib::Stmt("product[i] += A[k] * x[col[k]];",
                                                   "{[i,k]: 0 <= i && i < N && index(i) <= k && k < index(i + 1)}",
                                                   "{[i,k]->[2,i,0,k,0]}",
@@ -276,7 +268,42 @@ int CSR_SpMV(int a, int N, int A[a], int index[N + 1], int col[a], int x[N], int
                                                    {"x", "{[i,k]->[" + replacementVarName + "0]: " +
                                                        replacementVarName + "0 = col(k)}"}},
                                                   {{"product", "{[i,k]->[i]}"}}));
-  expectedComputation->addStmt(new iegenlib::Stmt("return 0;", "{[0]}", "{[0]->[3,0,0,0,0]}", {}, {}));
+  expectedComputation->addStmt(new iegenlib::Stmt("return 0;", "{[0]}", "{[0]->[3]}", {}, {}));
+
+  expectComputationsEqual(computation, expectedComputation);
+}
+
+TEST_F(ComputationBuilderTest, basic_nesting) {
+  std::string code = \
+"int inner(int);\n"
+"\n"
+"int outer(void) {\n"
+"  int N = 5;\n"
+"  for (int i = 0; i < N; i++) {\n"
+"    int x = 3;\n"
+"    inner(x);\n"
+"  }\n"
+"  return 3;\n"
+"}\n"
+"\n"
+"int inner(int x) {\n"
+"  x*=5;\n"
+"  return x;\n"
+"}";
+
+  iegenlib::Computation *computation = buildComputationFromCode(code);
+
+  Computation *expectedComputation = new Computation("outer");
+  expectedComputation->addDataSpace("N", "int");
+  expectedComputation->addDataSpace("x", "int");
+  expectedComputation->addDataSpace("_iegen_0x", "int");
+
+  expectedComputation->addStmt(new iegenlib::Stmt("int N = 5;", "{[0]}", "{[0]->[0]}", {}, {}));
+  expectedComputation->addStmt(new iegenlib::Stmt("int x = 3;", "{[i]: 0<=i<N}", "{[i]->[1,i,0]}", {}, {}));
+  expectedComputation->addStmt(new iegenlib::Stmt("_iegen_0x = x;", "{[i]: 0<=i<N}", "{[i]->[1,i,1]}", {}, {}));
+  expectedComputation->addStmt(new iegenlib::Stmt("_iegen_0x*=5;", "{[i]: 0<=i<N}", "{[i]->[1,i,2]}", {}, {}));
+  expectedComputation->addStmt(new iegenlib::Stmt("return _iegen_0x;", "{[i]: 0<=i<N}", "{[i]->[1,i,3]}", {}, {}));
+  expectedComputation->addStmt(new iegenlib::Stmt("return 3;", "{[0]}", "{[0]->[2]}", {}, {}));
 
   expectComputationsEqual(computation, expectedComputation);
 }

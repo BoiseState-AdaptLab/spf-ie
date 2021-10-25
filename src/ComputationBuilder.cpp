@@ -102,12 +102,13 @@ void ComputationBuilder::processSingleStmt(clang::Stmt *stmt) {
     if (!callee) {
       Utils::printErrorAndExit("Cannot processes this kind of call expression", asCallExpr);
     }
+    auto *calleeDefinition = callee->getDefinition();
     context.schedule.advanceSchedule();
-    std::string calleeName = callee->getNameAsString();
+    std::string calleeName = calleeDefinition->getNameAsString();
     if (!subComputations.count(calleeName)) {
-      // build Computation from callee, if we haven't done so already
+      // build Computation from calleeDefinition, if we haven't done so already
       auto builder = new ComputationBuilder();
-      subComputations[calleeName] = builder->buildComputationFromFunction(callee);
+      subComputations[calleeName] = builder->buildComputationFromFunction(calleeDefinition);
     }
     std::vector<std::string> callArgStrings;
     for (unsigned int i = 0; i < asCallExpr->getNumArgs(); ++i) {
