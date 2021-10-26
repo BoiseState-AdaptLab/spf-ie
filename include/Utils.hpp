@@ -44,13 +44,18 @@ public:
   //! \param[in] expr Expression to process
   //! \param[out] currentList List of accesses
   static void getExprArrayAccesses(
-	  Expr *expr, std::vector<ArraySubscriptExpr *> &currentList);
+      Expr *expr, std::vector<ArraySubscriptExpr *> &currentList);
 
   //! Get a unique variable name to use in substitutions
   static std::string getVarReplacementName();
 
   //! Get a string representation of a binary operator
   static std::string binaryOperatorKindToString(BinaryOperatorKind bo);
+
+  //! Check whether the provided expression is a variable or numeric literal (as opposed to neither of the two)
+  //! \param[in] expr Expression to check
+  //! \return True iff the expression is a variable or numeric literal
+  static bool isVarOrNumericLiteral(const Expr *expr);
 
 private:
   //! String representations of valid operators for use in constraints

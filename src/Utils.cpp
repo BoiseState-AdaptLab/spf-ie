@@ -63,6 +63,15 @@ std::string Utils::binaryOperatorKindToString(BinaryOperatorKind bo) {
   return operatorStrings.at(bo);
 }
 
+bool Utils::isVarOrNumericLiteral(const Expr *expr) {
+  auto *plainExpr = expr->IgnoreParenImpCasts();
+  return (isa<DeclRefExpr>(plainExpr)
+      || isa<IntegerLiteral>(plainExpr)
+      || isa<FixedPointLiteral>(plainExpr)
+      || isa<FloatingLiteral>(plainExpr)
+  );
+}
+
 const std::map<BinaryOperatorKind, std::string> Utils::operatorStrings = {
     {BinaryOperatorKind::BO_LT, "<"}, {BinaryOperatorKind::BO_LE, "<="},
     {BinaryOperatorKind::BO_GT, ">"}, {BinaryOperatorKind::BO_GE, ">="},

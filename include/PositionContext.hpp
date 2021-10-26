@@ -44,6 +44,8 @@ struct PositionContext {
       constraints;
   //! Execution schedule
   ExecSchedule schedule;
+  //! How deeply nested within compound structures this position is
+  unsigned int nestLevel = 0;
 
   //! Data spaces which are held invariant in the current context, grouped
   //! by the loop that they are invariant in

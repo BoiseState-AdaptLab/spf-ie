@@ -268,7 +268,8 @@ int CSR_SpMV(int a, int N, int A[a], int index[N + 1], int col[a], int x[N], int
                                                    {"x", "{[i,k]->[" + replacementVarName + "0]: " +
                                                        replacementVarName + "0 = col(k)}"}},
                                                   {{"product", "{[i,k]->[i]}"}}));
-  expectedComputation->addStmt(new iegenlib::Stmt("return 0;", "{[0]}", "{[0]->[3]}", {}, {}));
+
+  expectedComputation->addReturnValue("0", false);
 
   expectComputationsEqual(computation, expectedComputation);
 }
@@ -302,8 +303,8 @@ TEST_F(ComputationBuilderTest, basic_nesting) {
   expectedComputation->addStmt(new iegenlib::Stmt("int x = 3;", "{[i]: 0<=i<N}", "{[i]->[1,i,0]}", {}, {}));
   expectedComputation->addStmt(new iegenlib::Stmt("_iegen_0x = x;", "{[i]: 0<=i<N}", "{[i]->[1,i,1]}", {}, {}));
   expectedComputation->addStmt(new iegenlib::Stmt("_iegen_0x*=5;", "{[i]: 0<=i<N}", "{[i]->[1,i,2]}", {}, {}));
-  expectedComputation->addStmt(new iegenlib::Stmt("return _iegen_0x;", "{[i]: 0<=i<N}", "{[i]->[1,i,3]}", {}, {}));
-  expectedComputation->addStmt(new iegenlib::Stmt("return 3;", "{[0]}", "{[0]->[2]}", {}, {}));
+
+  expectedComputation->addReturnValue("3", false);
 
   expectComputationsEqual(computation, expectedComputation);
 }

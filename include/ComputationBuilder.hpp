@@ -39,10 +39,12 @@ public:
   static std::map<std::string, Computation *> subComputations;
 
 private:
-  //! Context information about the position we're currently at
-  PositionContext context;
   //! Top-level Computation being built up
   Computation *computation;
+  //! Context information about the position we're currently at
+  PositionContext context;
+  //! Whether a return Stmt has been hit in this function
+  bool haveFoundAReturn = false;
 
   //! Process the body of a control structure, such as a for loop
   //! \param[in] stmt Body statement (which may be compound) to process
@@ -55,6 +57,9 @@ private:
   //! Add info about a completed statement to the builder
   //! \param[in] stmt Completed statement to save
   void addStmt(clang::Stmt *stmt);
+
+  //! Handle a return statement in the function
+  void processReturnStmt(clang::ReturnStmt *returnStmt);
 };
 
 }  // namespace spf_ie

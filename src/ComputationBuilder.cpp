@@ -113,8 +113,7 @@ void ComputationBuilder::processSingleStmt(clang::Stmt *stmt) {
     std::vector<std::string> callArgStrings;
     for (unsigned int i = 0; i < asCallExpr->getNumArgs(); ++i) {
       auto *arg = asCallExpr->getArg(i)->IgnoreParenImpCasts();
-      if (!(isa<DeclRefExpr>(arg) || isa<IntegerLiteral>(arg) || isa<FixedPointLiteral>(arg)
-          || isa<FloatingLiteral>(arg))) {
+      if (!Utils::isVarOrNumericLiteral(arg)) {
         Utils::printErrorAndExit(
             "Argument passed to function is too complex (must be a data space or a numeric literal)",
             arg);
@@ -136,6 +135,18 @@ void ComputationBuilder::processSingleStmt(clang::Stmt *stmt) {
 }
 
 void ComputationBuilder::addStmt(clang::Stmt *clangStmt) {
+  // disallow statements following any return
+  if (haveFoundAReturn) {
+    Utils::printErrorAndExit(
+        "Found a statement following a return statement. Returns are only allowed at the end of functions.",
+        clangStmt);
+  }
+  // avoid typical Stmt handling for a return Stmt
+  if (auto *asReturnStmt = dyn_cast<ReturnStmt>(clangStmt)) {
+    processReturnStmt(asReturnStmt);
+    return;
+  }
+
   // capture reads and writes made in statement
   DataAccessHandler dataAccesses;
   if (auto *asDeclStmt = dyn_cast<DeclStmt>(clangStmt)) {
@@ -207,6 +218,20 @@ void ComputationBuilder::addStmt(clang::Stmt *clangStmt) {
   }
 
   computation->addStmt(newStmt);
+}
+
+void ComputationBuilder::processReturnStmt(clang::ReturnStmt *returnStmt) {
+  haveFoundAReturn = true;
+  if (context.nestLevel != 0) {
+    Utils::printErrorAndExit("Return within nested structures is disallowed.", returnStmt);
+  }
+
+  if (auto *returnedValue = returnStmt->getRetValue()) {
+    if (!Utils::isVarOrNumericLiteral(returnedValue)) {
+      Utils::printErrorAndExit("Return value is too complex, must be data space or number literal.", returnedValue);
+    }
+    computation->addReturnValue(Utils::stmtToString(returnedValue));
+  }
 }
 
 }  // namespace spf_ie

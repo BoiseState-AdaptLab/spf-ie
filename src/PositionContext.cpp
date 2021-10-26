@@ -208,6 +208,7 @@ void PositionContext::enterFor(ForStmt *forStmt) {
   } else {
     iterators.push_back(initVar);
     schedule.pushValue(ScheduleVal(initVar));
+    nestLevel++;
   }
 }
 
@@ -218,6 +219,7 @@ void PositionContext::exitFor() {
   schedule.popValue();
   schedule.popValue();
   invariants.pop_back();
+  nestLevel--;
 }
 
 void PositionContext::enterIf(IfStmt *ifStmt, bool invert) {
@@ -230,9 +232,13 @@ void PositionContext::enterIf(IfStmt *ifStmt, bool invert) {
     Utils::printErrorAndExit(
         "If statement condition must be a binary operation", ifStmt);
   }
+  nestLevel++;
 }
 
-void PositionContext::exitIf() { constraints.pop_back(); }
+void PositionContext::exitIf() {
+  constraints.pop_back();
+  nestLevel--;
+}
 
 void PositionContext::makeAndInsertConstraint(Expr *lower, Expr *upper,
                                               BinaryOperatorKind oper) {
