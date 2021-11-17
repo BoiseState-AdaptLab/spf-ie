@@ -151,6 +151,7 @@ void ComputationBuilder::addStmt(clang::Stmt *clangStmt) {
   DataAccessHandler dataAccesses;
   if (auto *asDeclStmt = dyn_cast<DeclStmt>(clangStmt)) {
     auto *decl = cast<VarDecl>(asDeclStmt->getSingleDecl());
+    computation->addDataSpace(decl->getNameAsString(), decl->getType().getUnqualifiedType().getAsString());
     if (decl->hasInit()) {
       dataAccesses.processAsReads(decl->getInit());
     }
@@ -208,13 +209,6 @@ void ComputationBuilder::addStmt(clang::Stmt *clangStmt) {
       newStmt->addWrite(dataSpaceAccessed,
                         context.getDataAccessString(&it_accesses));
     }
-  }
-
-  // add Computation data spaces
-  auto stmtDataSpaces = dataAccesses.dataSpaces;
-  for (const auto &dataSpaceName:
-      dataAccesses.dataSpaces) {
-    computation->addDataSpace(dataSpaceName, "placeholderType");
   }
 
   computation->addStmt(newStmt);

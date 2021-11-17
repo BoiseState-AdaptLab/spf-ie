@@ -299,9 +299,14 @@ TEST_F(ComputationBuilderTest, basic_nesting) {
   expectedComputation->addDataSpace("x", "int");
   expectedComputation->addDataSpace("_iegen_0x", "int");
 
-  expectedComputation->addStmt(new iegenlib::Stmt("int N = 5;", "{[0]}", "{[0]->[0]}", {}, {}));
-  expectedComputation->addStmt(new iegenlib::Stmt("int x = 3;", "{[i]: 0<=i<N}", "{[i]->[1,i,0]}", {}, {}));
-  expectedComputation->addStmt(new iegenlib::Stmt("_iegen_0x = x;", "{[i]: 0<=i<N}", "{[i]->[1,i,1]}", {}, {}));
+  expectedComputation->addStmt(new iegenlib::Stmt("int N = 5;", "{[0]}", "{[0]->[0]}", {}, {{"N", "{[0]->[0]}"}}));
+  expectedComputation
+      ->addStmt(new iegenlib::Stmt("int x = 3;", "{[i]: 0<=i<N}", "{[i]->[1,i,0]}", {}, {{"x", "{[i]->[0]}"}}));
+  expectedComputation->addStmt(new iegenlib::Stmt("_iegen_0x = x;",
+                                                  "{[i]: 0<=i<N}",
+                                                  "{[i]->[1,i,1]}",
+                                                  {{"x", "{[i]->[0]}"}},
+                                                  {{"_iegen_0x", "{[i]->[0]}"}}));
   expectedComputation->addStmt(new iegenlib::Stmt("_iegen_0x*=5;", "{[i]: 0<=i<N}", "{[i]->[1,i,2]}", {}, {}));
 
   expectedComputation->addReturnValue("3", false);
