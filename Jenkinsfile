@@ -8,6 +8,7 @@ pipeline {
     }
 
     stages {
+
         stage('Print build info') {
             steps {
                 echo "Building on node ${NODE_NAME}, executor ${EXECUTOR_NUMBER}"
@@ -20,12 +21,6 @@ pipeline {
         stage('Build Docker image') {
             steps {
                 sh 'podman build -t ${IMAGE_TAG_BASE}:${BUILD_TAG} .'
-            }
-        }
-
-        stage('Test image') {
-            steps {
-                sh 'podman run --rm ${IMAGE_TAG_BASE}:${BUILD_TAG} cmake --build build --target test'
             }
         }
 
@@ -49,6 +44,13 @@ pipeline {
                 }
             }
         }
+
+        stage('Test image') {
+            steps {
+                sh 'podman run --rm ${IMAGE_TAG_BASE}:${BUILD_TAG} cmake --build build --target test'
+            }
+        }
+
     }
 
     post {
