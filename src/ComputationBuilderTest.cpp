@@ -46,7 +46,7 @@ protected:
   }
   virtual void TearDown() override {}
 
-  std::string replacementVarName = REPLACEMENT_VAR_BASE_NAME;
+  const std::string replacementVarName = REPLACEMENT_VAR_BASE_NAME;
 
   //! Build a Computation from the first function in the provided code string.
   static iegenlib::Computation *

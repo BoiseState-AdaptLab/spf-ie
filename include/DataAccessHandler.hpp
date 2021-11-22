@@ -64,8 +64,16 @@ public:
   //! Make all data accesses, including subaccesses, from the given expression
   //! \param[in] fullExpr Expression to process
   //! \param[in] isRead Whether this access is a read
-  static std::vector<DataAccess> gatherDataAccessesInExpr(
+  static std::vector<DataAccess> makeDataAccessesFromExpr(
       Expr *fullExpr, bool isRead);
+
+  //! Retrieve "all" data accesses, from left to right, contained in an
+  //! expression.
+  //! Recurses into BinaryOperators.
+  //! \param[in] expr Expression to process
+  //! \param[out] currentList List of accesses
+  static void collectAllDataAccessesInCompoundExpr(
+      Expr *expr, std::vector<Expr *> &currentList);
 
   //! Data accesses
   std::vector<DataAccess> stmtDataAccesses;

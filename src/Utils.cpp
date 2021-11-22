@@ -40,23 +40,6 @@ std::string Utils::stmtToString(clang::Stmt *stmt) {
       .str();
 }
 
-void Utils::collectAllDataAccessesInExpr(
-    Expr *expr, std::vector<Expr *> &currentList) {
-  Expr *usableExpr = expr->IgnoreParenImpCasts();
-  if (auto *binOper = dyn_cast<BinaryOperator>(usableExpr)) {
-    collectAllDataAccessesInExpr(binOper->getLHS(), currentList);
-    collectAllDataAccessesInExpr(binOper->getRHS(), currentList);
-  } else if (auto *asArrayAccessExpr =
-      dyn_cast<ArraySubscriptExpr>(usableExpr)) {
-    currentList.push_back(asArrayAccessExpr);
-  } else if (auto *asDeclRefExpr =
-      dyn_cast<DeclRefExpr>(usableExpr)) {
-    currentList.push_back(asDeclRefExpr);
-  } else if (!isVarOrNumericLiteral(usableExpr)) {
-    Utils::printErrorAndExit("Cannot process data accesses in expression", expr);
-  }
-}
-
 std::string Utils::getVarReplacementName() {
   return REPLACEMENT_VAR_BASE_NAME + std::to_string(replacementVarNumber++);
 }

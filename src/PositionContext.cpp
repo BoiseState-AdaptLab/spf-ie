@@ -5,6 +5,7 @@
 #include <string>
 #include <tuple>
 #include <vector>
+#include <algorithm>
 
 #include "DataAccessHandler.hpp"
 #include "Driver.hpp"
@@ -75,7 +76,7 @@ std::string PositionContext::getDataAccessString(DataAccess *access) {
         os << ",";
       }
       std::vector<Expr *> subAccesses;
-      Utils::collectAllDataAccessesInExpr(it, subAccesses);
+      DataAccessHandler::collectAllDataAccessesInCompoundExpr(it, subAccesses);
       if (!subAccesses.empty()) {
         std::string replacementName = Utils::getVarReplacementName();
         os << replacementName;
@@ -106,12 +107,7 @@ std::string PositionContext::getDataAccessString(DataAccess *access) {
 }
 
 bool PositionContext::isIteratorName(const std::string &varName) {
-  for (const auto &iteratorName: iterators) {
-    if (varName == iteratorName) {
-      return true;
-    }
-  }
-  return false;
+  return std::count(iterators.begin(), iterators.end(), varName);
 }
 
 void PositionContext::enterFor(ForStmt *forStmt) {
@@ -146,11 +142,11 @@ void PositionContext::enterFor(ForStmt *forStmt) {
     // add any data spaces accessed in the condition to loop invariants
     std::vector<std::string> newInvariants;
     std::vector<Expr *> accessExprs;
-    Utils::collectAllDataAccessesInExpr(cond->getLHS(), accessExprs);
-    Utils::collectAllDataAccessesInExpr(cond->getRHS(), accessExprs);
+    DataAccessHandler::collectAllDataAccessesInCompoundExpr(cond->getLHS(), accessExprs);
+    DataAccessHandler::collectAllDataAccessesInCompoundExpr(cond->getRHS(), accessExprs);
     std::vector<DataAccess> accesses;
     for (const auto &accessExpr: accessExprs) {
-      auto additionalAccesses = DataAccessHandler::gatherDataAccessesInExpr(accessExpr, true);
+      auto additionalAccesses = DataAccessHandler::makeDataAccessesFromExpr(accessExpr, true);
       accesses.insert(accesses.end(), additionalAccesses.begin(), additionalAccesses.end());
     }
     for (const auto &access: accesses) {
@@ -270,9 +266,9 @@ void PositionContext::makeAndInsertConstraint(std::string lower, Expr *upper,
 std::string PositionContext::exprToStringWithSafeArrays(Expr *expr) {
   std::string initialStr = Utils::stmtToString(expr);
   std::vector<Expr *> rawAccesses;
-  Utils::collectAllDataAccessesInExpr(expr, rawAccesses);
+  DataAccessHandler::collectAllDataAccessesInCompoundExpr(expr, rawAccesses);
   for (const auto &access: rawAccesses) {
-    auto accesses = DataAccessHandler::gatherDataAccessesInExpr(access, true);
+    auto accesses = DataAccessHandler::makeDataAccessesFromExpr(access, true);
     std::string accessStr = accesses.back().toString(accesses);
     initialStr = iegenlib::replaceInString(
         initialStr, Utils::stmtToString(access), accessStr);
