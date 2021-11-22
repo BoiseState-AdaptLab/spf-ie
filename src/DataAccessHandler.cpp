@@ -71,6 +71,15 @@ void DataAccessHandler::processExprAsWrite(Expr *expr) {
   processSingleAccessExpr(expr, false);
 }
 
+void DataAccessHandler::processWriteToScalarName(const std::string name) {
+  if (ComputationBuilder::positionContext->isIteratorName(name)) {
+    return;
+  }
+
+  dataSpacesAccessed.emplace(name);
+  stmtDataAccesses.push_back(DataAccess(name, 0, false, false, {}));
+}
+
 void DataAccessHandler::processSingleAccessExpr(Expr *fullExpr,
                                                 bool isRead) {
   auto accesses = makeDataAccessesFromExpr(fullExpr, isRead);
