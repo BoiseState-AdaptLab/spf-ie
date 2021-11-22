@@ -3,11 +3,11 @@
 #include <sstream>
 #include <stack>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "Driver.hpp"
 #include "Utils.hpp"
+#include "ComputationBuilder.hpp"
 #include "clang/AST/Expr.h"
 
 using namespace clang;
@@ -76,6 +76,10 @@ void DataAccessHandler::processSingleAccessExpr(Expr *fullExpr,
   auto accesses = gatherDataAccessesInExpr(fullExpr, isRead);
 
   for (const auto &access: accesses) {
+    // skip counting iterators as data accesses
+    if (ComputationBuilder::positionContext->isIteratorName(access.name)) {
+      continue;
+    }
     dataSpacesAccessed.emplace(access.name);
     stmtDataAccesses.push_back(access);
   }

@@ -38,11 +38,13 @@ public:
   //! Computations referenced from any others, stored for potential re-use
   static std::map<std::string, Computation *> subComputations;
 
+  //! Context information about the position we're currently at.
+  //! Updated to the most recently processed statement in any Computation
+  static PositionContext *positionContext;
+
 private:
   //! Top-level Computation being built up
   Computation *computation;
-  //! Context information about the position we're currently at
-  PositionContext context;
   //! Whether a return Stmt has been hit in this function
   bool haveFoundAReturn = false;
 

@@ -17,6 +17,8 @@ using namespace clang;
 
 namespace spf_ie {
 
+PositionContext *ComputationBuilder::positionContext;
+
 /* ComputationBuilder */
 
 std::map<std::string, Computation *> ComputationBuilder::subComputations;
@@ -30,7 +32,7 @@ ComputationBuilder::buildComputationFromFunction(FunctionDecl *funcDecl) {
     Utils::printErrorAndExit("Invalid function body", funcDecl->getBody());
   }
 
-  context = PositionContext();
+  positionContext = new PositionContext();
   computation = new iegenlib::Computation(funcDecl->getNameAsString());
 
   // add function parameters to the Computation
@@ -76,25 +78,25 @@ void ComputationBuilder::processSingleStmt(clang::Stmt *stmt) {
   }
 
   if (auto *asForStmt = dyn_cast<ForStmt>(stmt)) {
-    context.schedule.advanceSchedule();
-    context.enterFor(asForStmt);
+    positionContext->schedule.advanceSchedule();
+    positionContext->enterFor(asForStmt);
     processBody(asForStmt->getBody());
-    context.exitFor();
+    positionContext->exitFor();
   } else if (auto *asIfStmt = dyn_cast<IfStmt>(stmt)) {
     if (asIfStmt->getConditionVariable()) {
       Utils::printErrorAndExit(
           "If statement condition variable declarations are unsupported",
           asIfStmt);
     }
-    context.enterIf(asIfStmt);
+    positionContext->enterIf(asIfStmt);
     processBody(asIfStmt->getThen());
-    context.exitIf();
+    positionContext->exitIf();
     // treat else clause (if present) as another if statement, but with
     // condition inverted
     if (asIfStmt->hasElseStorage()) {
-      context.enterIf(asIfStmt, true);
+      positionContext->enterIf(asIfStmt, true);
       processBody(asIfStmt->getElse());
-      context.exitIf();
+      positionContext->exitIf();
     }
   } else if (auto *asCallExpr = dyn_cast<CallExpr>(stmt)) {
     // TODO: detect function calls that are not the only thing in the statement
@@ -103,7 +105,7 @@ void ComputationBuilder::processSingleStmt(clang::Stmt *stmt) {
       Utils::printErrorAndExit("Cannot processes this kind of call expression", asCallExpr);
     }
     auto *calleeDefinition = callee->getDefinition();
-    context.schedule.advanceSchedule();
+    positionContext->schedule.advanceSchedule();
     std::string calleeName = calleeDefinition->getNameAsString();
     if (!subComputations.count(calleeName)) {
       // build Computation from calleeDefinition, if we haven't done so already
@@ -121,15 +123,15 @@ void ComputationBuilder::processSingleStmt(clang::Stmt *stmt) {
       callArgStrings.emplace_back(Utils::stmtToString(arg));
     }
     auto appendResult = computation->appendComputation(subComputations[calleeName],
-                                                       context.getIterSpaceString(),
-                                                       context.getExecScheduleString(),
+                                                       positionContext->getIterSpaceString(),
+                                                       positionContext->getExecScheduleString(),
                                                        callArgStrings);
 
-    context.schedule.skipToPosition(appendResult.tuplePosition);
+    positionContext->schedule.skipToPosition(appendResult.tuplePosition);
 
     // TODO: handle return value
   } else {
-    context.schedule.advanceSchedule();
+    positionContext->schedule.advanceSchedule();
     addStmt(stmt);
   }
 }
@@ -176,10 +178,10 @@ void ComputationBuilder::addStmt(clang::Stmt *clangStmt) {
   }
   newStmt->setStmtSourceCode(stmtSourceCode);
   // iteration space
-  std::string iterationSpace = context.getIterSpaceString();
+  std::string iterationSpace = positionContext->getIterSpaceString();
   newStmt->setIterationSpace(iterationSpace);
   // execution schedule
-  std::string executionSchedule = context.getExecScheduleString();
+  std::string executionSchedule = positionContext->getExecScheduleString();
   newStmt->setExecutionSchedule(executionSchedule);
   // data accesses
   std::vector<std::pair<std::string, std::string>> dataReads;
@@ -188,7 +190,7 @@ void ComputationBuilder::addStmt(clang::Stmt *clangStmt) {
     std::string dataSpaceAccessed = it_accesses.name;
     // enforce loop invariance
     if (!it_accesses.isRead) {
-      for (const auto &invariantGroup: context.invariants) {
+      for (const auto &invariantGroup: positionContext->invariants) {
         if (std::find(
             invariantGroup.begin(), invariantGroup.end(),
             dataSpaceAccessed) != invariantGroup.end()) {
@@ -203,10 +205,10 @@ void ComputationBuilder::addStmt(clang::Stmt *clangStmt) {
     // insert data access
     if (it_accesses.isRead) {
       newStmt->addRead(dataSpaceAccessed,
-                       context.getDataAccessString(&it_accesses));
+                       positionContext->getDataAccessString(&it_accesses));
     } else {
       newStmt->addWrite(dataSpaceAccessed,
-                        context.getDataAccessString(&it_accesses));
+                        positionContext->getDataAccessString(&it_accesses));
     }
   }
 
@@ -222,7 +224,7 @@ void ComputationBuilder::addStmt(clang::Stmt *clangStmt) {
 
 void ComputationBuilder::processReturnStmt(clang::ReturnStmt *returnStmt) {
   haveFoundAReturn = true;
-  if (context.nestLevel != 0) {
+  if (positionContext->nestLevel != 0) {
     Utils::printErrorAndExit("Return within nested structures is disallowed.", returnStmt);
   }
 
