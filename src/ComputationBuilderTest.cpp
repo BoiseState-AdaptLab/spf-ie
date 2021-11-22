@@ -418,6 +418,19 @@ TEST_F(ComputationBuilderDeathTest, invalid_condition_fails) {
       "Not-equal conditions are unsupported by SPF: in condition x != 0");
 }
 
+TEST_F(ComputationBuilderDeathTest, reusing_var_name_fails) {
+  std::string code =
+      "int a() {\
+    int x = 5;\
+    for (int i = 0; i < 5; i += 1) {\
+        int x = 3;\
+    }\
+    return x;\
+}";
+  ASSERT_DEATH(buildComputationFromCode(code),
+               "Declaring a variable with a name that has already been used in another scope is disallowed");
+}
+
 //! Set up and run tests
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);

@@ -153,8 +153,16 @@ void ComputationBuilder::addStmt(clang::Stmt *clangStmt) {
   DataAccessHandler dataAccesses;
   if (auto *asDeclStmt = dyn_cast<DeclStmt>(clangStmt)) {
     auto *decl = cast<VarDecl>(asDeclStmt->getSingleDecl());
+    std::string varName = decl->getNameAsString();
+    // If this declaration's variable is already registered as a data space, this is another declaration by that name.
+    if (computation->isDataSpace(varName)) {
+      Utils::printErrorAndExit(
+          "Declaring a variable with a name that has already been used in another scope is disallowed",
+          asDeclStmt);
+    }
     if (decl->hasInit()) {
       dataAccesses.processComplexExprAsReads(decl->getInit());
+      dataAccesses.processWriteToScalarName(varName);
     }
   } else if (auto *asBinOper = dyn_cast<BinaryOperator>(clangStmt)) {
     if (auto *lhsAsArrayAccess =

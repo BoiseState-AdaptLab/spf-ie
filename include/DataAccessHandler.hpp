@@ -61,6 +61,9 @@ public:
   //! Add the space accessed as a write, and any sub-accesses as reads
   void processExprAsWrite(Expr *expr);
 
+  //! Add a scalar's name as a write DataAccess.
+  void processWriteToScalarName(const std::string name);
+
   //! Make all data accesses, including subaccesses, from the given expression
   //! \param[in] fullExpr Expression to process
   //! \param[in] isRead Whether this access is a read
