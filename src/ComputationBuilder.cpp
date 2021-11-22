@@ -152,17 +152,17 @@ void ComputationBuilder::addStmt(clang::Stmt *clangStmt) {
   if (auto *asDeclStmt = dyn_cast<DeclStmt>(clangStmt)) {
     auto *decl = cast<VarDecl>(asDeclStmt->getSingleDecl());
     if (decl->hasInit()) {
-      dataAccesses.processAsReads(decl->getInit());
+      dataAccesses.processComplexExprAsReads(decl->getInit());
     }
   } else if (auto *asBinOper = dyn_cast<BinaryOperator>(clangStmt)) {
     if (auto *lhsAsArrayAccess =
         dyn_cast<ArraySubscriptExpr>(asBinOper->getLHS())) {
-      dataAccesses.processAsWrite(lhsAsArrayAccess);
+      dataAccesses.processExprAsWrite(lhsAsArrayAccess);
     }
     if (asBinOper->isCompoundAssignmentOp()) {
-      dataAccesses.processAsReads(asBinOper->getLHS());
+      dataAccesses.processComplexExprAsReads(asBinOper->getLHS());
     }
-    dataAccesses.processAsReads(asBinOper->getRHS());
+    dataAccesses.processComplexExprAsReads(asBinOper->getRHS());
   }
 
   // build IEGenLib Stmt and add it to the Computation
@@ -184,8 +184,8 @@ void ComputationBuilder::addStmt(clang::Stmt *clangStmt) {
   // data accesses
   std::vector<std::pair<std::string, std::string>> dataReads;
   std::vector<std::pair<std::string, std::string>> dataWrites;
-  for (auto &it_accesses: dataAccesses.arrayAccesses) {
-    std::string dataSpaceAccessed = it_accesses.arrayName;
+  for (auto &it_accesses: dataAccesses.stmtDataAccesses) {
+    std::string dataSpaceAccessed = it_accesses.name;
     // enforce loop invariance
     if (!it_accesses.isRead) {
       for (const auto &invariantGroup: context.invariants) {
@@ -211,9 +211,9 @@ void ComputationBuilder::addStmt(clang::Stmt *clangStmt) {
   }
 
   // add Computation data spaces
-  auto stmtDataSpaces = dataAccesses.dataSpaces;
+  auto stmtDataSpaces = dataAccesses.dataSpacesAccessed;
   for (const auto &dataSpaceName:
-      dataAccesses.dataSpaces) {
+      dataAccesses.dataSpacesAccessed) {
     computation->addDataSpace(dataSpaceName, "placeholderType");
   }
 

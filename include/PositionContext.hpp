@@ -58,7 +58,7 @@ struct PositionContext {
   std::string getExecScheduleString();
 
   //! Get a string representing the given data access
-  std::string getDataAccessString(ArrayAccess *);
+  std::string getDataAccessString(DataAccess *);
 
   // enter* and exit* methods add iterators and constraints when entering a
   // new scope, remove when leaving the scope

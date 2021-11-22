@@ -38,13 +38,13 @@ public:
   //! Get the source code of a statement as a string
   static std::string stmtToString(clang::Stmt *stmt);
 
-  //! Retrieve "all" array accesses, from left to right, contained in an
+  //! Retrieve "all" data accesses, from left to right, contained in an
   //! expression.
   //! Recurses into BinaryOperators.
   //! \param[in] expr Expression to process
   //! \param[out] currentList List of accesses
-  static void getExprArrayAccesses(
-      Expr *expr, std::vector<ArraySubscriptExpr *> &currentList);
+  static void collectAllDataAccessesInExpr(
+      Expr *expr, std::vector<Expr *> &currentList);
 
   //! Get a unique variable name to use in substitutions
   static std::string getVarReplacementName();
