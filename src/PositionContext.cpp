@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <sstream>
-#include <stack>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -104,6 +103,15 @@ std::string PositionContext::getDataAccessString(DataAccess *access) {
   }
   os << "}";
   return os.str();
+}
+
+bool PositionContext::isIteratorName(const std::string &varName) {
+  for (const auto &iteratorName: iterators) {
+    if (varName == iteratorName) {
+      return true;
+    }
+  }
+  return false;
 }
 
 void PositionContext::enterFor(ForStmt *forStmt) {

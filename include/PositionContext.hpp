@@ -60,6 +60,9 @@ struct PositionContext {
   //! Get a string representing the given data access
   std::string getDataAccessString(DataAccess *);
 
+  //! Check whether the given name is an iterator in this context
+  bool isIteratorName(const std::string &varName);
+
   // enter* and exit* methods add iterators and constraints when entering a
   // new scope, remove when leaving the scope
 
