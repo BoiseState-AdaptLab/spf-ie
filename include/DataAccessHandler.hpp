@@ -12,73 +12,80 @@
 //! Maximum allowed array dimension (a safe estimate to avoid stack overflow)
 #define MAX_ARRAY_DIM 50
 
-
 using namespace clang;
 
 namespace spf_ie {
 
 /*!
- * \struct ArrayAccess
+ * \struct DataAccess
  *
- * \brief Representation of an array (subscript) access
+ * \brief Representation of a data access
  *
- * Used because the AST's representation of a multidimensional array access
- * is difficult to work with for our purposes.
+ * Used partly because the AST's representation of a multidimensional array access
+ * is difficult to work with for our purposes. This can represent either an array
+ * subscript access or scalar access.
  */
-struct ArrayAccess {
-  ArrayAccess(std::string arrayName, int64_t sourceId, std::vector<Expr *> &indexes, bool isRead)
-      : arrayName(arrayName), sourceId(sourceId), indexes(indexes), isRead(isRead) {}
+struct DataAccess {
+  DataAccess(std::string name, int64_t sourceId, bool isRead, bool isArrayAccess, std::vector<Expr *> indexes)
+      : name(name), sourceId(sourceId), isRead(isRead), isArrayAccess(isArrayAccess), indexes(indexes) {}
 
-  //! Get a string representation of the array access, like A(i,j).
+  //! Get a string representation of the data access, like A(i,j) for an array or x for a scalar.
   //! \param[in] potentialSubaccesses Other array accesses here, which may be used as indexes in this one
-  std::string toString(const std::vector<ArrayAccess> &potentialSubaccesses) const;
+  std::string toString(const std::vector<DataAccess> &potentialSubaccesses) const;
 
-  //! ID of original ArraySubscriptExpr node
+  //! Name of base variable being accessed. In the case of an array, this will be the outermost access.
+  std::string name;
+  //! ID of original AST node this represents
   int64_t sourceId;
-  //! Name of base (outermost) array being accessed
-  std::string arrayName;
-  //! Indexes accessed in the array
-  std::vector<Expr *> indexes;
   //! Whether this access is a read or not (a write)
   bool isRead;
+  //! Whether this access is an array (non-scalar) access.
+  bool isArrayAccess;
+  //! Indexes accessed in the data space
+  std::vector<Expr *> indexes;
 };
 
 /*!
  * \struct DataAccessHandler
  *
- * \brief Handles data accesses (both reads and writes) for a statement
+ * \brief Handles data accesses (both reads and writes) for a statement.
+ *
+ * When referring to arrays, the 'access' is the access to the outer array in the subscript access, and sub-accesses are
+ * subscript accesses used as the subscripts in outer arrays.
  */
 struct DataAccessHandler {
 public:
   //! Add all the arrays accessed in the expression as reads
-  void processAsReads(Expr *expr);
+  void processComplexExprAsReads(Expr *expr);
 
-  //! Add the array accessed as a write, and any accessed within it as reads
-  void processAsWrite(ArraySubscriptExpr *expr);
+  //! Add the space accessed as a write, and any sub-accesses as reads
+  void processExprAsWrite(Expr *expr);
 
-  //! Make all ArrayAccesses, including subaccesses, from the given expression
+  //! Make all data accesses, including subaccesses, from the given expression
   //! \param[in] fullExpr Expression to process
   //! \param[in] isRead Whether this access is a read
-  static std::vector<ArrayAccess> buildDataAccesses(
-      ArraySubscriptExpr *fullExpr, bool isRead);
+  static std::vector<DataAccess> gatherDataAccessesInExpr(
+      Expr *fullExpr, bool isRead);
 
+  //! Data accesses
+  std::vector<DataAccess> stmtDataAccesses;
   //! Data spaces accessed
-  std::unordered_set<std::string> dataSpaces;
-  //! Array accesses
-  std::vector<ArrayAccess> arrayAccesses;
+  std::unordered_set<std::string> dataSpacesAccessed;
 
 private:
-  //! Make and store an ArrayAccess from an ArraySubscriptExpr, as the given access type
-  void processAsDataAccess(ArraySubscriptExpr *fullExpr, bool isRead);
+  //! Make and store a DataAccess from an expression, plus sub-accesses, as the given access type
+  //! \param[in] fullExpr Expression to process. Should just be a variable reference or array subscript expression.
+  //! \param[in] isRead Whether this access is a read
+  void processSingleAccessExpr(Expr *fullExpr, bool isRead);
 
-  //! Do recursive work of building ArrayAccesses
+  //! Do recursive work of building a DataAccess from an array
   //! \param[in] fullExpr Expression to process
   //! \param[in] isRead Whether this access is a read
   //! \param[out] existingAccesses Current list of sub-accesses; after
   //! processing completes, the last element will be the outermost access.
-  static void doBuildDataAccessesWork(ArraySubscriptExpr *fullExpr,
-                                      bool isRead,
-                                      std::vector<ArrayAccess> &existingAccesses);
+  static void doBuildArrayAccessWork(ArraySubscriptExpr *fullExpr,
+                                     bool isRead,
+                                     std::vector<DataAccess> &existingAccesses);
 
   //! Do the recursive work of getting array access info
   //! \param[in] fullExpr array access to process

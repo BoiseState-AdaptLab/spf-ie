@@ -14,76 +14,82 @@ using namespace clang;
 
 namespace spf_ie {
 
-/* ArrayAccess */
+/* DataAccess */
 
-std::string ArrayAccess::toString(const std::vector<ArrayAccess> &potentialSubaccesses) const {
+std::string DataAccess::toString(const std::vector<DataAccess> &potentialSubaccesses) const {
   std::ostringstream os;
-  os << this->arrayName;
-  os << "(";
-  bool first = true;
-  for (const auto &it: this->indexes) {
-    if (!first) {
-      os << ",";
-    } else {
-      first = false;
-    }
-    std::string indexString;
-    if (auto *asArrayAccess = dyn_cast<ArraySubscriptExpr>(it->IgnoreParenImpCasts())) {
-      // there is another array access used as an index for this one
-      bool foundSubaccess = false;
-      for (const auto &it: potentialSubaccesses) {
-        if (it.sourceId == asArrayAccess->getID(*Context)) {
-          foundSubaccess = true;
-          indexString = it.toString(potentialSubaccesses);
-          break;
+  os << this->name;
+  if (this->isArrayAccess) {
+    os << "(";
+    bool first = true;
+    for (const auto &it: this->indexes) {
+      if (!first) {
+        os << ",";
+      } else {
+        first = false;
+      }
+      std::string indexString;
+      if (auto *asArrayAccess = dyn_cast<ArraySubscriptExpr>(it->IgnoreParenImpCasts())) {
+        // there is another array access used as an index for this one
+        bool foundSubaccess = false;
+        for (const auto &it: potentialSubaccesses) {
+          if (it.sourceId == asArrayAccess->getID(*Context)) {
+            foundSubaccess = true;
+            indexString = it.toString(potentialSubaccesses);
+            break;
+          }
         }
+        if (!foundSubaccess) {
+          Utils::printErrorAndExit(
+              "Could not stringify array access because its sub-access "
+              "had (printed below) not already been processed.\nThis "
+              "point should be unreachable -- this is a bug.",
+              asArrayAccess);
+        }
+      } else {
+        indexString = Utils::stmtToString(it);
       }
-      if (!foundSubaccess) {
-        Utils::printErrorAndExit(
-            "Could not stringify array access because its sub-access "
-            "had (printed below) not already been processed.\nThis "
-            "point should be unreachable -- this is a bug.",
-            asArrayAccess);
-      }
-    } else {
-      indexString = Utils::stmtToString(it);
+      os <<
+         indexString;
     }
-    os <<
-       indexString;
+    os << ")";
   }
-  os << ")";
-  return os.
-      str();
+  return os.str();
 }
 
 /* DataAccessHandler */
 
-void DataAccessHandler::processAsReads(Expr *expr) {
-  std::vector<ArraySubscriptExpr *> reads;
-  Utils::getExprArrayAccesses(expr, reads);
+void DataAccessHandler::processComplexExprAsReads(Expr *expr) {
+  std::vector<Expr *> reads;
+  Utils::collectAllDataAccessesInExpr(expr, reads);
   for (const auto &read: reads) {
-    processAsDataAccess(read, true);
+    processSingleAccessExpr(read, true);
   }
 }
 
-void DataAccessHandler::processAsWrite(ArraySubscriptExpr *expr) {
-  processAsDataAccess(expr, false);
+void DataAccessHandler::processExprAsWrite(Expr *expr) {
+  processSingleAccessExpr(expr, false);
 }
 
-void DataAccessHandler::processAsDataAccess(ArraySubscriptExpr *fullExpr,
-                                            bool isRead) {
-  auto accesses = buildDataAccesses(fullExpr, isRead);
+void DataAccessHandler::processSingleAccessExpr(Expr *fullExpr,
+                                                bool isRead) {
+  auto accesses = gatherDataAccessesInExpr(fullExpr, isRead);
 
   for (const auto &access: accesses) {
-    dataSpaces.emplace(access.arrayName);
-    arrayAccesses.push_back(access);
+    dataSpacesAccessed.emplace(access.name);
+    stmtDataAccesses.push_back(access);
   }
 }
 
-std::vector<ArrayAccess> DataAccessHandler::buildDataAccesses(
-    ArraySubscriptExpr *fullExpr, bool isRead) {
-  std::vector<ArrayAccess> accesses;
-  doBuildDataAccessesWork(fullExpr, isRead, accesses);
+std::vector<DataAccess> DataAccessHandler::gatherDataAccessesInExpr(
+    Expr *fullExpr, bool isRead) {
+  std::vector<DataAccess> accesses;
+  if (auto *asArraySubscriptExpr =
+      dyn_cast<ArraySubscriptExpr>(fullExpr)) {
+    doBuildArrayAccessWork(asArraySubscriptExpr, isRead, accesses);
+  } else {
+    accesses.emplace_back(DataAccess(Utils::stmtToString(fullExpr), fullExpr->getID(*Context), isRead, false, {}));
+  }
   return accesses;
 }
 
@@ -102,9 +108,9 @@ int DataAccessHandler::getArrayExprInfo(ArraySubscriptExpr *fullExpr,
     return true;
   }
 }
-void DataAccessHandler::doBuildDataAccessesWork(ArraySubscriptExpr *fullExpr,
-                                                bool isRead,
-                                                std::vector<ArrayAccess> &existingAccesses) {
+void DataAccessHandler::doBuildArrayAccessWork(ArraySubscriptExpr *fullExpr,
+                                               bool isRead,
+                                               std::vector<DataAccess> &existingAccesses) {
   // extract information from subscript expression
   std::stack<Expr *> info;
   if (!getArrayExprInfo(fullExpr, &info)) {
@@ -113,7 +119,7 @@ void DataAccessHandler::doBuildDataAccessesWork(ArraySubscriptExpr *fullExpr,
                              fullExpr);
   }
 
-  // construct ArrayAccess object
+  // construct DataAccess object
   Expr *baseAccess = info.top();
   info.pop();
   std::vector<Expr *> indexes;
@@ -122,14 +128,14 @@ void DataAccessHandler::doBuildDataAccessesWork(ArraySubscriptExpr *fullExpr,
     // sub-accesses are always reads
     if (auto *indexAsArrayAccess =
         dyn_cast<ArraySubscriptExpr>(info.top())) {
-      doBuildDataAccessesWork(indexAsArrayAccess, true, existingAccesses);
+      doBuildArrayAccessWork(indexAsArrayAccess, true, existingAccesses);
     }
     indexes.push_back(info.top());
     info.pop();
   }
 
   existingAccesses
-      .emplace_back(ArrayAccess(Utils::stmtToString(baseAccess), fullExpr->getID(*Context), indexes, isRead));
+      .emplace_back(DataAccess(Utils::stmtToString(baseAccess), fullExpr->getID(*Context), isRead, true, indexes));
 }
 
 }  // namespace spf_ie

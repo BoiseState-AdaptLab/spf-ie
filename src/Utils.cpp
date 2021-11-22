@@ -40,15 +40,20 @@ std::string Utils::stmtToString(clang::Stmt *stmt) {
       .str();
 }
 
-void Utils::getExprArrayAccesses(
-    Expr *expr, std::vector<ArraySubscriptExpr *> &currentList) {
+void Utils::collectAllDataAccessesInExpr(
+    Expr *expr, std::vector<Expr *> &currentList) {
   Expr *usableExpr = expr->IgnoreParenImpCasts();
   if (auto *binOper = dyn_cast<BinaryOperator>(usableExpr)) {
-    getExprArrayAccesses(binOper->getLHS(), currentList);
-    getExprArrayAccesses(binOper->getRHS(), currentList);
+    collectAllDataAccessesInExpr(binOper->getLHS(), currentList);
+    collectAllDataAccessesInExpr(binOper->getRHS(), currentList);
   } else if (auto *asArrayAccessExpr =
       dyn_cast<ArraySubscriptExpr>(usableExpr)) {
     currentList.push_back(asArrayAccessExpr);
+  } else if (auto *asDeclRefExpr =
+      dyn_cast<DeclRefExpr>(usableExpr)) {
+    currentList.push_back(asDeclRefExpr);
+  } else if (!isVarOrNumericLiteral(usableExpr)) {
+    Utils::printErrorAndExit("Cannot process data accesses in expression", expr);
   }
 }
 

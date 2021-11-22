@@ -64,7 +64,7 @@ std::string PositionContext::getExecScheduleString() {
   return os.str();
 }
 
-std::string PositionContext::getDataAccessString(ArrayAccess *access) {
+std::string PositionContext::getDataAccessString(DataAccess *access) {
   std::ostringstream os;
   std::vector<std::pair<std::string, std::string>> constraintsToAdd;
   os << "{" << getItersTupleString() << "->[";
@@ -75,8 +75,8 @@ std::string PositionContext::getDataAccessString(ArrayAccess *access) {
       if (it != *access->indexes.begin()) {
         os << ",";
       }
-      std::vector<ArraySubscriptExpr *> subAccesses;
-      Utils::getExprArrayAccesses(it, subAccesses);
+      std::vector<Expr *> subAccesses;
+      Utils::collectAllDataAccessesInExpr(it, subAccesses);
       if (!subAccesses.empty()) {
         std::string replacementName = Utils::getVarReplacementName();
         os << replacementName;
@@ -137,17 +137,17 @@ void PositionContext::enterFor(ForStmt *forStmt) {
                             cond->getOpcode());
     // add any data spaces accessed in the condition to loop invariants
     std::vector<std::string> newInvariants;
-    std::vector<ArraySubscriptExpr *> accessExprs;
-    Utils::getExprArrayAccesses(cond->getLHS(), accessExprs);
-    Utils::getExprArrayAccesses(cond->getRHS(), accessExprs);
-    std::vector<ArrayAccess> accesses;
+    std::vector<Expr *> accessExprs;
+    Utils::collectAllDataAccessesInExpr(cond->getLHS(), accessExprs);
+    Utils::collectAllDataAccessesInExpr(cond->getRHS(), accessExprs);
+    std::vector<DataAccess> accesses;
     for (const auto &accessExpr: accessExprs) {
-      auto additionalAccesses = DataAccessHandler::buildDataAccesses(accessExpr, true);
+      auto additionalAccesses = DataAccessHandler::gatherDataAccessesInExpr(accessExpr, true);
       accesses.insert(accesses.end(), additionalAccesses.begin(), additionalAccesses.end());
     }
     for (const auto &access: accesses) {
       newInvariants.push_back(
-          access.arrayName);
+          access.name);
     }
     invariants.push_back(newInvariants);
   } else {
@@ -261,10 +261,10 @@ void PositionContext::makeAndInsertConstraint(std::string lower, Expr *upper,
 
 std::string PositionContext::exprToStringWithSafeArrays(Expr *expr) {
   std::string initialStr = Utils::stmtToString(expr);
-  std::vector<ArraySubscriptExpr *> rawAccesses;
-  Utils::getExprArrayAccesses(expr, rawAccesses);
+  std::vector<Expr *> rawAccesses;
+  Utils::collectAllDataAccessesInExpr(expr, rawAccesses);
   for (const auto &access: rawAccesses) {
-    auto accesses = DataAccessHandler::buildDataAccesses(access, true);
+    auto accesses = DataAccessHandler::gatherDataAccessesInExpr(access, true);
     std::string accessStr = accesses.back().toString(accesses);
     initialStr = iegenlib::replaceInString(
         initialStr, Utils::stmtToString(access), accessStr);
