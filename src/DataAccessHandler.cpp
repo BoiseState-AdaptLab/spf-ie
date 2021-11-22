@@ -61,7 +61,7 @@ std::string DataAccess::toString(const std::vector<DataAccess> &potentialSubacce
 
 void DataAccessHandler::processComplexExprAsReads(Expr *expr) {
   std::vector<Expr *> reads;
-  Utils::collectAllDataAccessesInExpr(expr, reads);
+  DataAccessHandler::collectAllDataAccessesInCompoundExpr(expr, reads);
   for (const auto &read: reads) {
     processSingleAccessExpr(read, true);
   }
@@ -73,7 +73,7 @@ void DataAccessHandler::processExprAsWrite(Expr *expr) {
 
 void DataAccessHandler::processSingleAccessExpr(Expr *fullExpr,
                                                 bool isRead) {
-  auto accesses = gatherDataAccessesInExpr(fullExpr, isRead);
+  auto accesses = makeDataAccessesFromExpr(fullExpr, isRead);
 
   for (const auto &access: accesses) {
     // skip counting iterators as data accesses
@@ -85,14 +85,17 @@ void DataAccessHandler::processSingleAccessExpr(Expr *fullExpr,
   }
 }
 
-std::vector<DataAccess> DataAccessHandler::gatherDataAccessesInExpr(
+std::vector<DataAccess> DataAccessHandler::makeDataAccessesFromExpr(
     Expr *fullExpr, bool isRead) {
   std::vector<DataAccess> accesses;
   if (auto *asArraySubscriptExpr =
       dyn_cast<ArraySubscriptExpr>(fullExpr)) {
     doBuildArrayAccessWork(asArraySubscriptExpr, isRead, accesses);
   } else {
-    accesses.emplace_back(DataAccess(Utils::stmtToString(fullExpr), fullExpr->getID(*Context), isRead, false, {}));
+    std::string varName = Utils::stmtToString(fullExpr);
+    if (!ComputationBuilder::positionContext->isIteratorName(varName)) {
+      accesses.emplace_back(DataAccess(varName, fullExpr->getID(*Context), isRead, false, {}));
+    }
   }
   return accesses;
 }
@@ -112,6 +115,26 @@ int DataAccessHandler::getArrayExprInfo(ArraySubscriptExpr *fullExpr,
     return true;
   }
 }
+
+void DataAccessHandler::collectAllDataAccessesInCompoundExpr(
+    Expr *expr, std::vector<Expr *> &currentList) {
+  Expr *usableExpr = expr->IgnoreParenImpCasts();
+  if (auto *binOper = dyn_cast<BinaryOperator>(usableExpr)) {
+    collectAllDataAccessesInCompoundExpr(binOper->getLHS(), currentList);
+    collectAllDataAccessesInCompoundExpr(binOper->getRHS(), currentList);
+  } else if (auto *asArrayAccessExpr =
+      dyn_cast<ArraySubscriptExpr>(usableExpr)) {
+    currentList.push_back(asArrayAccessExpr);
+  } else if (auto *asDeclRefExpr =
+      dyn_cast<DeclRefExpr>(usableExpr)) {
+    if (!ComputationBuilder::positionContext->isIteratorName(asDeclRefExpr->getDecl()->getNameAsString())) {
+      currentList.push_back(asDeclRefExpr);
+    }
+  } else if (!Utils::isVarOrNumericLiteral(usableExpr)) {
+    Utils::printErrorAndExit("Cannot process data accesses in expression", expr);
+  }
+}
+
 void DataAccessHandler::doBuildArrayAccessWork(ArraySubscriptExpr *fullExpr,
                                                bool isRead,
                                                std::vector<DataAccess> &existingAccesses) {
