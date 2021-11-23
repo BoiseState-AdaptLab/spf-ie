@@ -47,6 +47,8 @@ private:
   Computation *computation;
   //! Whether a return Stmt has been hit in this function
   bool haveFoundAReturn = false;
+  //! Declarations found, which may need to be consulted for type info later
+  std::map<std::string, QualType> varDecls;
 
   //! Process the body of a control structure, such as a for loop
   //! \param[in] stmt Body statement (which may be compound) to process

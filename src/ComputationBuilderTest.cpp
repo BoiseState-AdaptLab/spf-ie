@@ -159,9 +159,9 @@ TEST_F(ComputationBuilderTest, matrix_add_correct) {
   Computation *expectedComputation = new Computation("matrix_add");
   expectedComputation->addParameter("a", "int");
   expectedComputation->addParameter("b", "int");
-  expectedComputation->addParameter("x", "int[][]");
-  expectedComputation->addParameter("y", "int[][]");
-  expectedComputation->addParameter("sum", "int[][]");
+  expectedComputation->addParameter("x", "int**");
+  expectedComputation->addParameter("y", "int**");
+  expectedComputation->addParameter("sum", "int**");
 
   expectedComputation->addStmt(new iegenlib::Stmt("int i;", "{[0]}", "{[0]->[0]}", {}, {}));
   expectedComputation->addStmt(new iegenlib::Stmt("int j;", "{[0]}", "{[0]->[1]}", {}, {}));
@@ -200,9 +200,10 @@ TEST_F(ComputationBuilderTest, forward_solve_correct) {
 
   Computation *expectedComputation = new Computation("forward_solve");
   expectedComputation->addParameter("n", "int");
-  expectedComputation->addParameter("l", "int[][]");
-  expectedComputation->addParameter("b", "double[]");
-  expectedComputation->addParameter("x", "double[]");
+  expectedComputation->addParameter("l", "int**");
+  expectedComputation->addParameter("b", "double*");
+  expectedComputation->addParameter("x", "double*");
+  expectedComputation->addReturnValue("0");
 
   expectedComputation->addStmt(new iegenlib::Stmt("int i;", "{[0]}", "{[0]->[0]}", {}, {}));
   expectedComputation
@@ -225,7 +226,6 @@ TEST_F(ComputationBuilderTest, forward_solve_correct) {
                                                    {"l", "{[j,i]->[i,j]}"},
                                                    {"x", "{[j,i]->[j]}"}},
                                                   {{"x", "{[j,i]->[i]}"}}));
-  expectedComputation->addStmt(new iegenlib::Stmt("return 0;", "{[0]}", "{[0]->[4]}", {}, {}));
 
   expectComputationsEqual(computation, expectedComputation);
 }
@@ -251,11 +251,11 @@ int CSR_SpMV(int a, int N, int A[a], int index[N + 1], int col[a], int x[N], int
   Computation *expectedComputation = new Computation("CSR_SpMV");
   expectedComputation->addParameter("a", "int");
   expectedComputation->addParameter("N", "int");
-  expectedComputation->addParameter("A", "int[]");
-  expectedComputation->addParameter("index", "int[]");
-  expectedComputation->addParameter("col", "int[]");
-  expectedComputation->addParameter("x", "int[]");
-  expectedComputation->addParameter("product", "int[]");
+  expectedComputation->addParameter("A", "int*");
+  expectedComputation->addParameter("index", "int*");
+  expectedComputation->addParameter("col", "int*");
+  expectedComputation->addParameter("x", "int*");
+  expectedComputation->addParameter("product", "int*");
 
   expectedComputation->addStmt(new iegenlib::Stmt("int i;", "{[0]}", "{[0]->[0]}", {}, {}));
   expectedComputation->addStmt(new iegenlib::Stmt("int k;", "{[0]}", "{[0]->[1]}", {}, {}));
