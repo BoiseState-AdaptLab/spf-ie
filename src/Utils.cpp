@@ -7,6 +7,7 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/Stmt.h"
+#include "clang/AST/Type.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Lex/Lexer.h"
@@ -15,11 +16,11 @@ using namespace clang;
 
 namespace spf_ie {
 
-void Utils::printErrorAndExit(std::string message) {
+void Utils::printErrorAndExit(const std::string &message) {
   printErrorAndExit(message, nullptr);
 }
 
-void Utils::printErrorAndExit(std::string message, clang::Stmt *stmt) {
+void Utils::printErrorAndExit(const std::string &message, clang::Stmt *stmt) {
   llvm::errs() << "ERROR: " << message << "\n";
   if (stmt) {
     llvm::errs() << "At "
@@ -38,6 +39,14 @@ std::string Utils::stmtToString(clang::Stmt *stmt) {
       CharSourceRange::getTokenRange(stmt->getSourceRange()),
       Context->getSourceManager(), Context->getLangOpts())
       .str();
+}
+
+std::string Utils::typeToArrayStrippedString(const clang::Type *originalType) {
+  if (originalType->isArrayType()) {
+    return typeToArrayStrippedString(originalType->getArrayElementTypeNoTypeQual()) + "*";
+  } else {
+    return QualType(originalType, 0).getAsString();
+  }
 }
 
 std::string Utils::getVarReplacementName() {

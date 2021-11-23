@@ -37,7 +37,8 @@ ComputationBuilder::buildComputationFromFunction(FunctionDecl *funcDecl) {
 
   // add function parameters to the Computation
   for (const auto *param: funcDecl->parameters()) {
-    computation->addParameter(param->getNameAsString(), param->getOriginalType().getAsString());
+    computation->addParameter(param->getNameAsString(),
+                              Utils::typeToArrayStrippedString(param->getOriginalType().getTypePtr()));
   }
 
   // collect function body info and add it to the Computation
@@ -160,6 +161,7 @@ void ComputationBuilder::addStmt(clang::Stmt *clangStmt) {
           "Declaring a variable with a name that has already been used in another scope is disallowed",
           asDeclStmt);
     }
+    varDecls.emplace(varName, decl->getType());
     if (decl->hasInit()) {
       dataAccesses.processComplexExprAsReads(decl->getInit());
       dataAccesses.processWriteToScalarName(varName);
@@ -224,7 +226,10 @@ void ComputationBuilder::addStmt(clang::Stmt *clangStmt) {
   auto stmtDataSpaces = dataAccesses.dataSpacesAccessed;
   for (const auto &dataSpaceName:
       dataAccesses.dataSpacesAccessed) {
-    computation->addDataSpace(dataSpaceName, "placeholderType");
+    if (!computation->isDataSpace(dataSpaceName)) {
+      computation->addDataSpace(dataSpaceName,
+                                Utils::typeToArrayStrippedString(varDecls.at(dataSpaceName).getTypePtr()));
+    }
   }
 
   computation->addStmt(newStmt);

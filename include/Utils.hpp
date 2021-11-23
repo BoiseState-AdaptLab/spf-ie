@@ -26,17 +26,22 @@ public:
   Utils() = delete;
 
   //! Print an error to standard error and exit with error status
-  static void printErrorAndExit(std::string message);
+  static void printErrorAndExit(const std::string &message);
 
   //! Print an error to standard error, including the context of a
   //! statement in the source code, and exit with error status
-  static void printErrorAndExit(std::string message, clang::Stmt *stmt);
+  static void printErrorAndExit(const std::string &message, clang::Stmt *stmt);
 
   //! Print a line (horizontal separator) to standard output
   static void printSmallLine();
 
   //! Get the source code of a statement as a string
   static std::string stmtToString(clang::Stmt *stmt);
+
+  //! Get a type as string, with any arrays replaced with pointers.
+  //! For example the type int[][] would become int**
+  static std::string typeToArrayStrippedString(const clang::Type
+                                               *originalType);
 
   //! Get a unique variable name to use in substitutions
   static std::string getVarReplacementName();
