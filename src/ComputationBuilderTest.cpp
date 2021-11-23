@@ -356,8 +356,11 @@ TEST_F(ComputationBuilderDeathTest, incorrect_increment_fails) {
 
 TEST_F(ComputationBuilderDeathTest, loop_invariant_violation_fails) {
   std::string code =
-      "int a() {\
-    int x[5] = {1,2,3,4,5};\
+      "int* a() {\
+    int x[5];\
+    for (int i = 0; i < 5; i++) {\
+        x[i] = 0;\
+    }\
     for (int i = 0; x[i] < 5; i += 1) {\
         x[2] = 3;\
     }\
