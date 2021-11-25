@@ -117,14 +117,14 @@ void PositionContext::enterFor(ForStmt *forStmt) {
   // initializer
   std::string initVar;
   if (auto *init = dyn_cast<BinaryOperator>(forStmt->getInit())) {
-    makeAndInsertConstraint(init->getRHS(), init->getLHS(),
-                            BinaryOperatorKind::BO_LE);
+    makeAndInsertConstraint(init->getLHS(), init->getRHS(),
+                            BinaryOperatorKind::BO_GE);
     initVar = Utils::stmtToString(init->getLHS());
   } else if (auto *init = dyn_cast<DeclStmt>(forStmt->getInit())) {
     if (auto *initDecl = dyn_cast<VarDecl>(init->getSingleDecl())) {
       makeAndInsertConstraint(initDecl->getNameAsString(),
                               initDecl->getInit(),
-                              BinaryOperatorKind::BO_LE);
+                              BinaryOperatorKind::BO_GE);
       initVar = initDecl->getNameAsString();
     } else {
       error = "initializer";
