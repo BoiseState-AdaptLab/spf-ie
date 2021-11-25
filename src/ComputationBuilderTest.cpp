@@ -359,7 +359,7 @@ TEST_F(ComputationBuilderDeathTest, incorrect_increment_fails) {
 }
 
 TEST_F(ComputationBuilderDeathTest, loop_invariant_violation_fails) {
-  std::string code =
+  std::string code1 =
       "int* a() {\
     int x[5];\
     for (int i = 0; i < 5; i++) {\
@@ -370,8 +370,19 @@ TEST_F(ComputationBuilderDeathTest, loop_invariant_violation_fails) {
     }\
     return x;\
 }";
-  ASSERT_DEATH(buildComputationFromCode(code),
+  ASSERT_DEATH(buildComputationFromCode(code1),
                "Code may not modify loop-invariant data space 'x'");
+
+  std::string code2 =
+      "int* a() {\
+    int N = 5;\
+    for (int i = 0; i < N; i += 1) {\
+        N = 3;\
+    }\
+    return N;\
+}";
+  ASSERT_DEATH(buildComputationFromCode(code2),
+               "Code may not modify loop-invariant data space 'N'");
 }
 
 TEST_F(ComputationBuilderDeathTest, unsupported_statement_fails) {
