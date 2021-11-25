@@ -64,6 +64,9 @@ private:
 
   //! Handle a return statement in the function
   void processReturnStmt(clang::ReturnStmt *returnStmt);
+
+  //! Capture reads and writes made in a statement
+  DataAccessHandler getDataAccessesFromStmt(clang::Stmt *stmt);
 };
 
 }  // namespace spf_ie
