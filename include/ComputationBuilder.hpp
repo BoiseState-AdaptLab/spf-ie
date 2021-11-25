@@ -67,6 +67,9 @@ private:
 
   //! Capture reads and writes made in a statement
   DataAccessHandler getDataAccessesFromStmt(clang::Stmt *stmt);
+
+  //! Inline a nested function call and get its return value, if any
+  std::string inlineFunctionCall(CallExpr *callExpr);
 };
 
 }  // namespace spf_ie

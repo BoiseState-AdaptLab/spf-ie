@@ -100,36 +100,7 @@ void ComputationBuilder::processSingleStmt(clang::Stmt *stmt) {
       positionContext->exitIf();
     }
   } else if (auto *asCallExpr = dyn_cast<CallExpr>(stmt)) {
-    auto *callee = asCallExpr->getDirectCallee();
-    if (!callee) {
-      Utils::printErrorAndExit("Cannot processes this kind of call expression", asCallExpr);
-    }
-    auto *calleeDefinition = callee->getDefinition();
-    positionContext->schedule.advanceSchedule();
-    std::string calleeName = calleeDefinition->getNameAsString();
-    if (!subComputations.count(calleeName)) {
-      // build Computation from calleeDefinition, if we haven't done so already
-      PositionContext oldContext = *positionContext;
-      auto builder = new ComputationBuilder();
-      subComputations[calleeName] = builder->buildComputationFromFunction(calleeDefinition);
-      *positionContext = oldContext;
-    }
-    std::vector<std::string> callArgStrings;
-    for (unsigned int i = 0; i < asCallExpr->getNumArgs(); ++i) {
-      auto *arg = asCallExpr->getArg(i)->IgnoreParenImpCasts();
-      if (!Utils::isVarOrNumericLiteral(arg)) {
-        Utils::printErrorAndExit(
-            "Argument passed to function is too complex (must be a data space or a numeric literal)",
-            arg);
-      }
-      callArgStrings.emplace_back(Utils::stmtToString(arg));
-    }
-    auto appendResult = computation->appendComputation(subComputations[calleeName],
-                                                       positionContext->getIterSpaceString(),
-                                                       positionContext->getExecScheduleString(),
-                                                       callArgStrings);
-
-    positionContext->schedule.skipToPosition(appendResult.tuplePosition);
+    inlineFunctionCall(asCallExpr);
   } else {
     positionContext->schedule.advanceSchedule();
     addStmt(stmt);
@@ -248,6 +219,43 @@ DataAccessHandler ComputationBuilder::getDataAccessesFromStmt(clang::Stmt *stmt)
     dataAccesses.processComplexExprAsReads(asBinOper->getRHS());
   }
   return dataAccesses;
+}
+
+std::string ComputationBuilder::inlineFunctionCall(CallExpr *callExpr) {
+  auto *callee = callExpr->getDirectCallee();
+  if (!callee) {
+    Utils::printErrorAndExit("Cannot processes this kind of call expression", callExpr);
+  }
+  auto *calleeDefinition = callee->getDefinition();
+  positionContext->schedule.advanceSchedule();
+  std::string calleeName = calleeDefinition->getNameAsString();
+  if (!subComputations.count(calleeName)) {
+    // build Computation from calleeDefinition, if we haven't done so already
+    PositionContext oldContext = *positionContext;
+    auto builder = new ComputationBuilder();
+    subComputations[calleeName] = builder->buildComputationFromFunction(calleeDefinition);
+    *positionContext = oldContext;
+  }
+  std::vector<std::string> callArgStrings;
+  for (unsigned int i = 0; i < callExpr->getNumArgs(); ++i) {
+    auto *arg = callExpr->getArg(i)->IgnoreParenImpCasts();
+    if (!Utils::isVarOrNumericLiteral(arg)) {
+      Utils::printErrorAndExit(
+          "Argument passed to function is too complex (must be a data space or a numeric literal)",
+          arg);
+    }
+    callArgStrings.emplace_back(Utils::stmtToString(arg));
+  }
+  auto appendResult = computation->appendComputation(subComputations[calleeName],
+                                                     positionContext->getIterSpaceString(),
+                                                     positionContext->getExecScheduleString(),
+                                                     callArgStrings);
+
+  positionContext->schedule.skipToPosition(appendResult.tuplePosition);
+
+  // C doesn't have multiple return, so we only take one return value if any
+  return (appendResult.returnValues.empty() ?
+          "" : appendResult.returnValues.back());
 }
 
 }  // namespace spf_ie
