@@ -307,7 +307,11 @@ TEST_F(ComputationBuilderTest, basic_nesting) {
                                                   "{[i]->[1,i,1]}",
                                                   {{"x", "{[i]->[0]}"}},
                                                   {{"_iegen_0x", "{[i]->[0]}"}}));
-  expectedComputation->addStmt(new iegenlib::Stmt("_iegen_0x*=5;", "{[i]: 0<=i<N}", "{[i]->[1,i,2]}", {}, {}));
+  expectedComputation->addStmt(new iegenlib::Stmt("_iegen_0x*=5;",
+                                                  "{[i]: 0<=i<N}",
+                                                  "{[i]->[1,i,2]}",
+                                                  {{"_iegen_0x", "{[i]->[0]}"}},
+                                                  {{"_iegen_0x", "{[i]->[0]}"}}));
 
   expectedComputation->addReturnValue("3", false);
 

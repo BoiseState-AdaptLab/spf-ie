@@ -110,8 +110,10 @@ void ComputationBuilder::processSingleStmt(clang::Stmt *stmt) {
     std::string calleeName = calleeDefinition->getNameAsString();
     if (!subComputations.count(calleeName)) {
       // build Computation from calleeDefinition, if we haven't done so already
+      PositionContext oldContext = *positionContext;
       auto builder = new ComputationBuilder();
       subComputations[calleeName] = builder->buildComputationFromFunction(calleeDefinition);
+      *positionContext = oldContext;
     }
     std::vector<std::string> callArgStrings;
     for (unsigned int i = 0; i < asCallExpr->getNumArgs(); ++i) {
