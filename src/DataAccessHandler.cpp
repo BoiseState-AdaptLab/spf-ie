@@ -100,10 +100,11 @@ std::vector<DataAccess> DataAccessHandler::makeDataAccessesFromExpr(
   if (auto *asArraySubscriptExpr =
       dyn_cast<ArraySubscriptExpr>(fullExpr)) {
     doBuildArrayAccessWork(asArraySubscriptExpr, isRead, accesses);
-  } else {
-    std::string varName = Utils::stmtToString(fullExpr);
+  } else if (auto *asDeclRefExpr = dyn_cast<DeclRefExpr>(fullExpr)) {
+    std::string varName = Utils::stmtToString(asDeclRefExpr);
     if (!ComputationBuilder::positionContext->isIteratorName(varName)) {
-      accesses.emplace_back(DataAccess(varName, fullExpr->getID(*Context), isRead, false, {}));
+      accesses.emplace_back(
+          DataAccess(varName, asDeclRefExpr->getID(*Context), isRead, false, {}));
     }
   }
   return accesses;

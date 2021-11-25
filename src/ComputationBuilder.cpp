@@ -167,10 +167,7 @@ void ComputationBuilder::addStmt(clang::Stmt *clangStmt) {
       dataAccesses.processWriteToScalarName(varName);
     }
   } else if (auto *asBinOper = dyn_cast<BinaryOperator>(clangStmt)) {
-    if (auto *lhsAsArrayAccess =
-        dyn_cast<ArraySubscriptExpr>(asBinOper->getLHS())) {
-      dataAccesses.processExprAsWrite(lhsAsArrayAccess);
-    }
+    dataAccesses.processExprAsWrite(asBinOper->getLHS());
     if (asBinOper->isCompoundAssignmentOp()) {
       dataAccesses.processComplexExprAsReads(asBinOper->getLHS());
     }
