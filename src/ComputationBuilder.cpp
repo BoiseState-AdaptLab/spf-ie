@@ -103,6 +103,37 @@ void ComputationBuilder::processSingleStmt(clang::Stmt *stmt) {
     inlineFunctionCall(asCallExpr);
   } else {
     positionContext->schedule.advanceSchedule();
+
+    // gather data accesses
+    this->dataAccesses = DataAccessHandler();
+
+    if (auto *asDeclStmt = dyn_cast<DeclStmt>(stmt)) {
+      auto *decl = cast<VarDecl>(asDeclStmt->getSingleDecl());
+      std::string varName = decl->getNameAsString();
+      // If this declaration's variable is already registered as a data space, this is another declaration by that name.
+      if (computation->isDataSpace(varName)) {
+        Utils::printErrorAndExit(
+            "Declaring a variable with a name that has already been used in another scope is disallowed",
+            asDeclStmt);
+      } else {
+        this->varDecls.emplace(varName, decl->getType());
+      }
+      if (decl->hasInit()) {
+        processComplexExpr(decl->getInit(), true);
+        this->dataAccesses.processWriteToScalarName(varName);
+      }
+    } else if (auto *asBinOper = dyn_cast<BinaryOperator>(stmt)) {
+      if (asBinOper->isAssignmentOp()) {
+        this->dataAccesses.processExprAsWrite(asBinOper->getLHS());
+        if (asBinOper->isCompoundAssignmentOp()) {
+          processComplexExpr(asBinOper->getLHS(), true);
+        }
+        processComplexExpr(asBinOper->getRHS(), true);
+      } else {
+        processComplexExpr(asBinOper, false);
+      }
+    }
+
     addStmt(stmt);
   }
 }
@@ -119,9 +150,6 @@ void ComputationBuilder::addStmt(clang::Stmt *clangStmt) {
     processReturnStmt(asReturnStmt);
     return;
   }
-
-  // gather data accesses
-  auto dataAccesses = getDataAccessesFromStmt(clangStmt);
 
   // build IEGenLib Stmt and add it to the Computation
   auto *newStmt = new iegenlib::Stmt();
@@ -141,7 +169,7 @@ void ComputationBuilder::addStmt(clang::Stmt *clangStmt) {
   // data accesses
   std::vector<std::pair<std::string, std::string>> dataReads;
   std::vector<std::pair<std::string, std::string>> dataWrites;
-  for (auto &it_accesses: dataAccesses.stmtDataAccesses) {
+  for (auto &it_accesses: this->dataAccesses.stmtDataAccesses) {
     std::string dataSpaceAccessed = it_accesses.name;
     // enforce loop invariance
     if (!it_accesses.isRead) {
@@ -168,9 +196,9 @@ void ComputationBuilder::addStmt(clang::Stmt *clangStmt) {
   }
 
   // add Computation data spaces
-  auto stmtDataSpaces = dataAccesses.dataSpacesAccessed;
+  auto stmtDataSpaces = this->dataAccesses.dataSpacesAccessed;
   for (const auto &dataSpaceName:
-      dataAccesses.dataSpacesAccessed) {
+      this->dataAccesses.dataSpacesAccessed) {
     if (!computation->isDataSpace(dataSpaceName)) {
       computation->addDataSpace(dataSpaceName,
                                 Utils::typeToArrayStrippedString(varDecls.at(dataSpaceName).getTypePtr()));
@@ -193,32 +221,6 @@ void ComputationBuilder::processReturnStmt(clang::ReturnStmt *returnStmt) {
     }
     computation->addReturnValue(Utils::stmtToString(returnedValue));
   }
-}
-
-DataAccessHandler ComputationBuilder::getDataAccessesFromStmt(clang::Stmt *stmt) {
-  DataAccessHandler dataAccesses;
-  if (auto *asDeclStmt = dyn_cast<DeclStmt>(stmt)) {
-    auto *decl = cast<VarDecl>(asDeclStmt->getSingleDecl());
-    std::string varName = decl->getNameAsString();
-    // If this declaration's variable is already registered as a data space, this is another declaration by that name.
-    if (computation->isDataSpace(varName)) {
-      Utils::printErrorAndExit(
-          "Declaring a variable with a name that has already been used in another scope is disallowed",
-          asDeclStmt);
-    }
-    this->varDecls.emplace(varName, decl->getType());
-    if (decl->hasInit()) {
-      dataAccesses.processComplexExprAsReads(decl->getInit());
-      dataAccesses.processWriteToScalarName(varName);
-    }
-  } else if (auto *asBinOper = dyn_cast<BinaryOperator>(stmt)) {
-    dataAccesses.processExprAsWrite(asBinOper->getLHS());
-    if (asBinOper->isCompoundAssignmentOp()) {
-      dataAccesses.processComplexExprAsReads(asBinOper->getLHS());
-    }
-    dataAccesses.processComplexExprAsReads(asBinOper->getRHS());
-  }
-  return dataAccesses;
 }
 
 std::string ComputationBuilder::inlineFunctionCall(CallExpr *callExpr) {
@@ -256,6 +258,24 @@ std::string ComputationBuilder::inlineFunctionCall(CallExpr *callExpr) {
   // C doesn't have multiple return, so we only take one return value if any
   return (appendResult.returnValues.empty() ?
           "" : appendResult.returnValues.back());
+}
+
+void ComputationBuilder::processComplexExpr(Expr *expr, bool extractReads) {
+  std::vector<Expr *> components;
+  Utils::collectComponentsFromCompoundExpr(expr, components);
+  for (const auto &component: components) {
+    if (extractReads) {
+      if (isa<DeclRefExpr>(component) || isa<ArraySubscriptExpr>(component)) {
+        this->dataAccesses.processExprAsRead(component);
+      }
+    }
+    if (auto *asCallExpr = dyn_cast<CallExpr>(component)) {
+      std::string returnValue = inlineFunctionCall(asCallExpr);
+      if (extractReads && !returnValue.empty()) {
+        this->dataAccesses.processReadToScalarName(returnValue);
+      }
+    }
+  }
 }
 
 }  // namespace spf_ie

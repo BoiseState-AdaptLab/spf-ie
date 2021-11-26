@@ -76,7 +76,7 @@ std::string PositionContext::getDataAccessString(DataAccess *access) {
         os << ",";
       }
       std::vector<Expr *> subAccesses;
-      DataAccessHandler::collectAllDataAccessesInCompoundExpr(it, subAccesses);
+      Utils::collectComponentsFromCompoundExpr(it, subAccesses);
       if (!subAccesses.empty()) {
         std::string replacementName = Utils::getVarReplacementName();
         os << replacementName;
@@ -142,8 +142,8 @@ void PositionContext::enterFor(ForStmt *forStmt) {
     // add any data spaces accessed in the condition to loop invariants
     std::vector<std::string> newInvariants;
     std::vector<Expr *> accessExprs;
-    DataAccessHandler::collectAllDataAccessesInCompoundExpr(cond->getLHS(), accessExprs);
-    DataAccessHandler::collectAllDataAccessesInCompoundExpr(cond->getRHS(), accessExprs);
+    Utils::collectComponentsFromCompoundExpr(cond->getLHS(), accessExprs);
+    Utils::collectComponentsFromCompoundExpr(cond->getRHS(), accessExprs);
     std::vector<DataAccess> accesses;
     for (const auto &accessExpr: accessExprs) {
       auto additionalAccesses = DataAccessHandler::makeDataAccessesFromExpr(accessExpr, true);
@@ -266,7 +266,7 @@ void PositionContext::makeAndInsertConstraint(std::string lower, Expr *upper,
 std::string PositionContext::exprToStringWithSafeArrays(Expr *expr) {
   std::string initialStr = Utils::stmtToString(expr);
   std::vector<Expr *> rawAccesses;
-  DataAccessHandler::collectAllDataAccessesInCompoundExpr(expr, rawAccesses);
+  Utils::collectComponentsFromCompoundExpr(expr, rawAccesses);
   for (const auto &access: rawAccesses) {
     auto accesses = DataAccessHandler::makeDataAccessesFromExpr(access, true);
     std::string accessStr = accesses.back().toString(accesses);

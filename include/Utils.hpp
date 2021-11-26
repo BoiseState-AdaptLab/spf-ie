@@ -54,6 +54,14 @@ public:
   //! \return True iff the expression is a variable or numeric literal
   static bool isVarOrNumericLiteral(const Expr *expr);
 
+  //! Retrieve all "interesting" components that we might be concerned with,
+  //! from left to right, contained in an expression.
+  //! Recurses into both sides of BinaryOperators.
+  //! \param[in] expr Expression to process
+  //! \param[out] currentList List of accesses
+  static void collectComponentsFromCompoundExpr(
+      Expr *expr, std::vector<Expr *> &currentList);
+
 private:
   //! String representations of valid operators for use in constraints
   static const std::map<BinaryOperatorKind, std::string> operatorStrings;

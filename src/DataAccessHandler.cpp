@@ -59,25 +59,29 @@ std::string DataAccess::toString(const std::vector<DataAccess> &potentialSubacce
 
 /* DataAccessHandler */
 
-void DataAccessHandler::processComplexExprAsReads(Expr *expr) {
-  std::vector<Expr *> reads;
-  DataAccessHandler::collectAllDataAccessesInCompoundExpr(expr, reads);
-  for (const auto &read: reads) {
-    processSingleAccessExpr(read, true);
-  }
+void DataAccessHandler::processExprAsRead(Expr *expr) {
+  processSingleAccessExpr(expr, true);
 }
 
 void DataAccessHandler::processExprAsWrite(Expr *expr) {
   processSingleAccessExpr(expr, false);
 }
 
-void DataAccessHandler::processWriteToScalarName(const std::string name) {
+void DataAccessHandler::processReadToScalarName(const std::string &name) {
+  processAccessToScalarName(name, true);
+}
+
+void DataAccessHandler::processWriteToScalarName(const std::string &name) {
+  processAccessToScalarName(name, false);
+}
+
+void DataAccessHandler::processAccessToScalarName(const std::string &name, bool isRead) {
   if (ComputationBuilder::positionContext->isIteratorName(name)) {
     return;
   }
 
   dataSpacesAccessed.emplace(name);
-  stmtDataAccesses.push_back(DataAccess(name, 0, false, false, {}));
+  stmtDataAccesses.push_back(DataAccess(name, 0, isRead, false, {}));
 }
 
 void DataAccessHandler::processSingleAccessExpr(Expr *fullExpr,
@@ -123,25 +127,6 @@ int DataAccessHandler::getArrayExprInfo(ArraySubscriptExpr *fullExpr,
   } else {
     currentInfo->push(baseExpr);
     return true;
-  }
-}
-
-void DataAccessHandler::collectAllDataAccessesInCompoundExpr(
-    Expr *expr, std::vector<Expr *> &currentList) {
-  Expr *usableExpr = expr->IgnoreParenImpCasts();
-  if (auto *binOper = dyn_cast<BinaryOperator>(usableExpr)) {
-    collectAllDataAccessesInCompoundExpr(binOper->getLHS(), currentList);
-    collectAllDataAccessesInCompoundExpr(binOper->getRHS(), currentList);
-  } else if (auto *asArrayAccessExpr =
-      dyn_cast<ArraySubscriptExpr>(usableExpr)) {
-    currentList.push_back(asArrayAccessExpr);
-  } else if (auto *asDeclRefExpr =
-      dyn_cast<DeclRefExpr>(usableExpr)) {
-    if (!ComputationBuilder::positionContext->isIteratorName(asDeclRefExpr->getDecl()->getNameAsString())) {
-      currentList.push_back(asDeclRefExpr);
-    }
-  } else if (!Utils::isVarOrNumericLiteral(usableExpr)) {
-    Utils::printErrorAndExit("Cannot process data accesses in expression", expr);
   }
 }
 

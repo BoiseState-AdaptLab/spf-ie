@@ -55,14 +55,17 @@ struct DataAccess {
  */
 struct DataAccessHandler {
 public:
-  //! Add all the arrays accessed in the expression as reads
-  void processComplexExprAsReads(Expr *expr);
+  //! Add the space accessed (and any sub-accesses) as a read
+  void processExprAsRead(Expr *expr);
 
   //! Add the space accessed as a write, and any sub-accesses as reads
   void processExprAsWrite(Expr *expr);
 
+  //! Add a scalar's name as a read DataAccess.
+  void processReadToScalarName(const std::string &name);
+
   //! Add a scalar's name as a write DataAccess.
-  void processWriteToScalarName(const std::string name);
+  void processWriteToScalarName(const std::string &name);
 
   //! Make all data accesses, including subaccesses, from the given expression
   //! \param[in] fullExpr Expression to process
@@ -70,20 +73,15 @@ public:
   static std::vector<DataAccess> makeDataAccessesFromExpr(
       Expr *fullExpr, bool isRead);
 
-  //! Retrieve "all" data accesses, from left to right, contained in an
-  //! expression.
-  //! Recurses into BinaryOperators.
-  //! \param[in] expr Expression to process
-  //! \param[out] currentList List of accesses
-  static void collectAllDataAccessesInCompoundExpr(
-      Expr *expr, std::vector<Expr *> &currentList);
-
   //! Data accesses
   std::vector<DataAccess> stmtDataAccesses;
   //! Data spaces accessed
   std::unordered_set<std::string> dataSpacesAccessed;
 
 private:
+  //! Add a scalar's name as a DataAccess, as the given access type
+  void processAccessToScalarName(const std::string &name, bool isRead);
+
   //! Make and store a DataAccess from an expression, plus sub-accesses, as the given access type
   //! \param[in] fullExpr Expression to process. Should just be a variable reference or array subscript expression.
   //! \param[in] isRead Whether this access is a read
