@@ -260,18 +260,22 @@ std::string ComputationBuilder::inlineFunctionCall(CallExpr *callExpr) {
           "" : appendResult.returnValues.back());
 }
 
-void ComputationBuilder::processComplexExpr(Expr *expr, bool extractReads) {
+void ComputationBuilder::processComplexExpr(Expr *expr, bool processReads) {
   std::vector<Expr *> components;
-  Utils::collectComponentsFromCompoundExpr(expr, components);
+  Utils::collectComponentsFromCompoundExpr(expr, components, true);
   for (const auto &component: components) {
-    if (extractReads) {
-      if (isa<DeclRefExpr>(component) || isa<ArraySubscriptExpr>(component)) {
+    if (processReads) {
+      if (isa<ArraySubscriptExpr>(component)) {
         this->dataAccesses.processExprAsRead(component);
+      } else if (auto *asDeclRefExpr = dyn_cast<DeclRefExpr>(component)) {
+        if (!ComputationBuilder::positionContext->isIteratorName(asDeclRefExpr->getDecl()->getNameAsString())) {
+          this->dataAccesses.processExprAsRead(component);
+        }
       }
     }
     if (auto *asCallExpr = dyn_cast<CallExpr>(component)) {
       std::string returnValue = inlineFunctionCall(asCallExpr);
-      if (extractReads && !returnValue.empty()) {
+      if (processReads && !returnValue.empty()) {
         this->dataAccesses.processReadToScalarName(returnValue);
       }
     }

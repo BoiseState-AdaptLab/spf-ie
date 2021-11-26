@@ -59,8 +59,9 @@ public:
   //! Recurses into both sides of BinaryOperators.
   //! \param[in] expr Expression to process
   //! \param[out] currentList List of accesses
+  //! \param[in] includeCallExprs Whether to include function calls as components
   static void collectComponentsFromCompoundExpr(
-      Expr *expr, std::vector<Expr *> &currentList);
+      Expr *expr, std::vector<Expr *> &currentList, bool includeCallExprs = false);
 
 private:
   //! String representations of valid operators for use in constraints

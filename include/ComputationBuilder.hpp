@@ -39,7 +39,7 @@ public:
   static std::map<std::string, Computation *> subComputations;
 
   //! Context information about the position we're currently at.
-  //! Updated to the most recently processed statement in any Computation
+  //! Updated to the most recent statement in the Computation currently being processed.
   static PositionContext *positionContext;
 
 private:
@@ -49,7 +49,7 @@ private:
   bool haveFoundAReturn = false;
   //! Declarations found, which may need to be consulted for type info later
   std::map<std::string, QualType> varDecls;
-  //! Data accesses currently being built up
+  //! Data accesses for statement currently being processed
   DataAccessHandler dataAccesses;
 
   //! Process the body of a control structure, such as a for loop
