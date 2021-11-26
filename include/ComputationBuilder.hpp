@@ -49,6 +49,8 @@ private:
   bool haveFoundAReturn = false;
   //! Declarations found, which may need to be consulted for type info later
   std::map<std::string, QualType> varDecls;
+  //! Data accesses currently being built up
+  DataAccessHandler dataAccesses;
 
   //! Process the body of a control structure, such as a for loop
   //! \param[in] stmt Body statement (which may be compound) to process
@@ -65,11 +67,14 @@ private:
   //! Handle a return statement in the function
   void processReturnStmt(clang::ReturnStmt *returnStmt);
 
-  //! Capture reads and writes made in a statement
-  DataAccessHandler getDataAccessesFromStmt(clang::Stmt *stmt);
-
   //! Inline a nested function call and get its return value, if any
   std::string inlineFunctionCall(CallExpr *callExpr);
+
+  //! Perform processing on a compound expression, including inlining any function calls.
+  //! \param[in] expr Expression to process
+  //! \param[in] processReads If true, also add any referenced data spaces as reads,
+  //! including those returned from inlined functions
+  void processComplexExpr(Expr *expr, bool processReads);
 };
 
 }  // namespace spf_ie
