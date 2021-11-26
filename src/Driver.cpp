@@ -57,7 +57,7 @@ public:
           llvm::outs()
               << "FUNCTION: " << func->getQualifiedNameAsString()
               << "\n";
-          Utils::printSmallLine();
+          llvm::outs() << "---------------\n";
           llvm::outs() << "\n";
         }
         iegenlib::Computation *computation =

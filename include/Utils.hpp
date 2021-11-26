@@ -32,19 +32,13 @@ public:
   //! statement in the source code, and exit with error status
   static void printErrorAndExit(const std::string &message, clang::Stmt *stmt);
 
-  //! Print a line (horizontal separator) to standard output
-  static void printSmallLine();
-
   //! Get the source code of a statement as a string
   static std::string stmtToString(clang::Stmt *stmt);
 
   //! Get a type as string, with any arrays replaced with pointers.
-  //! For example the type int[][] would become int**
+  //! For example, the type int[][] would become int**.
   static std::string typeToArrayStrippedString(const clang::Type
                                                *originalType);
-
-  //! Get a unique variable name to use in substitutions
-  static std::string getVarReplacementName();
 
   //! Get a string representation of a binary operator
   static std::string binaryOperatorKindToString(BinaryOperatorKind bo);
@@ -59,9 +53,12 @@ public:
   //! Recurses into both sides of BinaryOperators.
   //! \param[in] expr Expression to process
   //! \param[out] currentList List of accesses
-  //! \param[in] includeCallExprs Whether to include function calls as components
+  //! \param[in] includeCallExprs Whether to include function calls in collected components
   static void collectComponentsFromCompoundExpr(
       Expr *expr, std::vector<Expr *> &currentList, bool includeCallExprs = false);
+
+  //! Get a unique variable name to use in substitutions
+  static std::string getVarReplacementName();
 
 private:
   //! String representations of valid operators for use in constraints

@@ -2,6 +2,7 @@
 
 #include <map>
 #include <string>
+#include <sstream>
 
 #include "Driver.hpp"
 #include "clang/AST/ASTContext.h"
@@ -17,22 +18,20 @@ using namespace clang;
 namespace spf_ie {
 
 void Utils::printErrorAndExit(const std::string &message) {
-  printErrorAndExit(message, nullptr);
-}
-
-void Utils::printErrorAndExit(const std::string &message, clang::Stmt *stmt) {
   llvm::errs() << "ERROR: " << message << "\n";
-  if (stmt) {
-    llvm::errs() << "At "
-                 << stmt->getBeginLoc().printToString(
-                     Context->getSourceManager())
-                 << ":\n"
-                 << stmtToString(stmt) << "\n";
-  }
   exit(1);
 }
 
-void Utils::printSmallLine() { llvm::outs() << "---------------\n"; }
+void Utils::printErrorAndExit(const std::string &message, clang::Stmt *stmt) {
+  std::ostringstream fullMessage;
+  fullMessage << message << "\n"
+              << "At "
+              << stmt->getBeginLoc().printToString(
+                  Context->getSourceManager())
+              << ":\n"
+              << stmtToString(stmt) << "\n";
+  printErrorAndExit(fullMessage.str());
+}
 
 std::string Utils::stmtToString(clang::Stmt *stmt) {
   return Lexer::getSourceText(
@@ -47,10 +46,6 @@ std::string Utils::typeToArrayStrippedString(const clang::Type *originalType) {
   } else {
     return QualType(originalType, 0).getAsString();
   }
-}
-
-std::string Utils::getVarReplacementName() {
-  return REPLACEMENT_VAR_BASE_NAME + std::to_string(replacementVarNumber++);
 }
 
 std::string Utils::binaryOperatorKindToString(BinaryOperatorKind bo) {
@@ -82,6 +77,10 @@ void Utils::collectComponentsFromCompoundExpr(
   } else if (!Utils::isVarOrNumericLiteral(usableExpr)) {
     Utils::printErrorAndExit("Failed to process components of complex expression", expr);
   }
+}
+
+std::string Utils::getVarReplacementName() {
+  return REPLACEMENT_VAR_BASE_NAME + std::to_string(replacementVarNumber++);
 }
 
 const std::map<BinaryOperatorKind, std::string> Utils::operatorStrings = {
