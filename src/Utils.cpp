@@ -70,12 +70,14 @@ bool Utils::isVarOrNumericLiteral(const Expr *expr) {
 }
 
 void Utils::collectComponentsFromCompoundExpr(
-    Expr *expr, std::vector<Expr *> &currentList) {
+    Expr *expr, std::vector<Expr *> &currentList, bool includeCallExprs) {
   Expr *usableExpr = expr->IgnoreParenImpCasts();
   if (auto *binOper = dyn_cast<BinaryOperator>(usableExpr)) {
-    collectComponentsFromCompoundExpr(binOper->getLHS(), currentList);
-    collectComponentsFromCompoundExpr(binOper->getRHS(), currentList);
-  } else if (isa<ArraySubscriptExpr>(usableExpr) || isa<DeclRefExpr>(usableExpr) || isa<CallExpr>(usableExpr)) {
+    collectComponentsFromCompoundExpr(binOper->getLHS(), currentList, includeCallExprs);
+    collectComponentsFromCompoundExpr(binOper->getRHS(), currentList, includeCallExprs);
+  } else if (isa<ArraySubscriptExpr>(usableExpr)
+      || isa<DeclRefExpr>(usableExpr)
+      || (includeCallExprs && isa<CallExpr>(usableExpr))) {
     currentList.push_back(usableExpr);
   } else if (!Utils::isVarOrNumericLiteral(usableExpr)) {
     Utils::printErrorAndExit("Failed to process components of complex expression", expr);

@@ -75,20 +75,22 @@ std::string PositionContext::getDataAccessString(DataAccess *access) {
       if (it != *access->indexes.begin()) {
         os << ",";
       }
-      std::vector<Expr *> subAccesses;
-      Utils::collectComponentsFromCompoundExpr(it, subAccesses);
-      if (!subAccesses.empty()) {
-        std::string replacementName = Utils::getVarReplacementName();
-        os << replacementName;
-        constraintsToAdd.emplace_back(replacementName, exprToStringWithSafeArrays(it));
-      } else if (isa<DeclRefExpr>(it->IgnoreParenImpCasts())) {
+      if (isa<DeclRefExpr>(it->IgnoreParenImpCasts())) {
         os << Utils::stmtToString(it);
       } else {
-        // if the expression is not a nested access or single variable
-        // simply assign it to a replacement variable and use that
-        std::string replacementName = Utils::getVarReplacementName();
-        os << replacementName;
-        constraintsToAdd.emplace_back(replacementName, Utils::stmtToString(it));
+        std::vector<Expr *> subAccesses;
+        Utils::collectComponentsFromCompoundExpr(it, subAccesses);
+        if (!subAccesses.empty()) {
+          std::string replacementName = Utils::getVarReplacementName();
+          os << replacementName;
+          constraintsToAdd.emplace_back(replacementName, exprToStringWithSafeArrays(it));
+        } else {
+          // if the expression is not a nested access or single variable
+          // simply assign it to a replacement variable and use that
+          std::string replacementName = Utils::getVarReplacementName();
+          os << replacementName;
+          constraintsToAdd.emplace_back(replacementName, Utils::stmtToString(it));
+        }
       }
     }
   }
@@ -268,6 +270,9 @@ std::string PositionContext::exprToStringWithSafeArrays(Expr *expr) {
   std::vector<Expr *> rawAccesses;
   Utils::collectComponentsFromCompoundExpr(expr, rawAccesses);
   for (const auto &access: rawAccesses) {
+    if (isa<DeclRefExpr>(access)) {
+      continue;
+    }
     auto accesses = DataAccessHandler::makeDataAccessesFromExpr(access, true);
     std::string accessStr = accesses.back().toString(accesses);
     initialStr = iegenlib::replaceInString(
