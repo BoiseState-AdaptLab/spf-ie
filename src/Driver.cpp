@@ -32,6 +32,11 @@ using namespace clang::tooling;
 static llvm::cl::opt<bool> PrintOutputToConsole(
     "print-info", llvm::cl::desc("Output info to console"));
 
+static llvm::cl::opt<std::string> EntryPoint(
+        "entry-point", llvm::cl::desc(
+                "Entry point for the spf-ie tool, only the specified "
+                "function will be translated"));
+
 namespace spf_ie {
 
 const ASTContext *Context;
@@ -40,6 +45,10 @@ class SPFConsumer : public ASTConsumer {
 public:
   explicit SPFConsumer(llvm::StringRef fileName) : fileName(fileName.str()) {}
   void HandleTranslationUnit(ASTContext &Ctx) override {
+    if (EntryPoint.empty()) {
+      llvm::errs() << "\033[31m--entry-point flag must be specified (-h for usage)\033[0m\n";
+      exit(1);
+    }
     // initializing globally-accessible ASTContext
     Context = &Ctx;
     llvm::errs() << "\nProcessing: " << fileName << "\n";
@@ -52,7 +61,8 @@ public:
     bool builtAComputation = false;
     for (auto it: Context->getTranslationUnitDecl()->decls()) {
       auto *func = dyn_cast<FunctionDecl>(it);
-      if (func && func->doesThisDeclarationHaveABody()) {
+      if (func && func->doesThisDeclarationHaveABody() &&
+            EntryPoint == func->getQualifiedNameAsString()) {
         if (PrintOutputToConsole) {
           llvm::outs()
               << "FUNCTION: " << func->getQualifiedNameAsString()
@@ -96,6 +106,7 @@ static llvm::cl::OptionCategory SPFToolCategory("spf-ie options");
 //! Instantiate and run the Clang tool
 int main(int argc, const char **argv) {
   PrintOutputToConsole.addCategory(SPFToolCategory);
+  EntryPoint.addCategory(SPFToolCategory);
   CommonOptionsParser OptionsParser(argc, argv, SPFToolCategory);
   ClangTool Tool(OptionsParser.getCompilations(),
                  OptionsParser.getSourcePathList());

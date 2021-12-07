@@ -50,7 +50,7 @@ protected:
 
   //! Build a Computation from the first function in the provided code string.
   static iegenlib::Computation *
-  buildComputationFromCode(const std::string &code) {
+  buildComputationFromCode(const std::string &code, const std::string &entryPoint) {
     std::unique_ptr<ASTUnit> AST = tooling::buildASTFromCode(
         code, "test_input.cpp", std::make_shared<PCHContainerOperations>());
     Context = &AST->getASTContext();
@@ -60,7 +60,8 @@ protected:
     bool builtComputation = false;
     for (auto it: Context->getTranslationUnitDecl()->decls()) {
       auto *func = dyn_cast<FunctionDecl>(it);
-      if (func && func->doesThisDeclarationHaveABody()) {
+      if (func && func->doesThisDeclarationHaveABody() &&
+                  entryPoint == func->getQualifiedNameAsString()) {
         return builder.buildComputationFromFunction(func);
       }
     }
@@ -154,7 +155,7 @@ TEST_F(ComputationBuilderTest, matrix_add_correct) {
     }\
 }";
 
-  iegenlib::Computation *computation = buildComputationFromCode(code);
+  iegenlib::Computation *computation = buildComputationFromCode(code, "matrix_add");
 
   Computation *expectedComputation = new Computation("matrix_add");
   expectedComputation->addParameter("a", "int");
@@ -196,7 +197,7 @@ TEST_F(ComputationBuilderTest, forward_solve_correct) {
     return 0;\
 }";
 
-  iegenlib::Computation *computation = buildComputationFromCode(code);
+  iegenlib::Computation *computation = buildComputationFromCode(code, "forward_solve");
 
   Computation *expectedComputation = new Computation("forward_solve");
   expectedComputation->addParameter("n", "int");
@@ -246,7 +247,7 @@ int CSR_SpMV(int a, int N, int A[a], int index[N + 1], int col[a], int x[N], int
 }\
 ";
 
-  iegenlib::Computation *computation = buildComputationFromCode(code);
+  iegenlib::Computation *computation = buildComputationFromCode(code, "CSR_SpMV");
 
   Computation *expectedComputation = new Computation("CSR_SpMV");
   expectedComputation->addParameter("a", "int");
@@ -292,7 +293,7 @@ TEST_F(ComputationBuilderTest, basic_nesting) {
 "  return x;\n"
 "}";
 
-  iegenlib::Computation *computation = buildComputationFromCode(code);
+  iegenlib::Computation *computation = buildComputationFromCode(code, "outer");
 
   Computation *expectedComputation = new Computation("outer");
   expectedComputation->addDataSpace("N", "int");
@@ -330,7 +331,7 @@ TEST_F(ComputationBuilderDeathTest, incorrect_increment_fails) {
     return x;\
 }";
   ASSERT_DEATH(
-      buildComputationFromCode(code1),
+      buildComputationFromCode(code1, "a"),
       "Invalid increment in for loop -- must increase iterator by 1");
 
   std::string code2 =
@@ -342,7 +343,7 @@ TEST_F(ComputationBuilderDeathTest, incorrect_increment_fails) {
     return x;\
 }";
   ASSERT_DEATH(
-      buildComputationFromCode(code2),
+      buildComputationFromCode(code2, "a"),
       "Invalid increment in for loop -- must increase iterator by 1");
 
   std::string code3 =
@@ -354,7 +355,7 @@ TEST_F(ComputationBuilderDeathTest, incorrect_increment_fails) {
     return x;\
 }";
   ASSERT_DEATH(
-      buildComputationFromCode(code3),
+      buildComputationFromCode(code3, "a"),
       "Invalid increment in for loop -- must increase iterator by 1");
 }
 
@@ -369,7 +370,7 @@ TEST_F(ComputationBuilderDeathTest, loop_invariant_violation_fails) {
         x[2] = 3;\
     }\
 }";
-  ASSERT_DEATH(buildComputationFromCode(code1),
+  ASSERT_DEATH(buildComputationFromCode(code1, "a"),
                "Code may not modify loop-invariant data space 'x'");
 
   std::string code2 =
@@ -380,7 +381,7 @@ TEST_F(ComputationBuilderDeathTest, loop_invariant_violation_fails) {
     }\
     return N;\
 }";
-  ASSERT_DEATH(buildComputationFromCode(code2),
+  ASSERT_DEATH(buildComputationFromCode(code2, "a"),
                "Code may not modify loop-invariant data space 'N'");
 }
 
@@ -395,7 +396,7 @@ TEST_F(ComputationBuilderDeathTest, unsupported_statement_fails) {
     goto asdf;\
     return x;\
 }";
-  ASSERT_DEATH(buildComputationFromCode(code),
+  ASSERT_DEATH(buildComputationFromCode(code, "a"),
                "Unsupported stmt type LabelStmt");
 }
 
@@ -408,7 +409,7 @@ TEST_F(ComputationBuilderDeathTest, invalid_condition_fails) {
     }\
     return x;\
 }";
-  ASSERT_DEATH(buildComputationFromCode(code1),
+  ASSERT_DEATH(buildComputationFromCode(code1, "a"),
                "If statement condition must be a binary operation");
 
   std::string code2 =
@@ -419,7 +420,7 @@ TEST_F(ComputationBuilderDeathTest, invalid_condition_fails) {
     }\
     return x;\
 }";
-  ASSERT_DEATH(buildComputationFromCode(code2),
+  ASSERT_DEATH(buildComputationFromCode(code2, "a"),
                "If statement condition must be a binary operation");
 
   std::string code3 =
@@ -431,7 +432,7 @@ TEST_F(ComputationBuilderDeathTest, invalid_condition_fails) {
     return x;\
 }";
   ASSERT_DEATH(
-      buildComputationFromCode(code3),
+      buildComputationFromCode(code3, "a"),
       "Not-equal conditions are unsupported by SPF: in condition x != 0");
 }
 
@@ -444,7 +445,7 @@ TEST_F(ComputationBuilderDeathTest, reusing_var_name_fails) {
     }\
     return x;\
 }";
-  ASSERT_DEATH(buildComputationFromCode(code),
+  ASSERT_DEATH(buildComputationFromCode(code, "a"),
                "Declaring a variable with a name that has already been used in another scope is disallowed");
 }
 
