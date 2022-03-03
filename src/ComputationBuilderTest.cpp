@@ -61,7 +61,7 @@ protected:
     for (auto it: Context->getTranslationUnitDecl()->decls()) {
       auto *func = dyn_cast<FunctionDecl>(it);
       if (func && func->doesThisDeclarationHaveABody() &&
-                  entryPoint == func->getQualifiedNameAsString()) {
+          entryPoint == func->getQualifiedNameAsString()) {
         return builder.buildComputationFromFunction(func);
       }
     }
@@ -318,6 +318,58 @@ TEST_F(ComputationBuilderTest, basic_nesting) {
 
   expectComputationsEqual(computation, expectedComputation);
 }
+
+TEST_F(ComputationBuilderTest, nesting_with_args_and_return) {
+  std::string code = \
+"int inner(int, int);\n"
+"\n"
+"int outer(void) {\n"
+"  int a = 0;\n"
+"  for (int i = 0; i < 3; i++) {\n"
+"    a += inner(i, 3);\n"
+"  }\n"
+"  return a;\n"
+"}\n"
+"\n"
+"int inner(int x, int y) {\n"
+"  x*=y;\n"
+"  return x;\n"
+"}";
+
+  iegenlib::Computation *computation = buildComputationFromCode(code, "outer");
+
+  Computation *expectedComputation = new Computation("outer");
+  expectedComputation->addDataSpace("a", "int");
+  expectedComputation->addDataSpace("_iegen_0x", "int");
+  expectedComputation->addDataSpace("_iegen_0y", "int");
+
+  expectedComputation->addStmt(new iegenlib::Stmt("int a = 0;", "{[0]}", "{[0]->[0]}", {}, {{"a", "{[0]->[0]}"}}));
+  expectedComputation->addStmt(new iegenlib::Stmt("_iegen_0x = i;",
+                                                  "{[i]: 0<=i<3}",
+                                                  "{[i]->[1,i,0]}",
+                                                  {},
+                                                  {{"_iegen_0x", "{[i]->[0]}"}}));
+  expectedComputation->addStmt(new iegenlib::Stmt("_iegen_0y = 3;",
+                                                  "{[i]: 0<=i<3}",
+                                                  "{[i]->[1,i,1]}",
+                                                  {},
+                                                  {{"_iegen_0x", "{[i]->[0]}"}}));
+  expectedComputation->addStmt(new iegenlib::Stmt("_iegen_0x*=_iegen_0y;",
+                                                  "{[i]: 0<=i<3}",
+                                                  "{[i]->[1,i,2]}",
+                                                  {{"_iegen_0x", "{[i]->[0]}"}, {"_iegen_0y", "{[i]->[0]}"}},
+                                                  {{"_iegen_0x", "{[i]->[0]}"}}));
+  expectedComputation->addStmt(new iegenlib::Stmt("a += _iegen_0x;",
+                                                  "{[i]: 0<=i<3}",
+                                                  "{[i]->[1,i,3]}",
+                                                  {{"a", "{[i]->[0]}"}, {"_iegen_0x", "{[i]->[0]}"}},
+                                                  {{"a", "{[i]->[0]}"}}));
+
+  expectedComputation->addReturnValue("a", true);
+
+  expectComputationsEqual(computation, expectedComputation);
+}
+
 
 /** Death tests, checking failure on invalid input **/
 

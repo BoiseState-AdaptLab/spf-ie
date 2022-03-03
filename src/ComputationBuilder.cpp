@@ -229,7 +229,6 @@ std::string ComputationBuilder::inlineFunctionCall(CallExpr *callExpr) {
     Utils::printErrorAndExit("Cannot processes this kind of call expression", callExpr);
   }
   auto *calleeDefinition = callee->getDefinition();
-  positionContext->schedule.advanceSchedule();
   std::string calleeName = calleeDefinition->getNameAsString();
   if (!subComputations.count(calleeName)) {
     // build Computation from calleeDefinition, if we haven't done so already
@@ -253,7 +252,9 @@ std::string ComputationBuilder::inlineFunctionCall(CallExpr *callExpr) {
                                                      positionContext->getExecScheduleString(),
                                                      callArgStrings);
 
+  // move to the next schedule position immediately after the last one used by inlined statements
   positionContext->schedule.skipToPosition(appendResult.tuplePosition);
+  positionContext->schedule.advanceSchedule();
 
   // C doesn't have multiple return, so we only take one return value if any
   return (appendResult.returnValues.empty() ?
@@ -261,6 +262,7 @@ std::string ComputationBuilder::inlineFunctionCall(CallExpr *callExpr) {
 }
 
 void ComputationBuilder::processComplexExpr(Expr *expr, bool processReads) {
+
   std::vector<Expr *> components;
   Utils::collectComponentsFromCompoundExpr(expr, components, true);
   for (const auto &component: components) {
