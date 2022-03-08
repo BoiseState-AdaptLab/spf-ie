@@ -51,6 +51,9 @@ private:
   std::map<std::string, QualType> varDecls;
   //! Data accesses for statement currently being processed
   DataAccessHandler dataAccesses;
+  //! String replacement rules to be applied for current statement, stored as from->to.
+  //! Currently only used to replace calls to inline functions with their return values.
+  std::map<std::string, std::string> stmtSourceCodeReplacements;
 
   //! Process the body of a control structure, such as a for loop
   //! \param[in] stmt Body statement (which may be compound) to process

@@ -77,6 +77,8 @@ void ComputationBuilder::processSingleStmt(clang::Stmt *stmt) {
                                  std::string(stmt->getStmtClassName()),
                              stmt);
   }
+  // reset statement string replacement list
+  stmtSourceCodeReplacements.clear();
 
   if (auto *asForStmt = dyn_cast<ForStmt>(stmt)) {
     positionContext->schedule.advanceSchedule();
@@ -108,6 +110,7 @@ void ComputationBuilder::processSingleStmt(clang::Stmt *stmt) {
     // gather data accesses
     this->dataAccesses = DataAccessHandler();
 
+    std::map<std::string, std::string> functionCallValueReplacements;
     if (auto *asDeclStmt = dyn_cast<DeclStmt>(stmt)) {
       auto *decl = cast<VarDecl>(asDeclStmt->getSingleDecl());
       std::string varName = decl->getNameAsString();
@@ -156,6 +159,9 @@ void ComputationBuilder::addStmt(clang::Stmt *clangStmt) {
   auto *newStmt = new iegenlib::Stmt();
   // source code
   std::string stmtSourceCode = Utils::stmtToString(clangStmt);
+  for (const auto &replacement: stmtSourceCodeReplacements) {
+    stmtSourceCode = iegenlib::replaceInString(stmtSourceCode, replacement.first, replacement.second);
+  }
   // append semicolon if absent
   if (stmtSourceCode.back() != ';') {
     stmtSourceCode += ';';
@@ -277,8 +283,11 @@ void ComputationBuilder::processComplexExpr(Expr *expr, bool processReads) {
     }
     if (auto *asCallExpr = dyn_cast<CallExpr>(component)) {
       std::string returnValue = inlineFunctionCall(asCallExpr);
-      if (processReads && !returnValue.empty()) {
-        this->dataAccesses.processReadToScalarName(returnValue);
+      if (!returnValue.empty()) {
+        this->stmtSourceCodeReplacements.emplace(Utils::stmtToString(asCallExpr), returnValue);
+        if (processReads) {
+          this->dataAccesses.processReadToScalarName(returnValue);
+        }
       }
     }
   }
