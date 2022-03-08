@@ -349,7 +349,7 @@ TEST_F(ComputationBuilderTest, nesting_with_args_and_return) {
                                                   "{[i]: 0<=i<3}",
                                                   "{[i]->[1,i,1]}",
                                                   {},
-                                                  {{"_iegen_0x", "{[i]->[0]}"}}));
+                                                  {{"_iegen_0y", "{[i]->[0]}"}}));
   expectedComputation->addStmt(new iegenlib::Stmt("_iegen_0x*=_iegen_0y;",
                                                   "{[i]: 0<=i<3}",
                                                   "{[i]->[1,i,2]}",

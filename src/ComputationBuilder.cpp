@@ -100,6 +100,7 @@ void ComputationBuilder::processSingleStmt(clang::Stmt *stmt) {
       positionContext->exitIf();
     }
   } else if (auto *asCallExpr = dyn_cast<CallExpr>(stmt)) {
+    positionContext->schedule.advanceSchedule();
     inlineFunctionCall(asCallExpr);
   } else {
     positionContext->schedule.advanceSchedule();
@@ -262,7 +263,6 @@ std::string ComputationBuilder::inlineFunctionCall(CallExpr *callExpr) {
 }
 
 void ComputationBuilder::processComplexExpr(Expr *expr, bool processReads) {
-
   std::vector<Expr *> components;
   Utils::collectComponentsFromCompoundExpr(expr, components, true);
   for (const auto &component: components) {
