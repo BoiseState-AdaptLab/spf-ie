@@ -29,13 +29,13 @@
 using namespace clang;
 using namespace clang::tooling;
 
-static llvm::cl::opt<bool> PrintOutputToConsole(
-    "print-info", llvm::cl::desc("Output info to console"));
+static llvm::cl::opt<bool> FrontendOnly(
+    "frontend-only", llvm::cl::desc("Just run the spf-ie frontend and output Computation IR to console"));
 
 static llvm::cl::opt<std::string> EntryPoint(
-        "entry-point", llvm::cl::desc(
-                "Entry point for the spf-ie tool, only the specified "
-                "function will be translated"));
+    "entry-point", llvm::cl::desc(
+        "Entry point for the spf-ie tool, only the specified "
+        "function will be translated"));
 
 namespace spf_ie {
 
@@ -52,35 +52,35 @@ public:
     // initializing globally-accessible ASTContext
     Context = &Ctx;
     llvm::errs() << "\nProcessing: " << fileName << "\n";
-    if (PrintOutputToConsole) {
-      llvm::errs()
-          << "=================================================\n\n";
-    }
+    llvm::errs()
+        << "=================================================\n\n";
     ComputationBuilder builder;
-    // process each function (with a body) in the file
+    // locate and process the target function
     bool builtAComputation = false;
     for (auto it: Context->getTranslationUnitDecl()->decls()) {
       auto *func = dyn_cast<FunctionDecl>(it);
       if (func && func->doesThisDeclarationHaveABody() &&
-            EntryPoint == func->getQualifiedNameAsString()) {
-        if (PrintOutputToConsole) {
-          llvm::outs()
-              << "FUNCTION: " << func->getQualifiedNameAsString()
-              << "\n";
-          llvm::outs() << "---------------\n";
-          llvm::outs() << "\n";
-        }
+          func->getQualifiedNameAsString() == EntryPoint) {
         iegenlib::Computation *computation =
             builder.buildComputationFromFunction(func);
         builtAComputation = true;
-        if (PrintOutputToConsole) {
+        if (FrontendOnly) {
+          llvm::errs()
+              << "Computation IR for function '" << func->getQualifiedNameAsString()
+              << "'\n";
+          llvm::errs() << "---------------\n\n";
           computation->printInfo();
+        } else {
+          llvm::errs() << "Codegen for function '" << func->getQualifiedNameAsString() << "':\n\n";
+          computation->finalize();
+          std::string codegen = computation->codeGen();
+          llvm::outs() << codegen;
         }
         delete computation;
       }
     }
     if (!builtAComputation) {
-      llvm::errs() << "No valid functions found for processing!\n";
+      llvm::errs() << "Could not locate definition of the target function '" << EntryPoint << "'!\n";
       exit(1);
     }
   }
@@ -105,7 +105,7 @@ static llvm::cl::OptionCategory SPFToolCategory("spf-ie options");
 
 //! Instantiate and run the Clang tool
 int main(int argc, const char **argv) {
-  PrintOutputToConsole.addCategory(SPFToolCategory);
+  FrontendOnly.addCategory(SPFToolCategory);
   EntryPoint.addCategory(SPFToolCategory);
   CommonOptionsParser OptionsParser(argc, argv, SPFToolCategory);
   ClangTool Tool(OptionsParser.getCompilations(),
