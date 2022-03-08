@@ -75,20 +75,20 @@ protected:
 
     ASSERT_EQ(expected->isComplete(), actual->isComplete());
 
+//    const auto expectedTransformations = expected->getTransformations();
+//    const auto actualTransformations = actual->getTransformations();
+//    ASSERT_EQ(expectedTransformations.size(), actualTransformations.size());
+//    for (unsigned int i = 0; i < expectedTransformations.size(); ++i) {
+//      EXPECT_EQ(*expectedTransformations[i], *actualTransformations[i]);
+//    }
+
     ASSERT_EQ(expected->getNumStmts(), actual->getNumStmts());
     for (unsigned int i = 0; i < actual->getNumStmts(); ++i) {
       SCOPED_TRACE("Statement " + std::to_string(i));
       expectStmtsEqual(actual->getStmt(i), expected->getStmt(i));
     }
 
-    const auto expectedTransformations = expected->getTransformations();
-    const auto actualTransformations = actual->getTransformations();
-    ASSERT_EQ(expectedTransformations.size(), actualTransformations.size());
-    for (unsigned int i = 0; i < expectedTransformations.size(); ++i) {
-      EXPECT_EQ(*expectedTransformations[i], *actualTransformations[i]);
-    }
-
-    EXPECT_EQ(expected->getDataSpaces(), actual->getDataSpaces());
+    EXPECT_EQ(expected->getDelimitedDataSpaces(), actual->getDelimitedDataSpaces());
 
     ASSERT_EQ(expected->getNumParams(), actual->getNumParams());
     for (unsigned int i = 0; i < actual->getNumParams(); ++i) {
@@ -99,8 +99,6 @@ protected:
 
     EXPECT_EQ(expected->getReturnValues(), actual->getReturnValues());
     EXPECT_EQ(expected->getActiveOutValues(), actual->getActiveOutValues());
-
-    EXPECT_TRUE(*actual == *expected);
   }
 
   //! EXPECT with gTest that two Stmts are equal, component by component.
@@ -135,8 +133,6 @@ protected:
     EXPECT_EQ(expected->getAllDebugStr(), actual->getAllDebugStr());
     EXPECT_EQ(expected->isPhiNode(), actual->isPhiNode());
     EXPECT_EQ(expected->isArrayAccess(), actual->isArrayAccess());
-
-    EXPECT_TRUE(*actual == *expected);
   }
 };
 
@@ -366,6 +362,8 @@ TEST_F(ComputationBuilderTest, nesting_with_args_and_return) {
                                                   {{"a", "{[i]->[0]}"}}));
 
   expectedComputation->addReturnValue("a", true);
+
+  expectedComputation->enforceArraySSA();
 
   expectComputationsEqual(computation, expectedComputation);
 }
