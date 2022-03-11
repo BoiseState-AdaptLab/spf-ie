@@ -44,7 +44,9 @@ protected:
   virtual void SetUp() override {
     iegenlib::Computation::resetNumRenamesCounters();
   }
-  virtual void TearDown() override {}
+  virtual void TearDown() override {
+    ComputationBuilder::subComputations.clear();
+  }
 
   const std::string replacementVarName = REPLACEMENT_VAR_BASE_NAME;
 
