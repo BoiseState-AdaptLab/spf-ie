@@ -112,19 +112,21 @@ void ComputationBuilder::processSingleStmt(clang::Stmt *stmt) {
 
     std::map<std::string, std::string> functionCallValueReplacements;
     if (auto *asDeclStmt = dyn_cast<DeclStmt>(stmt)) {
-      auto *decl = cast<VarDecl>(asDeclStmt->getSingleDecl());
-      std::string varName = decl->getNameAsString();
-      // If this declaration's variable is already registered as a data space, this is another declaration by that name.
-      if (computation->isDataSpace(varName)) {
-        Utils::printErrorAndExit(
-            "Declaring a variable with a name that has already been used in another scope is disallowed",
-            asDeclStmt);
-      } else {
-        this->varDecls.emplace(varName, decl->getType());
-      }
-      if (decl->hasInit()) {
-        processComplexExpr(decl->getInit(), true);
-        this->dataAccesses.processWriteToScalarName(varName);
+      for (auto *decl: asDeclStmt->decls()) {
+        auto *varDecl = cast<VarDecl>(decl);
+        std::string varName = varDecl->getNameAsString();
+        // If this declaration's variable is already registered as a data space, this is another declaration by that name.
+        if (computation->isDataSpace(varName)) {
+          Utils::printErrorAndExit(
+              "Declaring a variable with a name that has already been used in another scope is disallowed",
+              asDeclStmt);
+        } else {
+          this->varDecls.emplace(varName, varDecl->getType());
+        }
+        if (varDecl->hasInit()) {
+          processComplexExpr(varDecl->getInit(), true);
+          this->dataAccesses.processWriteToScalarName(varName);
+        }
       }
     } else if (auto *asBinOper = dyn_cast<BinaryOperator>(stmt)) {
       if (asBinOper->isAssignmentOp()) {
