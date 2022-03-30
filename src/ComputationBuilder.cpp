@@ -238,6 +238,9 @@ std::string ComputationBuilder::inlineFunctionCall(CallExpr *callExpr) {
     Utils::printErrorAndExit("Cannot processes this kind of call expression", callExpr);
   }
   auto *calleeDefinition = callee->getDefinition();
+  if (!calleeDefinition) {
+    Utils::printErrorAndExit("Cannot find definition for called function", callExpr);
+  }
   std::string calleeName = calleeDefinition->getNameAsString();
   if (!subComputations.count(calleeName)) {
     // build Computation from calleeDefinition, if we haven't done so already
