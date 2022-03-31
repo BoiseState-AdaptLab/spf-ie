@@ -1,0 +1,36 @@
+name: ci
+
+on: [push, pull_request]
+
+env:
+  TEST_TAG: riftember/spf-ie:test
+  LATEST_TAG: riftember/spf-ie:latest
+
+jobs:
+  docker:
+    runs-on: ubuntu-20.04
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v2
+      -
+        name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: riftember
+          password: ${{ secrets.DOCKERHUB_PAT }}
+      -
+        name: Build Docker image
+        run: docker build -t ${{ env.TEST_TAG }} .
+      -
+        name: Run tests in Docker image
+        run: |
+          docker run --rm ${{ env.TEST_TAG }} cmake --build build --target test
+      -
+        name: Push image as latest (if on main)
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          tags: ${{ env.LATEST_TAG }}
