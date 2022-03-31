@@ -40,7 +40,7 @@ set(LLVM_ENABLE_RTTI ON)
 # get IEGenLib
 ExternalProject_Add(iegenlib_in
         GIT_REPOSITORY "https://github.com/BoiseState-AdaptLab/IEGenLib.git"
-        GIT_TAG "9c44b169"
+        GIT_TAG "40ffb90c7bc9799449e288c4c3bf50e366121580"
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/IEGenLib
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_SOURCE_DIR}/lib/installed
         BUILD_COMMAND ${MAKE})
