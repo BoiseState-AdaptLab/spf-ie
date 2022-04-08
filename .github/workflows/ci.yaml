@@ -3,7 +3,6 @@ name: ci
 on: [push, pull_request]
 
 env:
-  TEST_TAG: riftember/spf-ie:test
   LATEST_TAG: riftember/spf-ie:latest
 
 jobs:
@@ -21,16 +20,13 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PAT }}
       -
         name: Build Docker image
-        run: docker build -t ${{ env.TEST_TAG }} .
+        run: docker build -t ${{ env.LATEST_TAG }} .
       -
         name: Run tests in Docker image
         run: |
-          docker run --rm ${{ env.TEST_TAG }} cmake --build build --target test
+          docker run --rm ${{ env.LATEST_TAG }} cmake --build build --target test
       -
         name: Push image as latest (if on main)
         if: ${{ github.ref == 'refs/heads/main' }}
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          push: true
-          tags: ${{ env.LATEST_TAG }}
+        run: |
+          docker push ${{ env.LATEST_TAG }}
