@@ -1,9 +1,6 @@
 SPF-IE
 ==================================
 
-[![Build Status](http://riftember.ddns.net:8090/buildStatus/icon?job=spf-ie%2Fmain)](http://riftember.ddns.net:8090/job/spf-ie/job/main/)
-
-Docker image: [riftember/spf-ie](https://hub.docker.com/r/riftember/spf-ie)
 
 
 Authors
@@ -28,7 +25,7 @@ Dependencies
 ------------
 
 - **CMake:** Download and install CMake from [here](https://cmake.org/download/), or however else you prefer.
-- **LLVM and Clang:** Follow [these instructions](https://github.com/BoiseState-AdaptLab/learningClangLLVM)
+- **LLVM and Clang:** Follow [these instructions](https://github.com/BoiseState-AdaptLab/learningClangLLVM#installation=)
   explaining how to install and use LLVM and Clang, with a few exceptions:
     - Checkout tag llvmorg-11.0.0 before building.
     - Modify the file `llvm/utils/benchmark/src/benchmark_register.h`
@@ -43,6 +40,18 @@ Dependencies
 
 Building
 --------
+### Docker image (recommended)
+
+[riftember/spf-ie](https://hub.docker.com/r/riftember/spf-ie)
+
+This image contains all dependencies (including the LLVM build), so using it
+will save a lot of time.
+
+
+### Manual build
+
+Requires LLVM is already built as specified above.
+
 Clone the repository and navigate to the root of this project (the directory containing this README). Then run the
 following:
 
