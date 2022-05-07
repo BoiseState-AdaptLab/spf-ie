@@ -42,6 +42,9 @@ public:
   //! Updated to the most recent statement in the Computation currently being processed.
   static PositionContext *positionContext;
 
+  //! Names of reserved (standard library) functions that should not be inlined
+  const static std::unordered_set<std::string> reservedFuncNames;
+
 private:
   //! Top-level Computation being built up
   Computation *computation;

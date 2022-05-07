@@ -22,6 +22,8 @@ PositionContext *ComputationBuilder::positionContext;
 /* ComputationBuilder */
 
 std::map<std::string, Computation *> ComputationBuilder::subComputations;
+const std::unordered_set<std::string>
+    ComputationBuilder::reservedFuncNames = {"sqrt", "ceil", "floor", "pow", "abs", "log", "log10"};
 
 ComputationBuilder::ComputationBuilder() = default;
 
@@ -237,11 +239,14 @@ std::string ComputationBuilder::inlineFunctionCall(CallExpr *callExpr) {
   if (!callee) {
     Utils::printErrorAndExit("Cannot processes this kind of call expression", callExpr);
   }
+  std::string calleeName = callee->getNameAsString();
+  if (reservedFuncNames.count(calleeName)) {
+    Utils::printErrorAndExit("Detected reserved function '" + calleeName + "'");
+  }
   auto *calleeDefinition = callee->getDefinition();
   if (!calleeDefinition) {
     Utils::printErrorAndExit("Cannot find definition for called function", callExpr);
   }
-  std::string calleeName = calleeDefinition->getNameAsString();
   if (!subComputations.count(calleeName)) {
     // build Computation from calleeDefinition, if we haven't done so already
     PositionContext oldContext = *positionContext;
