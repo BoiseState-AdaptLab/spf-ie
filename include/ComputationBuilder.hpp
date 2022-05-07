@@ -42,7 +42,8 @@ public:
   //! Updated to the most recent statement in the Computation currently being processed.
   static PositionContext *positionContext;
 
-  //! Names of reserved (standard library) functions that should not be inlined
+  //! Names of reserved (standard library) functions that should not be inlined.
+  //! When one of these is encountered, its arguments will be marked as read from, and no other processing will occur.
   const static std::unordered_set<std::string> reservedFuncNames;
 
 private:

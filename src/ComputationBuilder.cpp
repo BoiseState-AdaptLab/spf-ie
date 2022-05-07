@@ -81,6 +81,7 @@ void ComputationBuilder::processSingleStmt(clang::Stmt *stmt) {
   }
   // reset statement string replacement list
   stmtSourceCodeReplacements.clear();
+  this->dataAccesses = DataAccessHandler();
 
   if (auto *asForStmt = dyn_cast<ForStmt>(stmt)) {
     positionContext->schedule.advanceSchedule();
@@ -110,8 +111,6 @@ void ComputationBuilder::processSingleStmt(clang::Stmt *stmt) {
     positionContext->schedule.advanceSchedule();
 
     // gather data accesses
-    this->dataAccesses = DataAccessHandler();
-
     std::map<std::string, std::string> functionCallValueReplacements;
     if (auto *asDeclStmt = dyn_cast<DeclStmt>(stmt)) {
       for (auto *decl: asDeclStmt->decls()) {
@@ -235,14 +234,40 @@ void ComputationBuilder::processReturnStmt(clang::ReturnStmt *returnStmt) {
 }
 
 std::string ComputationBuilder::inlineFunctionCall(CallExpr *callExpr) {
+  // extract call
   auto *callee = callExpr->getDirectCallee();
   if (!callee) {
     Utils::printErrorAndExit("Cannot processes this kind of call expression", callExpr);
   }
   std::string calleeName = callee->getNameAsString();
-  if (reservedFuncNames.count(calleeName)) {
-    Utils::printErrorAndExit("Detected reserved function '" + calleeName + "'");
+
+  // get arguments
+  std::vector<clang::Expr *> callArgs;
+  std::vector<std::string> callArgStrings;
+  for (unsigned int i = 0; i < callExpr->getNumArgs(); ++i) {
+    auto *arg = callExpr->getArg(i)->IgnoreParenImpCasts();
+    if (!Utils::isVarOrNumericLiteral(arg)) {
+      Utils::printErrorAndExit(
+          "Argument passed to function is too complex (must be a data space or a numeric literal)",
+          arg);
+    }
+    callArgs.emplace_back(arg);
+    callArgStrings.emplace_back(Utils::stmtToString(arg));
   }
+
+  // check if this is a reserved function, avoiding inlining if so
+  if (reservedFuncNames.count(calleeName)) {
+    // mark data space arguments as read
+    for (unsigned int i = 0; i < callArgs.size(); ++i) {
+      if (computation->isDataSpace(callArgStrings[i])) {
+        this->dataAccesses.processExprAsRead(callArgs[i]);
+      }
+    }
+    // stop processing here and discard return value as irrelevant
+    return std::string();
+  }
+
+  // find function definition and build Computation from it if necessary
   auto *calleeDefinition = callee->getDefinition();
   if (!calleeDefinition) {
     Utils::printErrorAndExit("Cannot find definition for called function", callExpr);
@@ -253,17 +278,9 @@ std::string ComputationBuilder::inlineFunctionCall(CallExpr *callExpr) {
     auto builder = new ComputationBuilder();
     subComputations[calleeName] = builder->buildComputationFromFunction(calleeDefinition);
     *positionContext = oldContext;
+    delete builder;
   }
-  std::vector<std::string> callArgStrings;
-  for (unsigned int i = 0; i < callExpr->getNumArgs(); ++i) {
-    auto *arg = callExpr->getArg(i)->IgnoreParenImpCasts();
-    if (!Utils::isVarOrNumericLiteral(arg)) {
-      Utils::printErrorAndExit(
-          "Argument passed to function is too complex (must be a data space or a numeric literal)",
-          arg);
-    }
-    callArgStrings.emplace_back(Utils::stmtToString(arg));
-  }
+
   auto appendResult = computation->appendComputation(subComputations[calleeName],
                                                      positionContext->getIterSpaceString(),
                                                      positionContext->getExecScheduleString(),
@@ -273,9 +290,13 @@ std::string ComputationBuilder::inlineFunctionCall(CallExpr *callExpr) {
   positionContext->schedule.skipToPosition(appendResult.tuplePosition);
   positionContext->schedule.advanceSchedule();
 
-  // C doesn't have multiple return, so we only take one return value if any
+  // enforce no multiple return
+  if (appendResult.returnValues.size() > 1) {
+    Utils::printErrorAndExit("Function call returned multiple values", callExpr);
+  }
+
   return (appendResult.returnValues.empty() ?
-          "" : appendResult.returnValues.back());
+          std::string() : appendResult.returnValues.back());
 }
 
 void ComputationBuilder::processComplexExpr(Expr *expr, bool processReads) {
