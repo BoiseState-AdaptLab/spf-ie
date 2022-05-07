@@ -4,6 +4,7 @@ on: [ push ]
 
 env:
   LATEST_TAG: riftember/spf-ie:latest
+  BASE_IMAGE: riftember/llvm-for-spfie:11.0.0
 
 jobs:
   docker:
@@ -16,6 +17,8 @@ jobs:
         with:
           username: riftember
           password: ${{ secrets.DOCKERHUB_PAT }}
+      - name: Pull base dependencies image
+        run: docker pull ${{ env.BASE_IMAGE }}
       - name: Build Docker image
         run: docker build -t ${{ env.LATEST_TAG }} .
       - name: Run tests in Docker image

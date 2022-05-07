@@ -1,4 +1,4 @@
-FROM registry.hub.docker.com/riftember/llvm-for-spfie:11.0.0
+FROM riftember/llvm-for-spfie:11.0.0
 
 RUN apt-get -y install \
     git \
