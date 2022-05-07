@@ -25,7 +25,8 @@ Dependencies
 ------------
 
 - **CMake:** Download and install CMake from [here](https://cmake.org/download/), or however else you prefer.
-- **LLVM and Clang:** Follow [these instructions](https://github.com/BoiseState-AdaptLab/learningClangLLVM#installation=)
+- **LLVM and Clang:**
+  Follow [these instructions](https://github.com/BoiseState-AdaptLab/learningClangLLVM#installation=)
   explaining how to install and use LLVM and Clang, with a few exceptions:
     - Checkout tag llvmorg-11.0.0 before building.
     - Modify the file `llvm/utils/benchmark/src/benchmark_register.h`
@@ -40,13 +41,13 @@ Dependencies
 
 Building
 --------
+
 ### Docker image (recommended)
 
 [riftember/spf-ie](https://hub.docker.com/r/riftember/spf-ie)
 
 This image contains all dependencies (including the LLVM build), so using it
 will save a lot of time.
-
 
 ### Manual build
 
@@ -66,10 +67,10 @@ Usage
 -----
 
 ```bash
-$ ./build/spf-ie mysourcefile.cpp --entry-point <target function> [--frontend-only]
+$ ./build/spf-ie mysourcefile.c --entry-point <target function> [--frontend-only]
 ```
 
-- *mysourcefile.cpp* is the input file. Example files are provided in the test folder.
+- *mysourcefile.c* is the input file. Example files are provided in the test folder.
 - The `--entry-point` flag is required and specifies which function will be compiled.
 - The `--frontend-only` flag is optional and causes spf-ie to just run the compiler frontend and print out the resulting
   Computation IR. Default behavior (without this flag) outputs results of codegen on the generated IR.
