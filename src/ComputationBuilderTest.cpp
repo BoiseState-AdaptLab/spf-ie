@@ -273,6 +273,34 @@ int CSR_SpMV(int a, int N, int A[a], int index[N + 1], int col[a], int x[N], int
   expectComputationsEqual(computation, expectedComputation);
 }
 
+TEST_F(ComputationBuilderTest, reserved_function_call) {
+  std::string code = "\
+#include <math.h>\
+\n\
+double func(void) {\
+  double N = 5;\
+  double x = sqrt(N);\
+  return x;\
+}\n";
+
+  iegenlib::Computation *computation = buildComputationFromCode(code, "func");
+
+  Computation *expectedComputation = new Computation("func");
+  expectedComputation->addDataSpace("N", "double");
+  expectedComputation->addDataSpace("x", "double");
+
+  expectedComputation->addStmt(new iegenlib::Stmt("double N = 5;", "{[0]}", "{[0]->[0]}", {}, {{"N", "{[0]->[0]}"}}));
+  expectedComputation->addStmt(new iegenlib::Stmt("double x = sqrt(N);",
+                                                  "{[0]}",
+                                                  "{[0]->[1]}",
+                                                  {{"N", "{[0]->[0]}"}},
+                                                  {{"x", "{[0]->[0]}"}}));
+
+  expectedComputation->addReturnValue("x", true);
+
+  expectComputationsEqual(computation, expectedComputation);
+}
+
 TEST_F(ComputationBuilderTest, basic_nesting) {
   std::string code = \
 "int inner(int);\n"
