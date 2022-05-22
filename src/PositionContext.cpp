@@ -118,94 +118,114 @@ void PositionContext::enterFor(ForStmt *forStmt) {
 
   // initializer
   std::string initVar;
-  if (auto *init = dyn_cast<BinaryOperator>(forStmt->getInit())) {
-    makeAndInsertConstraint(init->getLHS(), init->getRHS(),
-                            BinaryOperatorKind::BO_GE);
-    initVar = Utils::stmtToString(init->getLHS());
-  } else if (auto *init = dyn_cast<DeclStmt>(forStmt->getInit())) {
-    if (auto *initDecl = dyn_cast<VarDecl>(init->getSingleDecl())) {
-      makeAndInsertConstraint(initDecl->getNameAsString(),
-                              initDecl->getInit(),
+  if (auto *originalInit = forStmt->getInit()) {
+    if (auto *init = dyn_cast<BinaryOperator>(originalInit)) {
+      makeAndInsertConstraint(init->getLHS(), init->getRHS(),
                               BinaryOperatorKind::BO_GE);
-      initVar = initDecl->getNameAsString();
+      initVar = Utils::stmtToString(init->getLHS());
+    } else if (auto *init = dyn_cast<DeclStmt>(originalInit)) {
+      if (init->isSingleDecl()) {
+        if (auto *initDecl = dyn_cast<VarDecl>(init->getSingleDecl())) {
+          makeAndInsertConstraint(initDecl->getNameAsString(),
+                                  initDecl->getInit(),
+                                  BinaryOperatorKind::BO_GE);
+          initVar = initDecl->getNameAsString();
+        } else {
+          error = "initializer";
+          errorReason = "declarative initializer must declare a variable";
+        }
+      } else {
+        error = "initializer";
+        errorReason = "must initialize just one variable";
+
+      }
     } else {
       error = "initializer";
-      errorReason = "declarative initializer must declare a variable";
+      errorReason = "must initialize iterator";
     }
   } else {
     error = "initializer";
-    errorReason = "must initialize iterator";
+    errorReason = "must be present";
   }
 
   // condition
-  if (auto *cond = dyn_cast<BinaryOperator>(forStmt->getCond())) {
-    makeAndInsertConstraint(cond->getLHS(), cond->getRHS(),
-                            cond->getOpcode());
-    // add any data spaces accessed in the condition to loop invariants
-    std::vector<std::string> newInvariants;
-    std::vector<Expr *> accessExprs;
-    Utils::collectComponentsFromCompoundExpr(cond->getLHS(), accessExprs);
-    Utils::collectComponentsFromCompoundExpr(cond->getRHS(), accessExprs);
-    std::vector<DataAccess> accesses;
-    for (const auto &accessExpr: accessExprs) {
-      auto additionalAccesses = DataAccessHandler::makeDataAccessesFromExpr(accessExpr, true);
-      accesses.insert(accesses.end(), additionalAccesses.begin(), additionalAccesses.end());
+  if (auto *originalCond = forStmt->getCond()) {
+    if (auto *cond = dyn_cast<BinaryOperator>(originalCond)) {
+      makeAndInsertConstraint(cond->getLHS(), cond->getRHS(),
+                              cond->getOpcode());
+      // add any data spaces accessed in the condition to loop invariants
+      std::vector<std::string> newInvariants;
+      std::vector<Expr *> accessExprs;
+      Utils::collectComponentsFromCompoundExpr(cond->getLHS(), accessExprs);
+      Utils::collectComponentsFromCompoundExpr(cond->getRHS(), accessExprs);
+      std::vector<DataAccess> accesses;
+      for (const auto &accessExpr: accessExprs) {
+        auto additionalAccesses = DataAccessHandler::makeDataAccessesFromExpr(accessExpr, true);
+        accesses.insert(accesses.end(), additionalAccesses.begin(), additionalAccesses.end());
+      }
+      for (const auto &access: accesses) {
+        newInvariants.push_back(
+            access.name);
+      }
+      invariants.push_back(newInvariants);
+    } else {
+      error = "condition";
+      errorReason = "must be a binary operation";
     }
-    for (const auto &access: accesses) {
-      newInvariants.push_back(
-          access.name);
-    }
-    invariants.push_back(newInvariants);
   } else {
     error = "condition";
-    errorReason = "must be a binary operation";
+    errorReason = "must be present";
   }
 
   // increment
-  bool validIncrement = false;
-  Expr *inc = forStmt->getInc();
-  auto *unaryIncOper = dyn_cast<UnaryOperator>(inc);
-  if (unaryIncOper && unaryIncOper->isIncrementOp()) {
-    // simple increment, ++i or i++
-    validIncrement = true;
-  } else if (auto *incOper = dyn_cast<BinaryOperator>(inc)) {
-    BinaryOperatorKind oper = incOper->getOpcode();
-    if (oper == BO_AddAssign || oper == BO_SubAssign) {
-      // operator is += or -=
-      Expr::EvalResult result;
-      if (incOper->getRHS()->EvaluateAsInt(result, *Context)) {
-        llvm::APSInt incVal = result.Val.getInt();
-        validIncrement = (oper == BO_AddAssign && incVal == 1) ||
-            (oper == BO_SubAssign && incVal == -1);
-      }
-    } else if (oper == BO_Assign &&
-        isa<BinaryOperator>(incOper->getRHS())) {
-      // Operator is '='
-      // This is the rhs of the increment statement
-      // (e.g. with i = i + 1, this is i + 1)
-      auto *secondOp = cast<BinaryOperator>(incOper->getRHS());
-      // Get variable being incremented
-      std::string iterStr = Utils::stmtToString(incOper->getLHS());
-      if (secondOp->getOpcode() == BO_Add) {
-        // Get our lh and rh expression, also in string form
-        Expr *lhs = secondOp->getLHS();
-        Expr *rhs = secondOp->getRHS();
-        std::string lhsStr = Utils::stmtToString(lhs);
-        std::string rhsStr = Utils::stmtToString(rhs);
+  if (Expr *inc = forStmt->getInc()) {
+    bool validIncrement = false;
+    auto *unaryIncOper = dyn_cast<UnaryOperator>(inc);
+    if (unaryIncOper && unaryIncOper->isIncrementOp()) {
+      // simple increment, ++i or i++
+      validIncrement = true;
+    } else if (auto *incOper = dyn_cast<BinaryOperator>(inc)) {
+      BinaryOperatorKind oper = incOper->getOpcode();
+      if (oper == BO_AddAssign || oper == BO_SubAssign) {
+        // operator is += or -=
         Expr::EvalResult result;
-        // one side must be iter var, other must be 1
-        validIncrement = (lhsStr == iterStr &&
-            rhs->EvaluateAsInt(result, *Context) &&
-            result.Val.getInt() == 1) ||
-            (rhsStr == iterStr &&
-                lhs->EvaluateAsInt(result, *Context) &&
-                result.Val.getInt() == 1);
+        if (incOper->getRHS()->EvaluateAsInt(result, *Context)) {
+          llvm::APSInt incVal = result.Val.getInt();
+          validIncrement = (oper == BO_AddAssign && incVal == 1) ||
+              (oper == BO_SubAssign && incVal == -1);
+        }
+      } else if (oper == BO_Assign &&
+          isa<BinaryOperator>(incOper->getRHS())) {
+        // Operator is '='
+        // This is the rhs of the increment statement
+        // (e.g. with i = i + 1, this is i + 1)
+        auto *secondOp = cast<BinaryOperator>(incOper->getRHS());
+        // Get variable being incremented
+        std::string iterStr = Utils::stmtToString(incOper->getLHS());
+        if (secondOp->getOpcode() == BO_Add) {
+          // Get our lh and rh expression, also in string form
+          Expr *lhs = secondOp->getLHS();
+          Expr *rhs = secondOp->getRHS();
+          std::string lhsStr = Utils::stmtToString(lhs);
+          std::string rhsStr = Utils::stmtToString(rhs);
+          Expr::EvalResult result;
+          // one side must be iter var, other must be 1
+          validIncrement = (lhsStr == iterStr &&
+              rhs->EvaluateAsInt(result, *Context) &&
+              result.Val.getInt() == 1) ||
+              (rhsStr == iterStr &&
+                  lhs->EvaluateAsInt(result, *Context) &&
+                  result.Val.getInt() == 1);
+        }
       }
     }
-  }
-  if (!validIncrement) {
+    if (!validIncrement) {
+      error = "increment";
+      errorReason = "must increase iterator by 1";
+    }
+  } else {
     error = "increment";
-    errorReason = "must increase iterator by 1";
+    errorReason = "must be present";
   }
 
   if (!error.empty()) {

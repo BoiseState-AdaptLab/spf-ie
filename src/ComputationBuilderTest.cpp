@@ -411,7 +411,7 @@ TEST_F(ComputationBuilderDeathTest, for_incorrect_initializer_fails) {
     return x;\
 }";
   ASSERT_DEATH(
-      buildComputationFromCode(code1, "a"), "");
+      buildComputationFromCode(code1, "a"), "Invalid initializer in for loop -- must initialize just one variable");
 
   std::string code2 =
       "int a() {\
@@ -424,11 +424,12 @@ TEST_F(ComputationBuilderDeathTest, for_incorrect_initializer_fails) {
 }";
   ASSERT_DEATH(
       buildComputationFromCode(code2, "a"),
-      "Invalid initializer in for loop -- must initializer iterator");
+      "Invalid initializer in for loop -- must be present");
 
   std::string code3 =
       "int a() {\
     int x;\
+    int i;\
     for (x++; i < 5; i++) {\
         x=i;\
     }\
@@ -436,7 +437,7 @@ TEST_F(ComputationBuilderDeathTest, for_incorrect_initializer_fails) {
 }";
   ASSERT_DEATH(
       buildComputationFromCode(code3, "a"),
-      "Invalid initializer in for loop -- must initializer iterator");
+      "Invalid initializer in for loop -- must initialize iterator");
 }
 
 TEST_F(ComputationBuilderDeathTest, for_incorrect_condition_fails) {
@@ -455,14 +456,14 @@ TEST_F(ComputationBuilderDeathTest, for_incorrect_condition_fails) {
   std::string code2 =
       "int a() {\
     int x;\
-    for (int i = 0; i++;) {\
+    for (int i = 0;;i++) {\
         x=i;\
     }\
     return x;\
 }";
   ASSERT_DEATH(
       buildComputationFromCode(code2, "a"),
-      "Invalid condition in for loop -- must be a binary operation");
+      "Invalid condition in for loop -- must be present");
 }
 
 TEST_F(ComputationBuilderDeathTest, for_incorrect_increment_fails) {
@@ -501,6 +502,18 @@ TEST_F(ComputationBuilderDeathTest, for_incorrect_increment_fails) {
   ASSERT_DEATH(
       buildComputationFromCode(code3, "a"),
       "Invalid increment in for loop -- must increase iterator by 1");
+
+  std::string code4 =
+      "int a() {\
+    int x = 0;\
+    for (int i = 0; i < 5;) {\
+        x=i;\
+    }\
+    return x;\
+}";
+  ASSERT_DEATH(
+      buildComputationFromCode(code4, "a"),
+      "Invalid increment in for loop -- must be present");
 }
 
 TEST_F(ComputationBuilderDeathTest, loop_invariant_violation_fails) {
