@@ -401,7 +401,71 @@ TEST_F(ComputationBuilderTest, nesting_with_args_and_return) {
 
 /** Death tests, checking failure on invalid input **/
 
-TEST_F(ComputationBuilderDeathTest, incorrect_increment_fails) {
+TEST_F(ComputationBuilderDeathTest, for_incorrect_initializer_fails) {
+  std::string code1 =
+      "int a() {\
+    int x;\
+    for (int i = 0, j; i < 5; i++) {\
+        x=i;\
+    }\
+    return x;\
+}";
+  ASSERT_DEATH(
+      buildComputationFromCode(code1, "a"), "");
+
+  std::string code2 =
+      "int a() {\
+    int x;\
+    int i;\
+    for (; i < 5; i++) {\
+        x=i;\
+    }\
+    return x;\
+}";
+  ASSERT_DEATH(
+      buildComputationFromCode(code2, "a"),
+      "Invalid initializer in for loop -- must initializer iterator");
+
+  std::string code3 =
+      "int a() {\
+    int x;\
+    for (x++; i < 5; i++) {\
+        x=i;\
+    }\
+    return x;\
+}";
+  ASSERT_DEATH(
+      buildComputationFromCode(code3, "a"),
+      "Invalid initializer in for loop -- must initializer iterator");
+}
+
+TEST_F(ComputationBuilderDeathTest, for_incorrect_condition_fails) {
+  std::string code1 =
+      "int a() {\
+    int x;\
+    for (int i = 0; i = 5; i++;) {\
+        x=i;\
+    }\
+    return x;\
+}";
+  ASSERT_DEATH(
+      buildComputationFromCode(code1, "a"),
+      "Invalid condition in for loop -- must be a binary operation");
+
+  std::string code2 =
+      "int a() {\
+    int x;\
+    for (int i = 0; i++;) {\
+        x=i;\
+    }\
+    return x;\
+}";
+  ASSERT_DEATH(
+      buildComputationFromCode(code2, "a"),
+      "Invalid condition in for loop -- must be a binary operation");
+}
+
+TEST_F(ComputationBuilderDeathTest, for_incorrect_increment_fails) {
   std::string code1 =
       "int a() {\
     int x;\
@@ -506,7 +570,7 @@ TEST_F(ComputationBuilderDeathTest, invalid_condition_fails) {
   std::string code3 =
       "int a() {\
     int x = 0;\
-    if (x !=0)\
+    if (x != 0)\
         x = 3;\
     }\
     return x;\
@@ -527,6 +591,126 @@ TEST_F(ComputationBuilderDeathTest, reusing_var_name_fails) {
 }";
   ASSERT_DEATH(buildComputationFromCode(code, "a"),
                "Declaring a variable with a name that has already been used in another scope is disallowed");
+}
+
+TEST_F(ComputationBuilderDeathTest, return_in_compound_stmt_disallowed) {
+  std::string code =
+      "int a() {\
+    int x = 5;\
+    for (int i = 0; i < 5; i += 1) {\
+        return 1;\
+    }\
+}";
+  ASSERT_DEATH(buildComputationFromCode(code, "a"),
+               "Return within nested structures is disallowed");
+}
+
+//TEST_F(ComputationBuilderDeathTest, early_return_disallowed) {
+//  std::string code =
+//      "int a() {\
+//    int x = 5;\
+//    if (x == 4) {\
+//        return 1;\
+//    }\
+//    for (int i = 0; i < 5; i += 1) {\
+//        x = 3;\
+//    }\
+//    return x;\
+//}";
+//  ASSERT_DEATH(buildComputationFromCode(code, "a"),
+//               "Return must be at end of function");
+//}
+
+//TEST_F(ComputationBuilderDeathTest, invalid_func_body_fails) {
+//  std::string code =
+//      "int a();";
+//  ASSERT_DEATH(buildComputationFromCode(code, "a"),
+//               "Invalid function body");
+//}
+
+
+TEST_F(ComputationBuilderDeathTest, func_arg_too_complex) {
+  std::string code1 =
+      "int inner(int);\n"
+      "int outer(void) {\n"
+      "  int x = 3;\n"
+      "  inner(x*5);\n"
+      "  return 3;\n"
+      "}\n"
+      "int inner(int x) {\n"
+      "  return x;\n"
+      "}";
+  ASSERT_DEATH(buildComputationFromCode(code1, "outer"),
+               "Argument passed to function is too complex");
+  std::string code2 =
+      "int inner(int);\n"
+      "int outer(void) {\n"
+      "  inner(3*5);\n"
+      "  return 3;\n"
+      "}\n"
+      "int inner(int x) {\n"
+      "  return x;\n"
+      "}";
+  ASSERT_DEATH(buildComputationFromCode(code2, "outer"),
+               "Argument passed to function is too complex");
+  std::string code3 =
+      "int inner(int);\n"
+      "int outer(void) {\n"
+      "  int* x;\n"
+      "  inner(x[0]);\n"
+      "  return 3;\n"
+      "}\n"
+      "int inner(int x) {\n"
+      "  return x;\n"
+      "}";
+  ASSERT_DEATH(buildComputationFromCode(code3, "outer"),
+               "Argument passed to function is too complex");
+}
+
+TEST_F(ComputationBuilderDeathTest, called_func_not_defined) {
+  std::string code =
+      "int inner(int);\n"
+      "int outer(void) {\n"
+      "  int x = inner(0);\n"
+      "  return x;\n"
+      "}\n";
+  ASSERT_DEATH(buildComputationFromCode(code, "outer"),
+               "Cannot find definition for called function");
+}
+
+TEST_F(ComputationBuilderDeathTest, return_too_complex) {
+  std::string code1 =
+      "int a(void) {\n"
+      "  return 3+5;\n"
+      "}\n";
+  ASSERT_DEATH(buildComputationFromCode(code1, "a"),
+               "Return value is too complex");
+  std::string code2 =
+      "int a(void) {\n"
+      "  int x = 5;"
+      "  return 3+x;\n"
+      "}\n";
+  ASSERT_DEATH(buildComputationFromCode(code2, "a"),
+               "Return value is too complex");
+  std::string code3 =
+      "int a(void) {\n"
+      "  int* x;"
+      "  return x[0];\n"
+      "}\n";
+  ASSERT_DEATH(buildComputationFromCode(code3, "a"),
+               "Return value is too complex");
+}
+
+TEST_F(ComputationBuilderDeathTest, condition_variables_disallowed) {
+  std::string code =
+      "int a(void) {\
+         if (int x = 3)) {\
+            x *= 3;\
+         }\
+         return 2;\
+      }";
+  ASSERT_DEATH(buildComputationFromCode(code, "a"),
+               "If statement condition variable declarations are unsupported");
 }
 
 //! Set up and run tests
