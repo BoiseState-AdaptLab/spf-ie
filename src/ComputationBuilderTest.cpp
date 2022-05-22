@@ -618,30 +618,6 @@ TEST_F(ComputationBuilderDeathTest, return_in_compound_stmt_disallowed) {
                "Return within nested structures is disallowed");
 }
 
-//TEST_F(ComputationBuilderDeathTest, early_return_disallowed) {
-//  std::string code =
-//      "int a() {\
-//    int x = 5;\
-//    if (x == 4) {\
-//        return 1;\
-//    }\
-//    for (int i = 0; i < 5; i += 1) {\
-//        x = 3;\
-//    }\
-//    return x;\
-//}";
-//  ASSERT_DEATH(buildComputationFromCode(code, "a"),
-//               "Return must be at end of function");
-//}
-
-//TEST_F(ComputationBuilderDeathTest, invalid_func_body_fails) {
-//  std::string code =
-//      "int a();";
-//  ASSERT_DEATH(buildComputationFromCode(code, "a"),
-//               "Invalid function body");
-//}
-
-
 TEST_F(ComputationBuilderDeathTest, func_arg_too_complex) {
   std::string code1 =
       "int inner(int);\n"
